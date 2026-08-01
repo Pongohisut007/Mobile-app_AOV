@@ -9,7 +9,7 @@ class Community extends StatelessWidget {
       padding: EdgeInsets.all(16.0),
       child: Center(
         child: Text(
-          "community Page",
+          "community Page View Arrived!",
           style: TextStyle(fontSize: 24),
         ),
       ),
