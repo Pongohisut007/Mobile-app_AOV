@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/food.dart';
 
 class FoodCard extends StatelessWidget {
-  const FoodCard({super.key});
+  final Food food;
+
+  const FoodCard({super.key, required this.food});
 
   @override
   Widget build(BuildContext context) {
@@ -24,38 +27,48 @@ class FoodCard extends StatelessWidget {
           Expanded(
             child: Center(
               child: Image.network(
-                "https://images.unsplash.com/photo-1568901346375-23c9450c58cd",
+                food.filePathImage,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.fastfood,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            "Cheese Burger",
-            style: TextStyle(
+          Text(
+            food.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 5),
-          const Text(
-            "Burger with Patty",
-            style: TextStyle(color: Colors.grey),
+          Text(
+            food.description,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "\$4.50",
-                style: TextStyle(
+              Text(
+                food.category,
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 14,
                 ),
               ),
-              CircleAvatar(
+              const CircleAvatar(
                 radius: 16,
                 backgroundColor: Colors.lime,
-                child: const Icon(
+                child: Icon(
                   Icons.add,
                   color: Colors.black,
                 ),
