@@ -5,11 +5,11 @@ import 'package:http/http.dart' as http;
 class ProductRepository {
   
   // Base URL for the API
-  static const String baseUrl = 'https://fakestoreapi.com';
+  static const String baseUrl = 'https://www.themealdb.com';
 
   Future<List<Product>> fetchProducts() async {
     // Make an HTTP GET request to fetch products from the API
-    final response = await http.get(Uri.parse('$baseUrl/products'));
+    final response = await http.get(Uri.parse('$baseUrl/api/json/v1/1/filter.php?c=Seafood'));
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonList = json.decode(response.body);
