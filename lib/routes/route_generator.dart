@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/counter/counter_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/product/product_bloc.dart';
@@ -20,6 +21,9 @@ class RoutesGenerator {
             ),
           BlocProvider(
             create: (context) => PageBloc(),
+            ),
+          BlocProvider(
+            create: (context) => CategoryBloc(),
             ),
           BlocProvider(create: (context) => ProductBloc(ProductRepository())),
           BlocProvider(create: (context) => Userbloc(UserRepository())),
