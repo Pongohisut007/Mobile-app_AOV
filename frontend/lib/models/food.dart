@@ -23,13 +23,4 @@ class Food {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'idfoods': idfoods,
-      'name': name,
-      'category': category,
-      'description': description,
-      'file_path_image': filePathImage,
-    };
-  }
 }
