@@ -22,7 +22,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     // call food bloc on init
-    context.read<FoodBloc>().add(FetchFoodEvent());
+   context.read<FoodBloc>().add(FetchFoodEvent());
   }
 
   @override

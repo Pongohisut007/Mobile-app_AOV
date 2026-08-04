@@ -8,12 +8,16 @@ class FoodRepository {
   static const String baseUrl = 'http://10.0.2.2:3000';
 
   Future<List<Food>> fetchFoods() async {
-    debugPrint('Fetching foods from: $baseUrl/foods');
+    return _getFoods('$baseUrl/foods');
+  }
 
-    final response = await http.get(Uri.parse('$baseUrl/foods'));
+  Future<List<Food>> fetchFoodsByCategory(String category) async {
+    return _getFoods('$baseUrl/foods/category/${Uri.encodeComponent(category)}');
+  }
 
-    debugPrint('Status code: ${response.statusCode}');
-    debugPrint('Response body: ${response.body}');
+  Future<List<Food>> _getFoods(String url) async {
+    debugPrint('Fetching foods from: $url');
+    final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonList = json.decode(response.body);

@@ -8,7 +8,9 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
 
   FoodBloc(this.repository) : super(FoodInitial()) {
     on<FetchFoodEvent>(_onFetchFoodEvent);
+    on<FetchFoodByCategoryEvent>(_onFetchFoodByCategoryEvent);
   }
+
 
   Future<void> _onFetchFoodEvent(
     FetchFoodEvent event,
@@ -16,6 +18,21 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     emit(FoodLoading());
     try {
       final foods = await repository.fetchFoods();
+      emit(FoodLoaded(foods));
+    } catch (e) {
+      emit(FoodError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onFetchFoodByCategoryEvent(
+    FetchFoodByCategoryEvent event,
+    Emitter<FoodState> emit) async {
+    emit(FoodLoading());
+    try {
+      // ถ้าไม่ได้เลือก category ให้ดึงทั้งหมด กดซ้ำเพื่อยกเลิก
+      final foods = event.category.isEmpty
+          ? await repository.fetchFoods()
+          : await repository.fetchFoodsByCategory(event.category);
       emit(FoodLoaded(foods));
     } catch (e) {
       emit(FoodError(message: e.toString()));

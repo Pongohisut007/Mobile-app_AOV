@@ -25,6 +25,7 @@ class CategoryItem extends StatelessWidget {
         return InkWell(
           onTap: () {
             categoryBloc.add(CategorySelectEvent(title));
+            debugPrint(title);
           },
           borderRadius: BorderRadius.circular(18),
           child: Container(

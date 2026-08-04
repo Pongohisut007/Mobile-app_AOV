@@ -20,6 +20,11 @@ export class FoodController {
     return this.foodService.findAll();
   }
 
+  @Get('category/:category')
+  findByCategory(@Param('category') category: string): Promise<Food[]> {
+    return this.foodService.findByCategory(category);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Food> {
     return this.foodService.findOne(id);

@@ -26,6 +26,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Product Detail - ID: ${widget.foodsId}')),
+      
     );
   }
 }

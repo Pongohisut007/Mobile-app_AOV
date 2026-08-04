@@ -14,8 +14,17 @@ export class FoodService {
     return this.foodRepository.find();
   }
 
+  async findByCategory(category: string): Promise<Food[]> {
+    return this.foodRepository.find({
+       where: { category } 
+      }
+    );
+  }
+
   async findOne(id: number): Promise<Food> {
-    const food = await this.foodRepository.findOne({ where: { idfoods: id } });
+    const food = await this.foodRepository.findOne({ 
+      where: { idfoods: id } 
+    });
     if (!food) {
       throw new NotFoundException(`Food with id ${id} not found`);
     }
