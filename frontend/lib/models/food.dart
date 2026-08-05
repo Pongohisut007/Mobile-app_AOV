@@ -1,5 +1,5 @@
 class Food {
-  final int idfoods;
+  final String idfoods;
   final String name;
   final String category;
   final String description;
@@ -14,13 +14,18 @@ class Food {
   });
 
   factory Food.fromJson(Map<String, dynamic> json) {
+    // recipe หนึ่งอันมีได้หลาย category ที่นี่ใช้อันแรกมาโชว์บนการ์ด
+    final categories = json['categories'] as List<dynamic>?;
+    final firstCategory = (categories != null && categories.isNotEmpty)
+        ? categories.first as Map<String, dynamic>
+        : null;
+
     return Food(
-      idfoods: json['idfoods'] as int,
-      name: json['name'] as String,
-      category: json['category'] as String,
-      description: json['description'] as String,
-      filePathImage: json['file_path_image'] as String,
+      idfoods: json['id'] as String,
+      name: json['title'] as String,
+      category: firstCategory?['name'] as String? ?? '',
+      description: json['shortDescription'] as String? ?? '',
+      filePathImage: json['coverImageUrl'] as String? ?? '',
     );
   }
-
 }
