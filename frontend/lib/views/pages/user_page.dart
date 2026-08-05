@@ -1,89 +1,109 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_application_1/bloc/user/user_bloc.dart';
-import 'package:flutter_application_1/bloc/user/user_even.dart';
-import 'package:flutter_application_1/bloc/user/user_state.dart';
-
-class UserPage extends StatefulWidget {
+class UserPage extends StatelessWidget {
   const UserPage({super.key});
 
-  @override
-  State<UserPage> createState() => _UserPageState();
-}
+  void _showComingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('$feature is coming soon'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: ProfileColors.ink,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      );
+  }
 
-class _UserPageState extends State<UserPage> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<Userbloc>().add(FetchUserEvent());
+  Future<void> _confirmSignOut(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'You can sign back in at any time to access your recipes.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _showComingSoon(context, 'Sign out');
+            },
+            style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Text(
-            "Our Users",
-            style: Theme.of(context).textTheme.headlineMedium,
-          ), // Text
-          Expanded(
-            child: BlocBuilder<Userbloc, UserState>(
-              builder: (context, state) {
-                // handle initial state
-                if (state is UserInit) {
-                  return const Center(child: Text("Initial Loading..."));
-                }
-                // handle loading state
-                if (state is Userloading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                // handle loaded state
-                if (state is Userloaded) {
-                  return ListView.builder(
-                    itemCount: state.user.length,
-                    itemBuilder: (context, index) {
-                      final user = state.user[index];
-                      return Card(
-                        elevation: 4.0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text(
-                              user.username.isNotEmpty
-                                  ? user.username[0].toUpperCase()
-                                  : "?",
-                            ),
-                          ), // CircleAvatar
-                          title: Text(
-                            user.username,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ), // Text
-                          subtitle: Text(user.email),
-                        ), // ListTile
-                      ); // Card
-                    },
-                  );
-                }
-                // handle error state
-                if (state is UserError) {
-                  return Center(child: Text(state.message));
-                }
-                // return empty widget
-                return const SizedBox.shrink();
-              },
-            ), // BlocBuilder
-          ), // Expanded
-        ],
-      ), // Column
-    ); // Container
+    return Scaffold(
+      backgroundColor: ProfileColors.background,
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+              sliver: SliverList.list(
+                children: [
+                  ProfilePageHeader(
+                    onSettingsPressed: () =>
+                        _showComingSoon(context, 'Settings'),
+                  ),
+                  const SizedBox(height: 22),
+                  ProfileCard(
+                    onEditPressed: () =>
+                        _showComingSoon(context, 'Edit profile'),
+                  ),
+                  const SizedBox(height: 16),
+                  const ProfileStatsRow(),
+                  const SizedBox(height: 30),
+                  const ProfileSectionTitle(
+                    title: 'Your kitchen',
+                    subtitle: 'Everything you cook and collect',
+                  ),
+                  const SizedBox(height: 14),
+                  ProfileQuickActions(
+                    onPressed: (label) => _showComingSoon(context, label),
+                  ),
+                  const SizedBox(height: 30),
+                  const ProfileSectionTitle(
+                    title: 'Account',
+                    subtitle: 'Manage your preferences',
+                  ),
+                  const SizedBox(height: 14),
+                  ProfileAccountMenu(
+                    onPressed: (label) => _showComingSoon(context, label),
+                    onSignOut: () => _confirmSignOut(context),
+                  ),
+                  const SizedBox(height: 24),
+                  const Center(
+                    child: Text(
+                      'Recipy · Version 1.0.0',
+                      style: TextStyle(
+                        color: ProfileColors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
