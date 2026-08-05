@@ -9,7 +9,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { FoodService } from './foods_service';
-import { Food } from './foods_entity';
+import { Food } from './entities/foods_entity';
 
 @Controller('foods')
 export class FoodController {

@@ -1,14 +1,23 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TypeormModule } from './TypeORM/typeorm.module';
-import { UsersModule } from './TypeORM/users/users.module';
-import { FoodsModule } from './TypeORM/foods/foods.module';
-
-
+import { UsersModule } from './users/users.module';
+import { FoodsModule } from './foods/foods.module';
+import { DatabaseModule } from './database/database.module';
+import databaseConfig from '../config/database.config';
 
 @Module({
-  imports: [TypeormModule, UsersModule, FoodsModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath:['.env.production','.env'],
+      load: [databaseConfig],
+    }),
+    DatabaseModule,
+    UsersModule,
+    FoodsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
