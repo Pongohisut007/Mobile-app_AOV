@@ -1,6 +1,35 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Category } from '../categories/entities/category.entity';
+import { Favorite } from '../favorites/entities/favorite.entity';
+import { Ingredient } from '../ingredients/entities/ingredient.entity';
+import { RecipeIngredient } from '../ingredients/entities/recipe-ingredient.entity';
+import { OrderItem } from '../orders/entities/order-item.entity';
+import { Order } from '../orders/entities/order.entity';
+import { Payment } from '../payments/entities/payment.entity';
+import { RecipeAccess } from '../recipe-access/entities/recipe-access.entity';
+import { RecipeContent } from '../recipes/entities/recipe-content.entity';
+import { RecipeSection } from '../recipes/entities/recipe-section.entity';
+import { Recipe } from '../recipes/entities/recipe.entity';
+import { Review } from '../reviews/entities/review.entity';
+import { User } from '../users/entities/user.entity';
+
+const entities = [
+  User,
+  Recipe,
+  RecipeSection,
+  RecipeContent,
+  Category,
+  Ingredient,
+  RecipeIngredient,
+  Order,
+  OrderItem,
+  Payment,
+  RecipeAccess,
+  Review,
+  Favorite,
+];
 
 @Module({
   imports: [
@@ -15,6 +44,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         password: config.getOrThrow<string>('database.password'),
         database: config.getOrThrow<string>('database.name'),
 
+        entities,
         autoLoadEntities: true,
 
         // เปิดใช้งานเฉพาะตอนพัฒนา
