@@ -10,8 +10,27 @@ class FoodRepository {
     return _getFoods('$baseUrl/recipes');
   }
 
-  Future<List<Food>> fetchFoodsByCategory(String slug) async {
-    return _getFoods('$baseUrl/recipes?category=${Uri.encodeComponent(slug)}');
+
+  Future<List<Food>> fetchFoodsByCategoryId(String categoryId) async {
+    final url = '$baseUrl/categories/$categoryId';
+    debugPrint('Fetching foods by category from: $url');
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final category = json.decode(response.body) as Map<String, dynamic>;
+      final recipes = category['recipes'] as List<dynamic>? ?? [];
+      final foods = recipes
+          .map((json) => Food.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      debugPrint('Parsed ${foods.length} foods in category ${category['name']}');
+      return foods;
+    } else if (response.statusCode == 404) {
+      throw Exception('ไม่พบหมวดหมู่นี้');
+    } else {
+      debugPrint('Failed to load category: ${response.statusCode}');
+      throw Exception('Failed to load foods');
+    }
   }
 
   Future<Food> fetchFoodById(String id) async {

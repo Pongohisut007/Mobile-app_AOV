@@ -18,7 +18,7 @@ export class CategoriesService {
     const category = await this.categoryRepository.findOne({
       where: { id },
       relations: {
-        recipes: true,
+        recipes: { categories: true },
       },
     });
     if (!category)

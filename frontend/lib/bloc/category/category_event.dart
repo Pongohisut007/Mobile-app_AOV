@@ -7,6 +7,6 @@ class FetchCategoriesEvent extends CategoryEvent {
 }
 
 class CategorySelectEvent extends CategoryEvent {
-  final String slug;
-  CategorySelectEvent(this.slug);
+  final String id;
+  CategorySelectEvent(this.id);
 }

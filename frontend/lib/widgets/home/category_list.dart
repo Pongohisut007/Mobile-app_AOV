@@ -29,10 +29,10 @@ class CategoryList extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<CategoryBloc, CategoryState>(
       listenWhen: (previous, current) =>
-          previous.selectedSlug != current.selectedSlug,
+          previous.selectedId != current.selectedId,
       listener: (context, state) {
         context.read<FoodBloc>().add(
-          FetchFoodByCategoryEvent(state.selectedSlug), 
+          FetchFoodByCategoryEvent(state.selectedId),
         );
       },
       builder: (context, state) {
@@ -58,10 +58,10 @@ class CategoryList extends StatelessWidget {
             itemBuilder: (_, index) {
               final category = state.categories[index];
               return CategoryItem(
-                icon: _iconFor(category.slug),
+                icon: _iconFor(category.slug), // ไอคอนยังเลือกจาก slug เหมือนเดิม
                 title: category.name,
-                slug: category.slug,
-                isSelected: state.selectedSlug == category.slug,
+                categoryId: category.id,
+                isSelected: state.selectedId == category.id,
               );
             },
           ),

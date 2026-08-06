@@ -30,9 +30,9 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     emit(FoodLoading());
     try {
       // ถ้าไม่ได้เลือก category ให้ดึงทั้งหมด กดซ้ำเพื่อยกเลิก
-      final foods = event.category.isEmpty
+      final foods = event.categoryId.isEmpty
           ? await repository.fetchFoods()
-          : await repository.fetchFoodsByCategory(event.category);
+          : await repository.fetchFoodsByCategoryId(event.categoryId);
       emit(FoodLoaded(foods));
     } catch (e) {
       emit(FoodError(message: e.toString()));

@@ -22,8 +22,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final selectedSlug = context.read<CategoryBloc>().state.selectedSlug;
-    context.read<FoodBloc>().add(FetchFoodByCategoryEvent(selectedSlug));
+    final selectedId = context.read<CategoryBloc>().state.selectedId;
+    context.read<FoodBloc>().add(FetchFoodByCategoryEvent(selectedId));
   }
 
   @override

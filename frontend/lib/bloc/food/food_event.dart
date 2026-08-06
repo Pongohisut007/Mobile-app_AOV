@@ -7,6 +7,6 @@ class FetchFoodEvent extends FoodEvent {
 }
 
 class FetchFoodByCategoryEvent extends FoodEvent {
-  final String category;
-  FetchFoodByCategoryEvent(this.category);
+  final String categoryId;
+  FetchFoodByCategoryEvent(this.categoryId);
 }

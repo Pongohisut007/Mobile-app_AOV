@@ -2,26 +2,26 @@ import 'package:flutter_application_1/models/category.dart';
 
 class CategoryState {
   final List<Category> categories;
-  final String selectedSlug;
+  final String selectedId;
   final bool isLoading;
   final String? error;
 
   const CategoryState({
     this.categories = const [],
-    this.selectedSlug = '',
+    this.selectedId = '',
     this.isLoading = false,
     this.error,
   });
 
   CategoryState copyWith({
     List<Category>? categories,
-    String? selectedSlug,
+    String? selectedId,
     bool? isLoading,
     String? error,
   }) {
     return CategoryState(
       categories: categories ?? this.categories,
-      selectedSlug: selectedSlug ?? this.selectedSlug,
+      selectedId: selectedId ?? this.selectedId,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );

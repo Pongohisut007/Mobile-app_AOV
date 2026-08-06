@@ -6,14 +6,14 @@ import 'package:flutter_application_1/bloc/category/category_event.dart';
 class CategoryItem extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String slug;
+  final String categoryId;
   final bool isSelected;
 
   const CategoryItem({
     super.key,
     required this.icon,
     required this.title,
-    required this.slug,
+    required this.categoryId,
     required this.isSelected,
   });
 
@@ -21,8 +21,8 @@ class CategoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        context.read<CategoryBloc>().add(CategorySelectEvent(slug)); //ส่ง  slug ไปหา api
-        debugPrint('Selected category: $slug');
+        context.read<CategoryBloc>().add(CategorySelectEvent(categoryId)); //ส่ง id ไปหา api
+        debugPrint('Selected category: $categoryId');
       },
       borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(

@@ -29,7 +29,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     Emitter<CategoryState> emit,
   ) {
     // กดอันเดิมซ้ำ = ยกเลิกการกรอง
-    final selected = state.selectedSlug == event.slug ? '' : event.slug;
-    emit(state.copyWith(selectedSlug: selected));
+    final selected = state.selectedId == event.id ? '' : event.id;
+    emit(state.copyWith(selectedId: selected));
   }
 }
