@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_state.dart';
 import 'package:flutter_application_1/views/pages/home_page.dart';
-import 'package:flutter_application_1/views/pages/community.dart';
+import 'package:flutter_application_1/views/pages/community_page.dart';
 import 'package:flutter_application_1/views/pages/product_page.dart';
 import 'package:flutter_application_1/views/pages/user_page.dart';
 import 'package:flutter_application_1/widgets/bottom_navbar.dart';
@@ -20,7 +20,7 @@ class MainTreeWidget extends StatefulWidget {
 class _MainTreeWidgetState extends State<MainTreeWidget> {
   List<Widget> pages = const [
     HomePage(),
-    Community(),
+    CommunityPage(),
     ProductPage(),
     UserPage(),
   ];

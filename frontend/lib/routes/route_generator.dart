@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
+import 'package:flutter_application_1/bloc/category/category_event.dart';
 import 'package:flutter_application_1/bloc/counter/counter_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/product/product_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
+import 'package:flutter_application_1/repositories/category_repository.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/product_repository.dart';
+import 'package:flutter_application_1/bloc/food_category/food_category_bloc.dart';
+import 'package:flutter_application_1/repositories/food_category_repository.dart';
 import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/main_tree.dart';
@@ -24,7 +28,14 @@ class RoutesGenerator {
             providers: [
               BlocProvider(create: (context) => CounterBloc()),
               BlocProvider(create: (context) => PageBloc()),
-              BlocProvider(create: (context) => CategoryBloc()),
+              BlocProvider(
+                create: (context) =>
+                    CategoryBloc(CategoryRepository())
+                      ..add(FetchCategoriesEvent()),
+              ),
+              BlocProvider(
+                create: (context) => FoodCategoryBloc(FoodCategoryRepository()),
+              ),
               BlocProvider(create: (context) => FoodBloc(FoodRepository())),
               BlocProvider(
                 create: (context) => ProductBloc(ProductRepository()),

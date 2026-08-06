@@ -2,59 +2,80 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
-import 'package:flutter_application_1/bloc/category/category_state.dart';
 
 class CategoryItem extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String slug;
+  final bool isSelected;
 
   const CategoryItem({
     super.key,
     required this.icon,
     required this.title,
+    required this.slug,
+    required this.isSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    final categoryBloc = context.read<CategoryBloc>();
-
-    return BlocBuilder<CategoryBloc, CategoryState>(
-      builder: (context, state) {
-        final isSelected = state.selectedCategory == title;
-
-        return InkWell(
-          onTap: () {
-            categoryBloc.add(CategorySelectEvent(title));
-            debugPrint(title);
-          },
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            width: 80,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.black : Colors.white,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 30,
-                  color: isSelected ? Colors.white : Colors.black,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+    return InkWell(
+      onTap: () {
+        context.read<CategoryBloc>().add(CategorySelectEvent(slug));
+        debugPrint('Selected category: $slug');
       },
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 80,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFFD32F2F), Color(0xFFF57C00)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : const Color(0xFFFFF3E0), // ส้มอ่อนมาก
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFE64A19).withOpacity(0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 30,
+              color: isSelected ? Colors.white : const Color(0xFFE64A19),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : const Color(0xFF5D4037),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

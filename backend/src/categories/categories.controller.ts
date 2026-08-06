@@ -20,10 +20,7 @@ export class CategoriesController {
     return this.categoriesService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Category> {
-    return this.categoriesService.findOne(id);
-  }
+
 
   @Post()
   create(@Body() data: Partial<Category>): Promise<Category> {
