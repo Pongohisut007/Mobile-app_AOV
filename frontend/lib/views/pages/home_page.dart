@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
@@ -21,8 +22,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // call food bloc on init
-   context.read<FoodBloc>().add(FetchFoodEvent());
+    final selectedSlug = context.read<CategoryBloc>().state.selectedSlug;
+    context.read<FoodBloc>().add(FetchFoodByCategoryEvent(selectedSlug));
   }
 
   @override
@@ -59,6 +60,17 @@ class _HomePageState extends State<HomePage> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (state is FoodLoaded) {
+                    if (state.foods.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: Text(
+                            'ยังไม่มีเมนูในหมวดนี้',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      );
+                    }
                     return GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),

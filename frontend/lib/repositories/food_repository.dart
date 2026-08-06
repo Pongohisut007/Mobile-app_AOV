@@ -4,15 +4,33 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:http/http.dart' as http;
 
 class FoodRepository {
-  // Base URL for the API
   static const String baseUrl = 'http://10.0.2.2:3000';
 
   Future<List<Food>> fetchFoods() async {
     return _getFoods('$baseUrl/recipes');
   }
 
-  Future<List<Food>> fetchFoodsByCategory(String category) async {
-    return _getFoods('$baseUrl/recipes?category=${Uri.encodeComponent(category)}');
+  Future<List<Food>> fetchFoodsByCategory(String slug) async {
+    return _getFoods('$baseUrl/recipes?category=${Uri.encodeComponent(slug)}');
+  }
+
+  Future<Food> fetchFoodById(String id) async {
+    final url = '$baseUrl/recipes/$id';
+    debugPrint('Fetching food from: $url');
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final food = Food.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+      debugPrint('Parsed food: ${food.idfoods} - ${food.name}');
+      return food;
+    } else if (response.statusCode == 404) {
+      throw Exception('ไม่พบเมนูนี้');
+    } else {
+      debugPrint('Failed to load food: ${response.statusCode}');
+      throw Exception('Failed to load food');
+    }
   }
 
   Future<List<Food>> _getFoods(String url) async {

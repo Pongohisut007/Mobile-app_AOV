@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
+import 'package:flutter_application_1/bloc/category/category_event.dart';
 import 'package:flutter_application_1/bloc/counter/counter_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/product/product_bloc.dart';
 import 'package:flutter_application_1/bloc/user/user_bloc.dart';
+import 'package:flutter_application_1/repositories/category_repository.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/product_repository.dart';
 import 'package:flutter_application_1/repositories/product_users.dart';
@@ -25,7 +27,8 @@ class RoutesGenerator {
             create: (context) => PageBloc(),
             ),
           BlocProvider(
-            create: (context) => CategoryBloc(),
+            create: (context) =>
+                CategoryBloc(CategoryRepository())..add(FetchCategoriesEvent()),
             ),
           BlocProvider(create: (context) => FoodBloc(FoodRepository())),
           BlocProvider(create: (context) => ProductBloc(ProductRepository())),

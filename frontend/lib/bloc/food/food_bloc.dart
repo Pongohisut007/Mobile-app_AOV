@@ -38,4 +38,5 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
       emit(FoodError(message: e.toString()));
     }
   }
+
 }
