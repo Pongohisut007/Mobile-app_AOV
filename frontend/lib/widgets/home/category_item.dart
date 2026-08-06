@@ -25,12 +25,30 @@ class CategoryItem extends StatelessWidget {
         debugPrint('Selected category: $slug');
       },
       borderRadius: BorderRadius.circular(18),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: 80,
         margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.white,
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFFD32F2F), Color(0xFFF57C00)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : const Color(0xFFFFF3E0), // ส้มอ่อนมาก
           borderRadius: BorderRadius.circular(18),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFE64A19).withOpacity(0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -38,7 +56,7 @@ class CategoryItem extends StatelessWidget {
             Icon(
               icon,
               size: 30,
-              color: isSelected ? Colors.white : Colors.black,
+              color: isSelected ? Colors.white : const Color(0xFFE64A19),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -50,7 +68,8 @@ class CategoryItem extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isSelected ? Colors.white : Colors.black,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : const Color(0xFF5D4037),
                 ),
               ),
             ),
