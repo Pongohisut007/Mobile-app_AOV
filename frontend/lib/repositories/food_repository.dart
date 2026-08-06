@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 
 class FoodRepository {
   // Base URL for the API
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  // static const String baseUrl = 'http://10.0.2.2:3000';
+  static const String baseUrl = 'http://localhost:3000';
 
   Future<List<Food>> fetchFoods() async {
     return _getFoods('$baseUrl/recipes');

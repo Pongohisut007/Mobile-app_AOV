@@ -1,5 +1,5 @@
 class FoodCategory {
-  final int id;
+  final String id;
   final DateTime createAt;
   final DateTime updateAt;
   final String slug;
@@ -23,15 +23,17 @@ class FoodCategory {
 
   factory FoodCategory.fromJson(Map<String, dynamic> json) {
     return FoodCategory(
-      id: json['id'] as int,
-      createAt: DateTime.parse(json['create_at'] as String),
-      updateAt: DateTime.parse(json['update_at'] as String),
-      slug: json['slug'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      imageUrl: json['image_url'] as String,
-      isActive: json['is_active'] as bool,
-      sortOrder: json['sort_order'] as String,
+      id: json['id']?.toString() ?? '',
+      createAt: DateTime.tryParse(json['create_at']?.toString() ?? '') ??
+          DateTime.now(),
+      updateAt: DateTime.tryParse(json['update_at']?.toString() ?? '') ??
+          DateTime.now(),
+      slug: json['slug']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      isActive: json['isActive'] ?? false,
+      sortOrder: json['sortOrder']?.toString() ?? '',
     );
   }
 }

@@ -1,31 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/food_category.dart';
 
-class CategoryCard extends StatefulWidget {
-  const CategoryCard({super.key});
+class CategoryCard extends StatelessWidget {
+  final FoodCategory category;
+  final VoidCallback onTap;
 
-  @override
-  State<CategoryCard> createState() => _CategoryCardState();
-}
+  const CategoryCard({
+    super.key,
+    required this.category,
+    required this.onTap,
+  });
 
-class _CategoryCardState extends State<CategoryCard> {
   @override
   Widget build(BuildContext context) {
+    const fallbackImage =
+        'https://islamspk.com/masjid/no-pict-board.png';
+    print(category.isActive);
+    final imageUrl = category.imageUrl.trim().isEmpty
+        ? fallbackImage
+        : category.imageUrl;
+
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(20),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {
-          print("Card Click");
-        },
+        onTap: onTap,
         child: SizedBox(
-          height: 206,
-          width: double.infinity,
+          height: 130,
           child: Image.network(
-            "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9",
+            imageUrl,
             fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Image.network(
+                fallbackImage,
+                fit: BoxFit.cover,
+              );
+            },
           ),
         ),
       ),

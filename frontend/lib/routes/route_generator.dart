@@ -7,6 +7,8 @@ import 'package:flutter_application_1/bloc/product/product_bloc.dart';
 import 'package:flutter_application_1/bloc/user/user_bloc.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/product_repository.dart';
+import 'package:flutter_application_1/bloc/food_category/food_category_bloc.dart';
+import 'package:flutter_application_1/repositories/food_category_repository.dart';
 import 'package:flutter_application_1/repositories/product_users.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/main_tree.dart';
@@ -27,6 +29,11 @@ class RoutesGenerator {
           BlocProvider(
             create: (context) => CategoryBloc(),
             ),
+          BlocProvider(
+            create: (context) => FoodCategoryBloc(
+              FoodCategoryRepository(),
+            ),
+          ),
           BlocProvider(create: (context) => FoodBloc(FoodRepository())),
           BlocProvider(create: (context) => ProductBloc(ProductRepository())),
           BlocProvider(create: (context) => Userbloc(UserRepository())),
