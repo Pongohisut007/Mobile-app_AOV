@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_application_1/bloc/food_category/food_category_bloc.dart';
-import 'package:flutter_application_1/bloc/food_category/food_category_event.dart';
-import 'package:flutter_application_1/bloc/food_category/food_category_state.dart';
+import 'package:flutter_application_1/bloc/category/category_bloc.dart';
+import 'package:flutter_application_1/bloc/category/category_event.dart';
+import 'package:flutter_application_1/bloc/category/category_state.dart';
 import 'package:flutter_application_1/widgets/community/category_card.dart';
 
 class CommunityPage extends StatefulWidget {
@@ -17,8 +17,12 @@ class _CommunityPageState extends State<CommunityPage> {
   void initState() {
     super.initState();
 
-    // โหลด Category เมื่อเปิดหน้า
-    context.read<FoodCategoryBloc>().add(FetchFoodCategoryEvent());
+    // CategoryBloc โหลด category ไปแล้วตอนสร้าง route
+    // ยิงซ้ำเฉพาะกรณีที่ยังไม่มีข้อมูลและไม่ได้กำลังโหลดอยู่ (เช่นรอบก่อนพลาด)
+    final categoryBloc = context.read<CategoryBloc>();
+    if (categoryBloc.state.categories.isEmpty && !categoryBloc.state.isLoading) {
+      categoryBloc.add(FetchCategoriesEvent());
+    }
   }
 
   @override
@@ -28,55 +32,50 @@ class _CommunityPageState extends State<CommunityPage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: BlocBuilder<FoodCategoryBloc, FoodCategoryState>(
+          child: BlocBuilder<CategoryBloc, CategoryState>(
             builder: (context, state) {
-              if (state is FoodCategoryInitial ||
-                  state is FoodCategoryLoading) {
+              if (state.isLoading && state.categories.isEmpty) {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
               }
 
-              if (state is FoodCategoryLoaded) {
-                if (state.categories.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      "ไม่มีหมวดหมู่อาหาร",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  );
-                }
-
-                return GridView.builder(
-                  itemCount: state.categories.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,          // แสดง 1 การ์ดต่อแถว
-                    childAspectRatio: 2.8,      // กว้าง : สูง = 2.8 : 1
-                    mainAxisSpacing: 16,
-                  ),
-                  itemBuilder: (context, index) {
-                    final category = state.categories[index];
-
-                    return CategoryCard(
-                      category: category,
-                      onTap: () {
-                        debugPrint('Category: ${category.name}');
-                      },
-                    );
-                  },
-                );
-              }
-
-              if (state is FoodCategoryError) {
+              if (state.error != null && state.categories.isEmpty) {
                 return Center(
                   child: Text(
-                    state.message,
+                    state.error!,
                     style: const TextStyle(color: Colors.red),
                   ),
                 );
               }
 
-              return const SizedBox.shrink();
+              if (state.categories.isEmpty) {
+                return const Center(
+                  child: Text(
+                    "ไม่มีหมวดหมู่อาหาร",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                );
+              }
+
+              return GridView.builder(
+                itemCount: state.categories.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1,          // แสดง 1 การ์ดต่อแถว
+                  childAspectRatio: 2.8,      // กว้าง : สูง = 2.8 : 1
+                  mainAxisSpacing: 16,
+                ),
+                itemBuilder: (context, index) {
+                  final category = state.categories[index];
+
+                  return CategoryCard(
+                    category: category,
+                    onTap: () {
+                      debugPrint('Category: ${category.name}');
+                    },
+                  );
+                },
+              );
             },
           ),
         ),

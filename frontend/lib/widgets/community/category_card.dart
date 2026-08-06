@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/models/food_category.dart';
+import 'package:flutter_application_1/models/category.dart';
 
 class CategoryCard extends StatelessWidget {
-  final FoodCategory category;
+  final Category category;
   final VoidCallback onTap;
 
   const CategoryCard({
@@ -15,10 +15,8 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const fallbackImage =
         'https://islamspk.com/masjid/no-pict-board.png';
-    print(category.isActive);
-    final imageUrl = category.imageUrl.trim().isEmpty
-        ? fallbackImage
-        : category.imageUrl;
+    final rawImageUrl = category.imageUrl?.trim() ?? '';
+    final imageUrl = rawImageUrl.isEmpty ? fallbackImage : rawImageUrl;
 
     return Card(
       elevation: 5,

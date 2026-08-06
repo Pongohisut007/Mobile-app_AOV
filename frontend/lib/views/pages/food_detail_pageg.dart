@@ -12,6 +12,9 @@ class FoodDetailPage extends StatefulWidget {
 }
 
 class _FoodDetailPageState extends State<FoodDetailPage> {
+  static const Color primaryRed = Color(0xFFD32F2F);
+  static const Color accentOrange = Color(0xFFF57C00);
+
   late Future<Food> _foodFuture;
 
   @override
@@ -30,11 +33,78 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.shade300),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.shopping_bag_outlined, color: primaryRed),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: SizedBox(
+                height: 58,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [primaryRed, accentOrange],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryRed.withOpacity(0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text(
+                      "Buy Now",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       body: FutureBuilder<Food>(
         future: _foodFuture,
         builder: (context, state) {
           if (state.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(
+                color: primaryRed,
+                strokeWidth: 3,
+              ),
+            );
           }
 
           if (state.hasError || !state.hasData) {
@@ -48,7 +118,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       const Icon(
                         Icons.error_outline,
                         size: 48,
-                        color: Colors.grey,
+                        color: accentOrange,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -62,11 +132,18 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade700,
+                            ),
                             child: const Text("ย้อนกลับ"),
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: _reload,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryRed,
+                              foregroundColor: Colors.white,
+                            ),
                             child: const Text("ลองอีกครั้ง"),
                           ),
                         ],
@@ -90,7 +167,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       Container(
                         height: 320,
                         decoration: const BoxDecoration(
-                          color: Color(0xfff5f5f5),
+                          color: Color(0xfffff3e0), // ส้มอ่อน แทนเทา
                           borderRadius: BorderRadius.only(
                             bottomLeft: Radius.circular(40),
                             bottomRight: Radius.circular(40),
@@ -103,7 +180,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                         child: CircleAvatar(
                           backgroundColor: Colors.white,
                           child: IconButton(
-                            icon: const Icon(Icons.arrow_back),
+                            icon: const Icon(Icons.arrow_back, color: primaryRed),
                             onPressed: () => Navigator.pop(context),
                           ),
                         ),
@@ -119,14 +196,16 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                                     food.filePathImage,
                                     height: 240,
                                     fit: BoxFit.contain,
-                                    errorBuilder: (_, _, _) =>
+                                    errorBuilder: (_, __, ___) =>
                                         _imagePlaceholder(),
                                     loadingBuilder: (context, child, progress) {
                                       if (progress == null) return child;
                                       return const SizedBox(
                                         height: 240,
                                         child: Center(
-                                          child: CircularProgressIndicator(),
+                                          child: CircularProgressIndicator(
+                                            color: primaryRed,
+                                          ),
                                         ),
                                       );
                                     },
@@ -149,14 +228,12 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                           ),
                         ),
 
-                        const SizedBox(height: 8),
-
-                        const SizedBox(height: 25),
+                        const SizedBox(height: 33),
 
                         Container(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: const Color(0xfffff3e0), // ส้มอ่อน แทนเทา
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -211,7 +288,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     return const SizedBox(
       height: 240,
       child: Center(
-        child: Icon(Icons.restaurant, size: 64, color: Colors.grey),
+        child: Icon(Icons.restaurant, size: 64, color: accentOrange),
       ),
     );
   }

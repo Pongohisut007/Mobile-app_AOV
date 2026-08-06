@@ -32,7 +32,7 @@ class CategoryList extends StatelessWidget {
           previous.selectedSlug != current.selectedSlug,
       listener: (context, state) {
         context.read<FoodBloc>().add(
-          FetchFoodByCategoryEvent(state.selectedSlug),
+          FetchFoodByCategoryEvent(state.selectedSlug), 
         );
       },
       builder: (context, state) {

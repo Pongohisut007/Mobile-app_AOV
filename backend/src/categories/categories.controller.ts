@@ -21,7 +21,6 @@ export class CategoriesController {
   }
 
 
-
   @Post()
   create(@Body() data: Partial<Category>): Promise<Category> {
     return this.categoriesService.create(data);
