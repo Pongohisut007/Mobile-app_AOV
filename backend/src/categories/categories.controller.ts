@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { Category } from './entities/category.entity';
+import { get } from 'http';
 
 @Controller('categories')
 export class CategoriesController {
@@ -19,7 +20,10 @@ export class CategoriesController {
   findAll(): Promise<Category[]> {
     return this.categoriesService.findAll();
   }
-
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Category> {
+    return this.categoriesService.findOne(id);
+  }
 
   @Post()
   create(@Body() data: Partial<Category>): Promise<Category> {
