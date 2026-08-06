@@ -25,29 +25,37 @@ class CategoryList extends StatelessWidget {
   static IconData _iconFor(String slug) =>
       _icons[slug.trim().toLowerCase()] ?? Icons.restaurant_menu;
 
+  // มีเฉพาะตอน CategoryLoaded ถ้าเป็น state อื่นถือว่าไม่ได้กรอง
+  static String _selectedIdOf(CategoryState state) =>
+      state is CategoryLoaded ? state.selectedId : '';
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CategoryBloc, CategoryState>(
       listenWhen: (previous, current) =>
-          previous.selectedId != current.selectedId,
+          _selectedIdOf(previous) != _selectedIdOf(current),
       listener: (context, state) {
         context.read<FoodBloc>().add(
-          FetchFoodByCategoryEvent(state.selectedId),
+          FetchFoodByCategoryEvent(_selectedIdOf(state)),
         );
       },
       builder: (context, state) {
-        if (state.isLoading && state.categories.isEmpty) {
+        if (state is CategoryLoading) {
           return const SizedBox(
             height: 90,
             child: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (state.error != null && state.categories.isEmpty) {
+        if (state is CategoryError) {
           return SizedBox(
             height: 90,
-            child: Center(child: Text(state.error!)),
+            child: Center(child: Text(state.message)),
           );
+        }
+
+        if (state is! CategoryLoaded) {
+          return const SizedBox(height: 90);
         }
 
         return SizedBox(

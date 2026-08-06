@@ -6,7 +6,7 @@ import 'package:flutter_application_1/repositories/category_repository.dart';
 class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   final CategoryRepository repository;
 
-  CategoryBloc(this.repository) : super(const CategoryState()) {
+  CategoryBloc(this.repository) : super(CategoryInitial()) {
     on<FetchCategoriesEvent>(_onFetchCategoriesEvent);
     on<CategorySelectEvent>(_onCategorySelectEvent);
   }
@@ -15,12 +15,12 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     FetchCategoriesEvent event,
     Emitter<CategoryState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true));
+    emit(CategoryLoading());
     try {
       final categories = await repository.fetchCategories();
-      emit(state.copyWith(categories: categories, isLoading: false));
+      emit(CategoryLoaded(categories));
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+      emit(CategoryError(message: e.toString()));
     }
   }
 
@@ -28,8 +28,11 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     CategorySelectEvent event,
     Emitter<CategoryState> emit,
   ) {
+    final current = state;
+    if (current is! CategoryLoaded) return;
+
     // กดอันเดิมซ้ำ = ยกเลิกการกรอง
-    final selected = state.selectedId == event.id ? '' : event.id;
-    emit(state.copyWith(selectedId: selected));
+    final selected = current.selectedId == event.id ? '' : event.id;
+    emit(CategoryLoaded(current.categories, selectedId: selected));
   }
 }

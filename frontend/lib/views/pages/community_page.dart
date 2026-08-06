@@ -20,7 +20,8 @@ class _CommunityPageState extends State<CommunityPage> {
     // CategoryBloc โหลด category ไปแล้วตอนสร้าง route
     // ยิงซ้ำเฉพาะกรณีที่ยังไม่มีข้อมูลและไม่ได้กำลังโหลดอยู่ (เช่นรอบก่อนพลาด)
     final categoryBloc = context.read<CategoryBloc>();
-    if (categoryBloc.state.categories.isEmpty && !categoryBloc.state.isLoading) {
+    final state = categoryBloc.state;
+    if (state is! CategoryLoaded && state is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
   }
@@ -34,22 +35,22 @@ class _CommunityPageState extends State<CommunityPage> {
           padding: const EdgeInsets.all(16),
           child: BlocBuilder<CategoryBloc, CategoryState>(
             builder: (context, state) {
-              if (state.isLoading && state.categories.isEmpty) {
+              if (state is CategoryLoading || state is CategoryInitial) {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
               }
 
-              if (state.error != null && state.categories.isEmpty) {
+              if (state is CategoryError) {
                 return Center(
                   child: Text(
-                    state.error!,
+                    state.message,
                     style: const TextStyle(color: Colors.red),
                   ),
                 );
               }
 
-              if (state.categories.isEmpty) {
+              if (state is! CategoryLoaded || state.categories.isEmpty) {
                 return const Center(
                   child: Text(
                     "ไม่มีหมวดหมู่อาหาร",
