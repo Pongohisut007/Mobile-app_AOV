@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
-import 'package:flutter_application_1/bloc/category/category_state.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
@@ -23,10 +22,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final categoryState = context.read<CategoryBloc>().state;
-    final selectedId = categoryState is CategoryLoaded
-        ? categoryState.selectedId
-        : '';
+    final selectedId = context.read<CategoryBloc>().state.selectedId;
     context.read<FoodBloc>().add(FetchFoodByCategoryEvent(selectedId));
   }
 
