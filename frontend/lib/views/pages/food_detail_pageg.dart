@@ -5,7 +5,7 @@ import 'package:flutter_application_1/repositories/food_repository.dart';
 class FoodDetailPage extends StatefulWidget {
   const FoodDetailPage({super.key, required this.foodsId});
 
-  final int foodsId;
+  final String foodsId;
 
   @override
   State<FoodDetailPage> createState() => _FoodDetailPageState();

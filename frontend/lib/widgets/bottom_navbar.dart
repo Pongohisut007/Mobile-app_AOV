@@ -16,6 +16,9 @@ class BottomNavbar extends StatelessWidget {
       selectedItemColor: Colors.black,
       unselectedItemColor: Colors.grey,
       type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
+      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+      showUnselectedLabels: true,
 
       onTap: (index) {
         pageBloc.add(PageChangeEvent(index));
@@ -23,24 +26,23 @@ class BottomNavbar extends StatelessWidget {
 
       items: const [
         BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: "",
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home_rounded),
+          label: "Home",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.favorite_border),
-          label: "",
+          activeIcon: Icon(Icons.favorite_rounded),
+          label: "Saved",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.receipt_long),
-          label: "",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_bag_outlined),
-          label: "",
+          label: "Orders",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
-          label: "",
+          activeIcon: Icon(Icons.person_rounded),
+          label: "Profile",
         ),
       ],
     );

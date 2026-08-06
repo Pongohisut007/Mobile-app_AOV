@@ -8,11 +8,11 @@ class FoodRepository {
   static const String baseUrl = 'http://10.0.2.2:3000';
 
   Future<List<Food>> fetchFoods() async {
-    return _getFoods('$baseUrl/foods');
+    return _getFoods('$baseUrl/recipes');
   }
 
   Future<List<Food>> fetchFoodsByCategory(String category) async {
-    return _getFoods('$baseUrl/foods/category/${Uri.encodeComponent(category)}');
+    return _getFoods('$baseUrl/recipes?category=${Uri.encodeComponent(category)}');
   }
 
   Future<List<Food>> _getFoods(String url) async {
