@@ -1,23 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
 class ProfileStatsRow extends StatelessWidget {
-  const ProfileStatsRow({super.key});
+  const ProfileStatsRow({super.key, required this.profile});
+
+  final UserProfile profile;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Expanded(
-          child: _StatCard(value: '12', label: 'Recipes'),
+          child: _StatCard(
+            value: profile.recipeCount.toString(),
+            label: 'Recipes',
+          ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
-          child: _StatCard(value: '28', label: 'Saved'),
+          child: _StatCard(
+            value: profile.savedCount.toString(),
+            label: 'Saved',
+          ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
-          child: _StatCard(value: '4.9', label: 'Rating'),
+          child: _StatCard(
+            value: profile.rating.toStringAsFixed(1),
+            label: 'Rating',
+          ),
         ),
       ],
     );

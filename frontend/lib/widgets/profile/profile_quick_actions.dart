@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
 class ProfileQuickActions extends StatelessWidget {
-  const ProfileQuickActions({super.key, required this.onPressed});
+  const ProfileQuickActions({
+    super.key,
+    required this.profile,
+    required this.onPressed,
+  });
 
+  final UserProfile profile;
   final ValueChanged<String> onPressed;
 
   @override
@@ -18,28 +24,28 @@ class ProfileQuickActions extends StatelessWidget {
       children: [
         _QuickActionCard(
           label: 'My recipes',
-          detail: '12 published',
+          detail: '${profile.recipeCount} published',
           icon: Icons.restaurant_menu_rounded,
           color: const Color(0xFFFFE6CC),
           onTap: () => onPressed('My recipes'),
         ),
         _QuickActionCard(
           label: 'Purchased',
-          detail: '8 recipes',
+          detail: '${profile.purchasedCount} recipes',
           icon: Icons.receipt_long_rounded,
           color: const Color(0xFFE4EDFF),
           onTap: () => onPressed('Purchased recipes'),
         ),
         _QuickActionCard(
           label: 'Favorites',
-          detail: '28 saved',
+          detail: '${profile.savedCount} saved',
           icon: Icons.favorite_rounded,
           color: const Color(0xFFFFE2E8),
           onTap: () => onPressed('Favorites'),
         ),
         _QuickActionCard(
           label: 'Drafts',
-          detail: '3 unfinished',
+          detail: '${profile.draftCount} unfinished',
           icon: Icons.edit_note_rounded,
           color: const Color(0xFFE8F3D7),
           onTap: () => onPressed('Draft recipes'),

@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
 class ProfileCard extends StatelessWidget {
-  const ProfileCard({super.key, required this.onEditPressed});
+  const ProfileCard({
+    super.key,
+    required this.profile,
+    required this.onEditPressed,
+  });
 
+  final UserProfile profile;
   final VoidCallback onEditPressed;
 
   @override
@@ -33,18 +39,18 @@ class ProfileCard extends StatelessWidget {
                   color: ProfileColors.accent,
                   shape: BoxShape.circle,
                 ),
-                child: const CircleAvatar(
+                child: CircleAvatar(
                   backgroundColor: Colors.white,
-                  backgroundImage: AssetImage('assets/images/Profile1.jpg'),
+                  backgroundImage: AssetImage(profile.avatarAssetPath),
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Chef Mook',
+                      profile.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -56,13 +62,13 @@ class ProfileCard extends StatelessWidget {
                     ),
                     SizedBox(height: 5),
                     Text(
-                      'chef@recipy.local',
+                      profile.email,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: Colors.white60, fontSize: 13),
                     ),
                     SizedBox(height: 10),
-                    _CreatorBadge(),
+                    _CreatorBadge(label: profile.roleLabel),
                   ],
                 ),
               ),
@@ -95,7 +101,9 @@ class ProfileCard extends StatelessWidget {
 }
 
 class _CreatorBadge extends StatelessWidget {
-  const _CreatorBadge();
+  const _CreatorBadge({required this.label});
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -106,14 +114,18 @@ class _CreatorBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.verified_rounded, color: ProfileColors.accent, size: 15),
-          SizedBox(width: 5),
+          const Icon(
+            Icons.verified_rounded,
+            color: ProfileColors.accent,
+            size: 15,
+          ),
+          const SizedBox(width: 5),
           Text(
-            'Recipe creator',
-            style: TextStyle(
+            label,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.w700,
