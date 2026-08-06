@@ -4,12 +4,14 @@ import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
-  ProfileBloc(this._repository) : super(const ProfileInitial()) {
+  ProfileBloc(this._repository, {required this.userId})
+    : super(const ProfileInitial()) {
     on<ProfileRequested>(_loadProfile);
     on<ProfileRefreshRequested>(_loadProfile);
   }
 
   final ProfileRepository _repository;
+  final String userId;
 
   Future<void> _loadProfile(
     ProfileEvent event,
@@ -19,7 +21,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(const ProfileLoading());
     }
     try {
-      final profile = await _repository.fetchProfileById();
+      final profile = await _repository.fetchProfile(userId);
       emit(ProfileLoaded(profile));
     } on Exception catch (error) {
       emit(ProfileFailure(error.toString()));

@@ -39,10 +39,7 @@ class ProfileCard extends StatelessWidget {
                   color: ProfileColors.accent,
                   shape: BoxShape.circle,
                 ),
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  backgroundImage: AssetImage(profile.avatarAssetPath),
-                ),
+                child: ClipOval(child: _ProfileAvatar(profile: profile)),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -96,6 +93,27 @@ class ProfileCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({required this.profile});
+
+  final UserProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = profile.avatarUrl;
+    if (avatarUrl == null) {
+      return Image.asset(UserProfile.fallbackAvatarAsset, fit: BoxFit.cover);
+    }
+
+    return Image.network(
+      avatarUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          Image.asset(UserProfile.fallbackAvatarAsset, fit: BoxFit.cover),
     );
   }
 }

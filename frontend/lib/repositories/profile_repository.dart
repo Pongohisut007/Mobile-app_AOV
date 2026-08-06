@@ -1,51 +1,87 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:http/http.dart' as http;
 
-class ProfileRepository {
-  const ProfileRepository();
+abstract interface class ProfileRepository {
+  Future<UserProfile> fetchProfile(String userId);
+}
 
-  Future<UserProfile> fetchProfileById() async {
-    // Replace this mock with GET /users/me after authentication is connected.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+class HttpProfileRepository implements ProfileRepository {
+  HttpProfileRepository({
+    required String baseUrl,
+    http.Client? client,
+    this.requestTimeout = const Duration(seconds: 10),
+  }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
+       _client = client ?? http.Client();
 
-    return const UserProfile(
-      id: 'seed-creator',
-      displayName: 'Chef Mook',
-      email: 'chef@recipy.local',
-      avatarAssetPath: 'assets/images/Profile1.jpg',
-      roleLabel: 'Recipe creator',
-      recipeCount: 12,
-      purchasedCount: 8,
-      savedCount: 28,
-      draftCount: 3,
-      rating: 4.9,
+  final String _baseUrl;
+  final http.Client _client;
+  final Duration requestTimeout;
+
+  @override
+  Future<UserProfile> fetchProfile(String userId) async {
+    final normalizedUserId = userId.trim();
+    //
+    if (normalizedUserId.isEmpty) {
+      throw const ProfileRepositoryException(
+        'PROFILE_USER_ID is missing. Start Flutter with '
+        '--dart-define=PROFILE_USER_ID=<user-uuid>.'
+        'dev only',
+      );
+    }
+    //
+    final uri = Uri.parse(
+      '$_baseUrl/users/${Uri.encodeComponent(normalizedUserId)}/profile',
     );
+
+    try {
+      final response = await _client.get(uri).timeout(requestTimeout);
+
+      if (response.statusCode == 404) {
+        throw const ProfileRepositoryException('Profile not found.');
+      }
+      if (response.statusCode != 200) {
+        throw ProfileRepositoryException(
+          'Could not load profile (HTTP ${response.statusCode}).',
+        );
+      }
+
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is! Map<String, dynamic>) {
+        throw const ProfileRepositoryException(
+          'Backend returned an invalid profile response.',
+        );
+      }
+
+      try {
+        // print('Decoded profile JSON: $decoded');
+        return UserProfile.fromJson(decoded, apiBaseUrl: _baseUrl);
+      } on FormatException catch (error) {
+        throw ProfileRepositoryException(error.message);
+      }
+    } on TimeoutException {
+      throw const ProfileRepositoryException(
+        'Profile request timed out. Check the backend connection.',
+      );
+    } on FormatException {
+      throw const ProfileRepositoryException(
+        'Backend returned malformed JSON.',
+      );
+    } on http.ClientException catch (error) {
+      throw ProfileRepositoryException(
+        'Could not connect to the backend: ${error.message}',
+      );
+    }
   }
-  static const String baseUrl = 'http://10.0.2.2:3000';
+}
 
-  // Future<UserProfile> fetchProfile() async {
-  //   return _getProfile('$baseUrl/profile');
-  // }
+class ProfileRepositoryException implements Exception {
+  const ProfileRepositoryException(this.message);
 
-  // Future<UserProfile> fetchProfileById(String id) async {
-  //   final url = '$baseUrl/recipes/$id';
-  //   debugPrint('Fetching profile from: $url');
-  //   final response = await http.get(Uri.parse(url));
+  final String message;
 
-  //   if (response.statusCode == 200) {
-  //     final profile = UserProfile.fromJson(
-  //       json.decode(response.body) as Map<String, dynamic>,
-  //     );
-  //     debugPrint('Parsed profile: ${profile.id} - ${profile.displayName}');
-  //     return profile;
-  //   } else if (response.statusCode == 404) {
-  //     throw Exception('ไม่พบ profile นี้');
-  //   } else {
-  //     debugPrint('Failed to load profile: ${response.statusCode}');
-  //     throw Exception('Failed to load profile');
-  //   }
-  // }
+  @override
+  String toString() => message;
 }

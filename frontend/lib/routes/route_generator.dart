@@ -6,6 +6,7 @@ import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/product/product_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/product_repository.dart';
 import 'package:flutter_application_1/repositories/profile_repository.dart';
@@ -29,9 +30,10 @@ class RoutesGenerator {
                 create: (context) => ProductBloc(ProductRepository()),
               ),
               BlocProvider(
-                create: (context) =>
-                    ProfileBloc(const ProfileRepository())
-                      ..add(const ProfileRequested()),
+                create: (context) => ProfileBloc(
+                  HttpProfileRepository(baseUrl: ApiConfig.apiBaseUrl),
+                  userId: ApiConfig.profileUserId,
+                )..add(const ProfileRequested()),
               ),
             ],
             child: const MainTreeWidget(title: 'Flutter App'),
