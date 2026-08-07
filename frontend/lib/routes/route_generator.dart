@@ -7,11 +7,19 @@ import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
 import 'package:flutter_application_1/repositories/category_repository.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
+import 'package:flutter_application_1/bloc/recipe_library/recipe_library_bloc.dart';
+import 'package:flutter_application_1/bloc/recipe_library/recipe_library_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/profile_repository.dart';
+import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/main_tree.dart';
+import 'package:flutter_application_1/models/recipe_collection_type.dart';
+import 'package:flutter_application_1/views/pages/draft_recipes_page.dart';
+import 'package:flutter_application_1/views/pages/favorite_recipes_page.dart';
+import 'package:flutter_application_1/views/pages/my_recipes_page.dart';
+import 'package:flutter_application_1/views/pages/purchased_recipes_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class RoutesGenerator {
@@ -21,7 +29,7 @@ class RoutesGenerator {
         return MaterialPageRoute(
           builder: (_) => MultiBlocProvider(
             providers: [
-            //BlocProvider(create: (context) => CounterBloc()),
+              //BlocProvider(create: (context) => CounterBloc()),
               BlocProvider(create: (context) => PageBloc()),
               BlocProvider(
                 create: (context) =>
@@ -39,9 +47,45 @@ class RoutesGenerator {
             child: const MainTreeWidget(title: 'Flutter App'),
           ),
         );
+      case AppRoutes.myRecipes:
+        return _recipeCollectionRoute(
+          RecipeCollectionType.myRecipes,
+          const MyRecipesPage(),
+        );
+      case AppRoutes.purchasedRecipes:
+        return _recipeCollectionRoute(
+          RecipeCollectionType.purchased,
+          const PurchasedRecipesPage(),
+        );
+      case AppRoutes.favoriteRecipes:
+        return _recipeCollectionRoute(
+          RecipeCollectionType.favorites,
+          const FavoriteRecipesPage(),
+        );
+      case AppRoutes.draftRecipes:
+        return _recipeCollectionRoute(
+          RecipeCollectionType.drafts,
+          const DraftRecipesPage(),
+        );
       default:
         return _errorRoute();
     }
+  }
+
+  static Route<dynamic> _recipeCollectionRoute(
+    RecipeCollectionType collectionType,
+    Widget page,
+  ) {
+    return MaterialPageRoute(
+      builder: (_) => BlocProvider(
+        create: (context) => RecipeLibraryBloc(
+          HttpRecipeLibraryRepository(baseUrl: ApiConfig.apiBaseUrl),
+          userId: ApiConfig.profileUserId,
+          collectionType: collectionType,
+        )..add(const RecipeLibraryRequested()),
+        child: page,
+      ),
+    );
   }
 
   static Route<dynamic> _errorRoute() {
