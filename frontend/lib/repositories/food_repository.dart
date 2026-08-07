@@ -10,9 +10,7 @@ class FoodRepository {
   Future<List<Food>> fetchFoods() async {
     return _getFoods('$baseUrl/recipes');
   }
-
-
-  Future<List<Food>> fetchFoodsByCategoryId(String categoryId) async {
+    Future<List<Food>> fetchFoodsByCategoryId(String categoryId) async {
     final url = '$baseUrl/categories/$categoryId';
     debugPrint('Fetching foods by category from: $url');
     final response = await http.get(Uri.parse(url));
@@ -33,6 +31,7 @@ class FoodRepository {
       throw Exception('Failed to load foods');
     }
   }
+
 
   Future<Food> fetchFoodById(String id) async {
     final url = '$baseUrl/recipes/$id';

@@ -18,66 +18,35 @@ class _CommunityPageState extends State<CommunityPage> {
     super.initState();
     final categoryBloc = context.read<CategoryBloc>();
     final state = categoryBloc.state;
-    print('state: $state');
     if (state is! CategoryLoaded && state is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: BlocBuilder<CategoryBloc, CategoryState>(
-            builder: (context, state) {
-              if (state is CategoryLoading || state is CategoryInitial) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-
-              if (state is CategoryError) {
-                return Center(
-                  child: Text(
-                    state.message,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
-
-              if (state is! CategoryLoaded || state.categories.isEmpty) {
-                return const Center(
-                  child: Text(
-                    "ไม่มีหมวดหมู่อาหาร",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                );
-              }
-
-              return GridView.builder(
-                itemCount: state.categories.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 1,          // แสดง 1 การ์ดต่อแถว
-                  childAspectRatio: 2.8,      // กว้าง : สูง = 2.8 : 1
-                  mainAxisSpacing: 16,
-                ),
-                itemBuilder: (context, index) {
-                  final category = state.categories[index];
-
-                  return CategoryCard(
-                    category: category,
-                    onTap: () {
-                      debugPrint('Category: ${category.name}');
-                    },
-                  );
-                },
+      body: BlocBuilder<CategoryBloc, CategoryState>(
+        builder: (context, state) {
+          if (state is CategoryLoaded) {
+            return ListView.builder(
+              itemCount: state.categories.length,
+              itemBuilder: (context, index) {
+              final category = state.categories[index];
+              return 
+              CategoryCard(
+                category: category,
               );
-            },
-          ),
-        ),
+              },
+            );
+          }else if (state is CategoryLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is CategoryError) {
+            return Center(child: Text('Error: ${state.message}'));
+          }
+          return const Center(child: Text('No data available.'));
+        },
       ),
     );
   }
