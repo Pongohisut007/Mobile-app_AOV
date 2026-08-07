@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
-//import 'package:flutter_application_1/bloc/counter/counter_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
@@ -12,6 +11,9 @@ import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/main_tree.dart';
+import 'package:flutter_application_1/views/pages/community_page.dart';
+import 'package:flutter_application_1/views/pages/community_selectcategory_page.dart';
+import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class RoutesGenerator {
@@ -39,6 +41,55 @@ class RoutesGenerator {
             child: const MainTreeWidget(title: 'Flutter App'),
           ),
         );
+
+      case AppRoutes.community:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => CategoryBloc(
+              CategoryRepository(),
+            )..add(
+                FetchCategoriesEvent(),
+              ),
+            child: const CommunityPage(),
+          ),
+        );
+
+      case AppRoutes.communitySelectCategory:
+        final args = setting.arguments as Map<String, dynamic>;
+
+        final String categoryUUID = args['categoryUUID'];
+        final String categoryImageUrl = args['categoryImageUrl'];
+
+        final CategoryBloc categoryBloc = args['categoryBloc'];
+
+        return MaterialPageRoute(
+          builder: (_) => MultiBlocProvider(
+            providers: [
+              BlocProvider.value(
+                value: categoryBloc,
+              ),
+              BlocProvider(
+                create: (_) => FoodBloc(
+                  FoodRepository(),
+                ),
+              ),
+            ],
+            child: CommunitySelectCategoryPage(
+              categoryUUID: categoryUUID,
+              categoryImageUrl: categoryImageUrl,
+            ),
+          ),
+        );
+
+      case AppRoutes.foodDetail:
+        final String foodId = setting.arguments as String;
+
+        return MaterialPageRoute(
+          builder: (_) => FoodDetailPage(
+            foodsId: foodId,
+          ),
+        );
+
       default:
         return _errorRoute();
     }

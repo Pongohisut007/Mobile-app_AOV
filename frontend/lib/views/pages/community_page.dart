@@ -16,13 +16,16 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   void initState() {
     super.initState();
+
     final categoryBloc = context.read<CategoryBloc>();
     final state = categoryBloc.state;
-    if (state is! CategoryLoaded && state is! CategoryLoading) {
+
+    if (state is! CategoryLoaded &&
+        state is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,19 +36,26 @@ class _CommunityPageState extends State<CommunityPage> {
             return ListView.builder(
               itemCount: state.categories.length,
               itemBuilder: (context, index) {
-              final category = state.categories[index];
-              return 
-              CategoryCard(
-                category: category,
-              );
+                final category = state.categories[index];
+
+                return CategoryCard(
+                  category: category,
+                );
               },
             );
-          }else if (state is CategoryLoading) {
-            return const Center(child: CircularProgressIndicator());
+          } else if (state is CategoryLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           } else if (state is CategoryError) {
-            return Center(child: Text('Error: ${state.message}'));
+            return Center(
+              child: Text('Error: ${state.message}'),
+            );
           }
-          return const Center(child: Text('No data available.'));
+
+          return const Center(
+            child: Text('No data available.'),
+          );
         },
       ),
     );
