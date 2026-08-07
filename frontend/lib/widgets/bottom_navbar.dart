@@ -31,18 +31,19 @@ class BottomNavbar extends StatelessWidget {
           label: "Home",
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.favorite_border),
-          activeIcon: Icon(Icons.favorite_rounded),
-          label: "Saved",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.receipt_long),
-          label: "Orders",
+          icon: Icon(Icons.groups_outlined),
+          activeIcon: Icon(Icons.groups),
+          label: 'Community',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           activeIcon: Icon(Icons.person_rounded),
           label: "Profile",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.warning_amber_rounded),
+          activeIcon: Icon(Icons.warning_rounded),
+          label: "! ! !",
         ),
       ],
     );
