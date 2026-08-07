@@ -4,8 +4,8 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:http/http.dart' as http;
 
 class FoodRepository {
-  // static const String baseUrl = 'http://10.0.2.2:3000';
-  static const String baseUrl = 'http://localhost:3000';
+  static const String baseUrl = 'http://10.0.2.2:3000';
+  //static const String baseUrl = 'http://localhost:3000';
 
   Future<List<Food>> fetchFoodsByCategoryId(String categoryId) async {
     final url = '$baseUrl/categories/$categoryId';

@@ -17,6 +17,7 @@ export class RecipesService {
   constructor(
     @InjectRepository(Recipe)
     private readonly recipeRepository: Repository<Recipe>,
+    
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
   ) {}
