@@ -42,7 +42,7 @@ class _CommunitySelectCategoryPageState
     if (foodBloc.state is! FoodLoaded &&
         foodBloc.state is! FoodLoading) {
       foodBloc.add(
-        FetchFoodByCategoryEvent(widget.categoryUUID),
+        FetchCommunityFoodsByCategoryEvent(widget.categoryUUID),
       );
     }
   }
@@ -86,7 +86,7 @@ class _CommunitySelectCategoryPageState
                           });
 
                           context.read<FoodBloc>().add(
-                                FetchFoodByCategoryEvent(
+                                FetchCommunityFoodsByCategoryEvent(
                                   category.id,
                                 ),
                               );
