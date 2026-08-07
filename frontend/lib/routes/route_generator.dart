@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
-import 'package:flutter_application_1/bloc/counter/counter_bloc.dart';
+//import 'package:flutter_application_1/bloc/counter/counter_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
@@ -21,7 +21,7 @@ class RoutesGenerator {
         return MaterialPageRoute(
           builder: (_) => MultiBlocProvider(
             providers: [
-              BlocProvider(create: (context) => CounterBloc()),
+            //BlocProvider(create: (context) => CounterBloc()),
               BlocProvider(create: (context) => PageBloc()),
               BlocProvider(
                 create: (context) =>

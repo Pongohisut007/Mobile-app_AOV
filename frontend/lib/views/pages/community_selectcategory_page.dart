@@ -4,7 +4,7 @@ import 'package:flutter_application_1/bloc/category/category_state.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
-import 'package:flutter_application_1/views/pages/food_detail_pageg.dart';
+import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_application_1/widgets/community/category_header_delegate.dart';
 import 'package:flutter_application_1/widgets/home/food_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

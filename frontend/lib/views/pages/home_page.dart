@@ -3,7 +3,7 @@ import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
-import 'package:flutter_application_1/views/pages/food_detail_pageg.dart';
+import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_application_1/widgets/home/category_list.dart';
 import 'package:flutter_application_1/widgets/home/food_card.dart';
 import 'package:flutter_application_1/widgets/home/home_banner.dart';
@@ -22,8 +22,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final selectedId = context.read<CategoryBloc>().state.selectedId;
-    context.read<FoodBloc>().add(FetchFoodByCategoryEvent(selectedId));
+    final selectedId = context.read<CategoryBloc>().state.selectedId; // อ่าน id ของ CategoryBloc
+    context.read<FoodBloc>().add(FetchFoodByCategoryEvent(selectedId)); // ดึงข้อมูลตาม food by CategoryBloc 
   }
 
   @override
