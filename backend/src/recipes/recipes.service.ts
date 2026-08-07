@@ -4,12 +4,13 @@ import { In, Repository } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
-import { Recipe, RecipeStatus } from './entities/recipe.entity';
+import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
 
 export interface FindRecipesOptions {
   category?: string;
   creatorId?: string;
   status?: RecipeStatus;
+  type?: RecipeType;
 }
 
 @Injectable()
@@ -53,6 +54,10 @@ export class RecipesService {
 
     if (options.status) {
       query.andWhere('recipe.status = :status', { status: options.status });
+    }
+
+    if (options.type) {
+      query.andWhere('recipe.type = :type', { type: options.type });
     }
 
     return query.getMany();

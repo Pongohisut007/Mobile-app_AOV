@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
-import { Recipe, RecipeStatus } from './entities/recipe.entity';
+import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
 import { RecipesService } from './recipes.service';
 
 @Controller('recipes')
@@ -23,8 +23,9 @@ export class RecipesController {
     @Query('category') category?: string,
     @Query('creatorId') creatorId?: string,
     @Query('status') status?: RecipeStatus,
+    @Query('type') type?: RecipeType,
   ): Promise<Recipe[]> {
-    return this.recipesService.findAll({ category, creatorId, status });
+    return this.recipesService.findAll({ category, creatorId, status, type });
   }
 
   @Get(':id')
