@@ -9,6 +9,20 @@ class FoodRepository {
 
   Future<List<Food>> fetchFoodsByCategoryId(String categoryId) async {
     final url = '$baseUrl/categories/$categoryId';
+    return _getFoodsByCategoryId(url);
+  }
+
+  Future<List<Food>> fetchCommunityFoodsByCategoryId(String categoryId) async {
+    final url = '$baseUrl/categories/$categoryId?type=community';
+    return _getFoodsByCategoryId(url);
+  }
+
+  Future<List<Food>> fetchOfficialFoodsByCategoryId(String categoryId) async {
+    final url = '$baseUrl/categories/$categoryId?type=official';
+    return _getFoodsByCategoryId(url);
+  }
+
+  Future<List<Food>> _getFoodsByCategoryId(String url) async {
     debugPrint('Fetching foods by category from: $url');
     final response = await http.get(Uri.parse(url));
 
@@ -52,6 +66,14 @@ class FoodRepository {
 
   Future<List<Food>> fetchFoods() async {
     return _getFoods('$baseUrl/recipes');
+  }
+
+  Future<List<Food>> fetchCommunityFoods() async {
+    return _getFoods('$baseUrl/recipes?type=community');
+  }
+
+  Future<List<Food>> fetchOfficialFoods() async {
+    return _getFoods('$baseUrl/recipes?type=official');
   }
 
   Future<List<Food>> _getFoods(String url) async {

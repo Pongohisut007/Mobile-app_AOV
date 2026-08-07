@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
+import { RecipeType } from '../recipes/entities/recipe.entity';
 
 @Injectable()
 export class CategoriesService {
@@ -14,15 +15,24 @@ export class CategoriesService {
     return this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
   }
 
-  async findOne(id: string): Promise<Category> {
-    const category = await this.categoryRepository.findOne({
-      where: { id },
-      relations: {
-        recipes: { categories: true },
-      },
-    });
-    if (!category)
+  async findOne(id: string, type?: RecipeType): Promise<Category> {
+    const query = this.categoryRepository
+      .createQueryBuilder('category')
+      .leftJoinAndSelect(
+        'category.recipes',
+        'recipe',
+        type ? 'recipe.type = :type' : undefined,
+        type ? { type } : undefined,
+      )
+      .leftJoinAndSelect('recipe.categories', 'categories')
+      .where('category.id = :id', { id });
+
+    const category = await query.getOne();
+
+    if (!category) {
       throw new NotFoundException(`Category with id ${id} not found`);
+    }
+
     return category;
   }
 

@@ -7,10 +7,11 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { Category } from './entities/category.entity';
-import { get } from 'http';
+import { RecipeType } from '../recipes/entities/recipe.entity';
 
 @Controller('categories')
 export class CategoriesController {
@@ -21,8 +22,11 @@ export class CategoriesController {
     return this.categoriesService.findAll();
   }
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Category> {
-    return this.categoriesService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('type') type?: RecipeType,
+  ): Promise<Category> {
+    return this.categoriesService.findOne(id, type);
   }
 
   @Post()
