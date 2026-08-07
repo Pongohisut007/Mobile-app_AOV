@@ -114,6 +114,10 @@ class _CommunitySelectCategoryPageState
 
                                 return GestureDetector(
                                   onTap: () {
+                                    if (selectedCategoryId == category.id) {
+                                      return;
+                                    }
+                                    
                                     setState(() {
                                       categoryImageUrl = category.imageUrl ?? '';
                                       selectedCategoryId = category.id;
