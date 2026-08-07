@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_state.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
-import 'package:flutter_application_1/routes/app_routes.dart';
-import 'package:flutter_application_1/widgets/community/category_header_delegate.dart';
-import 'package:flutter_application_1/widgets/home/food_card.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/widgets/community/community_category_header.dart';
+import 'package:flutter_application_1/widgets/community/community_category_selector.dart';
+import 'package:flutter_application_1/widgets/community/community_food_grid.dart';
 
 class CommunitySelectCategoryPage extends StatefulWidget {
   const CommunitySelectCategoryPage({
@@ -26,6 +26,7 @@ class CommunitySelectCategoryPage extends StatefulWidget {
 
 class _CommunitySelectCategoryPageState
     extends State<CommunitySelectCategoryPage> {
+
   String? selectedCategoryId;
   late String categoryImageUrl;
 
@@ -41,8 +42,7 @@ class _CommunitySelectCategoryPageState
     if (foodBloc.state is! FoodLoaded &&
         foodBloc.state is! FoodLoading) {
       foodBloc.add(
-        // FetchFoodByCategoryEvent(widget.categoryUUID),
-        FetchFoodEvent(), // test
+        FetchFoodByCategoryEvent(widget.categoryUUID),
       );
     }
   }
@@ -50,160 +50,71 @@ class _CommunitySelectCategoryPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<FoodBloc, FoodState>(
-        builder: (context, state) {
-          if (state is FoodLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+      backgroundColor: Colors.grey.shade100,
+      body: SafeArea(
+        child: BlocBuilder<FoodBloc, FoodState>(
+          builder: (context, state) {
+            if (state is FoodLoading) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
 
-          if (state is FoodLoaded) {
-            final foods = state.foods;
+            if (state is FoodLoaded) {
+              return CustomScrollView(
+                slivers: [
+                  CommunityCategoryHeader(
+                    imageUrl: categoryImageUrl,
+                  ),
 
-            return CustomScrollView(
-              slivers: [
-                // AppBar + รูป Header
-                SliverAppBar(
-                  pinned: true,
-                  expandedHeight: 250,
-                  backgroundColor: Colors.transparent,
-                  flexibleSpace: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.network(
-                            categoryImageUrl,
-                            fit: BoxFit.cover,
-                            alignment: Alignment.bottomCenter,
-                          ),
-                          Container(
-                            color: Colors.black.withOpacity(0.2),
-                          ),
-                        ],
+                  BlocBuilder<CategoryBloc, CategoryState>(
+                    builder: (context, categoryState) {
+                      if (categoryState is! CategoryLoaded) {
+                        return const SliverToBoxAdapter(
+                          child: SizedBox(),
+                        );
+                      }
+
+                      return CommunityCategorySelector(
+                        categories: categoryState.categories,
+                        selectedCategoryId: selectedCategoryId,
+                        onCategorySelected: (category) {
+                          setState(() {
+                            selectedCategoryId = category.id;
+                            categoryImageUrl =
+                                category.imageUrl ?? '';
+                          });
+
+                          context.read<FoodBloc>().add(
+                                FetchFoodByCategoryEvent(
+                                  category.id,
+                                ),
+                              );
+                        },
                       );
                     },
                   ),
-                ),
 
-                // Category Header
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: CategoryHeaderDelegate(
-                    child: BlocBuilder<CategoryBloc, CategoryState>(
-                      builder: (context, state) {
-                        if (state is CategoryLoaded) {
-                          final categories = state.categories;
-
-                          return Container(
-                            height: 80,
-                            color: Colors.white,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: categories.length,
-                              itemBuilder: (context, index) {
-                                final category = categories[index];
-
-                                final isSelected =
-                                    selectedCategoryId == category.id;
-
-                                return GestureDetector(
-                                  onTap: () {
-                                    // ถ้ากด Category เดิม
-                                    // ไม่ต้อง Fetch ใหม่
-                                    if (selectedCategoryId == category.id) {
-                                      return;
-                                    }
-
-                                    setState(() {
-                                      categoryImageUrl =
-                                          category.imageUrl ?? '';
-
-                                      selectedCategoryId =
-                                          category.id;
-                                    });
-
-                                    context.read<FoodBloc>().add(
-                                          FetchFoodByCategoryEvent(
-                                            category.id,
-                                          ),
-                                        );
-                                  },
-                                  child: Card(
-                                    elevation: isSelected ? 8 : 3,
-                                    color: isSelected
-                                        ? Colors.blue.shade100
-                                        : Colors.white,
-                                    margin: const EdgeInsets.all(8),
-                                    child: SizedBox(
-                                      width: 100,
-                                      child: Center(
-                                        child: Text(
-                                          category.name,
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        }
-
-                        return const SizedBox();
-                      },
-                    ),
+                  CommunityFoodGrid(
+                    foods: state.foods,
                   ),
+                ],
+              );
+            }
+
+            if (state is FoodError) {
+              return Center(
+                child: Text(
+                  'Error: ${state.message}',
                 ),
+              );
+            }
 
-                // Food Grid
-                SliverPadding(
-                  padding: const EdgeInsets.all(15),
-                  sliver: SliverGrid(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final food = foods[index];
-
-                        return FoodCard(
-                          food: food,
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              AppRoutes.foodDetail,
-                              arguments: food.idfoods,
-                            );
-                          },
-                        );
-                      },
-                      childCount: foods.length,
-                    ),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: .68,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                    ),
-                  ),
-                ),
-              ],
+            return const Center(
+              child: Text('No data available.'),
             );
-          }
-
-          if (state is FoodError) {
-            return Center(
-              child: Text(
-                'Error: ${state.message}',
-              ),
-            );
-          }
-
-          return const Center(
-            child: Text('No data available.'),
-          );
-        },
+          },
+        ),
       ),
     );
   }

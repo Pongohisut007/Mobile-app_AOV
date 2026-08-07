@@ -21,11 +21,11 @@ class CategoryHeaderDelegate
 
 
   @override
-  double get maxExtent => 80;
+  double get maxExtent => 60;
 
 
   @override
-  double get minExtent => 80;
+  double get minExtent => 60;
 
 
   @override
