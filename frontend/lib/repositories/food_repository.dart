@@ -17,10 +17,49 @@ class FoodRepository {
     return _getFoodsByCategoryId(url);
   }
 
+  // get food qury by type
   Future<List<Food>> fetchOfficialFoodsByCategoryId(String categoryId) async {
     final url = '$baseUrl/categories/$categoryId?type=official';
-    return _getFoodsByCategoryId(url);
+    debugPrint('Fetching foods by category from: $url');
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final category = json.decode(response.body) as Map<String, dynamic>;
+      final recipes = category['recipes'] as List<dynamic>? ?? [];
+      final foods = recipes
+          .map((json) => Food.fromJson(json as Map<String, dynamic>))
+          .toList();
+      // debugPrint(
+      //   'Parsed ${foods.length} foods in category ${category['name']}',
+      // );
+      return foods;
+      
+    } else if (response.statusCode == 404) {
+      throw Exception('ไม่พบหมวดหมู่นี้');
+    } else {
+      debugPrint('Failed to load category: ${response.statusCode}');
+      throw Exception('Failed to load foods');
+    }
   }
+
+  // get all food qury by type
+Future<List<Food>> fetchOfficialAllFoodsByCategoryId() async {
+  final url = '$baseUrl/categories?type=official';
+  debugPrint('Fetching from: $url');
+  final response = await http.get(Uri.parse(url));
+
+  if (response.statusCode == 200) {
+    final List<dynamic> categories = json.decode(response.body);
+    final foods = <Food>[];
+    for (final cat in categories) {
+      final recipes = (cat as Map<String, dynamic>)['recipes'] as List<dynamic>? ?? [];
+      foods.addAll(recipes.map((r) => Food.fromJson(r as Map<String, dynamic>)));
+    }
+    return foods;
+  } else {
+    throw Exception('Failed to load foods');
+  }
+}
 
   Future<List<Food>> _getFoodsByCategoryId(String url) async {
     debugPrint('Fetching foods by category from: $url');
