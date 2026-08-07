@@ -16,11 +16,9 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   void initState() {
     super.initState();
-
-    // CategoryBloc โหลด category ไปแล้วตอนสร้าง route
-    // ยิงซ้ำเฉพาะกรณีที่ยังไม่มีข้อมูลและไม่ได้กำลังโหลดอยู่ (เช่นรอบก่อนพลาด)
     final categoryBloc = context.read<CategoryBloc>();
     final state = categoryBloc.state;
+    print('state: $state');
     if (state is! CategoryLoaded && state is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
