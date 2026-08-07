@@ -3,6 +3,8 @@ import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_state.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
+import 'package:flutter_application_1/models/recipe_collection_type.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -59,6 +61,19 @@ class UserPage extends StatelessWidget {
     );
   }
 
+  void _openRecipeCollection(
+    BuildContext context,
+    RecipeCollectionType collectionType,
+  ) {
+    final routeName = switch (collectionType) {
+      RecipeCollectionType.myRecipes => AppRoutes.myRecipes,
+      RecipeCollectionType.purchased => AppRoutes.purchasedRecipes,
+      RecipeCollectionType.favorites => AppRoutes.favoriteRecipes,
+      RecipeCollectionType.drafts => AppRoutes.draftRecipes,
+    };
+    Navigator.pushNamed(context, routeName);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,6 +86,8 @@ class UserPage extends StatelessWidget {
                 profile: profile,
                 onRefresh: () => _refresh(context),
                 onActionPressed: (label) => _showComingSoon(context, label),
+                onRecipeCollectionPressed: (collectionType) =>
+                    _openRecipeCollection(context, collectionType),
                 onSignOut: () => _confirmSignOut(context),
               ),
               ProfileFailure(:final message) => ProfileErrorView(
@@ -92,12 +109,14 @@ class _ProfileContent extends StatelessWidget {
     required this.profile,
     required this.onRefresh,
     required this.onActionPressed,
+    required this.onRecipeCollectionPressed,
     required this.onSignOut,
   });
 
   final UserProfile profile;
   final RefreshCallback onRefresh;
   final ValueChanged<String> onActionPressed;
+  final ValueChanged<RecipeCollectionType> onRecipeCollectionPressed;
   final VoidCallback onSignOut;
 
   @override
@@ -132,7 +151,7 @@ class _ProfileContent extends StatelessWidget {
                 const SizedBox(height: 14),
                 ProfileQuickActions(
                   profile: profile,
-                  onPressed: onActionPressed,
+                  onPressed: onRecipeCollectionPressed,
                 ),
                 const SizedBox(height: 30),
                 const ProfileSectionTitle(

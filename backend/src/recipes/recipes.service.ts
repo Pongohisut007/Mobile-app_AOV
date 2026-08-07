@@ -4,7 +4,13 @@ import { In, Repository } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
-import { Recipe } from './entities/recipe.entity';
+import { Recipe, RecipeStatus } from './entities/recipe.entity';
+
+export interface FindRecipesOptions {
+  category?: string;
+  creatorId?: string;
+  status?: RecipeStatus;
+}
 
 @Injectable()
 export class RecipesService {
@@ -15,14 +21,14 @@ export class RecipesService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  findAll(category?: string): Promise<Recipe[]> {
+  findAll(options: FindRecipesOptions = {}): Promise<Recipe[]> {
     const query = this.recipeRepository
       .createQueryBuilder('recipe')
       .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'category')
       .orderBy('recipe.createdAt', 'DESC');
 
-    if (category) {
+    if (options.category) {
       // กรองด้วย subquery เพื่อให้ recipe ที่ผ่านการกรองยังโหลด categories มาครบทุกอัน
       // (ถ้าใส่เงื่อนไขลงใน join ตรงๆ จะเหลือแต่ category ที่ตรงกับที่กรอง)
       query.andWhere(
@@ -34,8 +40,18 @@ export class RecipesService {
             .innerJoin('filtered.categories', 'filteredCategory')
             .where('filteredCategory.slug = :category')
             .getQuery(),
-        { category },
+        { category: options.category },
       );
+    }
+
+    if (options.creatorId) {
+      query.andWhere('recipe.creator_id = :creatorId', {
+        creatorId: options.creatorId,
+      });
+    }
+
+    if (options.status) {
+      query.andWhere('recipe.status = :status', { status: options.status });
     }
 
     return query.getMany();

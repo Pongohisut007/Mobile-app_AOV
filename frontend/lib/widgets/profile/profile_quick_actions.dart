@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
@@ -10,7 +11,7 @@ class ProfileQuickActions extends StatelessWidget {
   });
 
   final UserProfile profile;
-  final ValueChanged<String> onPressed;
+  final ValueChanged<RecipeCollectionType> onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -27,28 +28,28 @@ class ProfileQuickActions extends StatelessWidget {
           detail: '${profile.recipeCount} published',
           icon: Icons.restaurant_menu_rounded,
           color: const Color(0xFFFFE6CC),
-          onTap: () => onPressed('My recipes'),
+          onTap: () => onPressed(RecipeCollectionType.myRecipes),
         ),
         _QuickActionCard(
           label: 'Purchased',
           detail: '${profile.purchasedCount} recipes',
           icon: Icons.receipt_long_rounded,
           color: const Color(0xFFE4EDFF),
-          onTap: () => onPressed('Purchased recipes'),
+          onTap: () => onPressed(RecipeCollectionType.purchased),
         ),
         _QuickActionCard(
           label: 'Favorites',
           detail: '${profile.savedCount} saved',
           icon: Icons.favorite_rounded,
           color: const Color(0xFFFFE2E8),
-          onTap: () => onPressed('Favorites'),
+          onTap: () => onPressed(RecipeCollectionType.favorites),
         ),
         _QuickActionCard(
           label: 'Drafts',
           detail: '${profile.draftCount} unfinished',
           icon: Icons.edit_note_rounded,
           color: const Color(0xFFE8F3D7),
-          onTap: () => onPressed('Draft recipes'),
+          onTap: () => onPressed(RecipeCollectionType.drafts),
         ),
       ],
     );

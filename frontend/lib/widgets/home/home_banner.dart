@@ -7,7 +7,7 @@ class HomeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 6,
-      shadowColor: const Color(0xFFE64A19).withOpacity(0.4),
+      shadowColor: const Color(0xFFE64A19).withValues(alpha:0.4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(25),
       ),
