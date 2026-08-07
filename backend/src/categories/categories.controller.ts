@@ -18,8 +18,8 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
-  findAll(): Promise<Category[]> {
-    return this.categoriesService.findAll();
+  findAll(@Query('type') type?: RecipeType): Promise<Category[]> {
+    return this.categoriesService.findAll(type);
   }
   @Get(':id')
   findOne(

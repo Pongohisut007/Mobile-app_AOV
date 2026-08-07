@@ -11,8 +11,19 @@ export class CategoriesService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  findAll(): Promise<Category[]> {
-    return this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
+  findAll(type?: RecipeType): Promise<Category[]> {
+    if (!type) {
+      return this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
+    }
+
+    return this.categoryRepository
+      .createQueryBuilder('category')
+      .leftJoinAndSelect('category.recipes', 'recipe', 'recipe.type = :type', {
+        type,
+      })
+      .leftJoinAndSelect('recipe.categories', 'categories')
+      .orderBy('category.sortOrder', 'ASC')
+      .getMany();
   }
 
   async findOne(id: string, type?: RecipeType): Promise<Category> {
