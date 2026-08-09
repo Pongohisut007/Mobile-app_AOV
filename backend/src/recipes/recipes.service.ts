@@ -70,9 +70,16 @@ export class RecipesService {
         creator: true,
         categories: true,
         recipeIngredients: { ingredient: true },
+        sections: { contents: true },
       },
     });
     if (!recipe) throw new NotFoundException(`Recipe with id ${id} not found`);
+
+    recipe.sections.sort((left, right) => left.sortOrder - right.sortOrder);
+    for (const section of recipe.sections) {
+      section.contents.sort((left, right) => left.sortOrder - right.sortOrder);
+    }
+
     return recipe;
   }
 

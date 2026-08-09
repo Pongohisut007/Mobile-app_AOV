@@ -9,6 +9,7 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
   FoodBloc(this.repository) : super(FoodInitial()) {
     on<FetchFoodEvent>(_onFetchFoodEvent);
     on<FetchFoodByCategoryEvent>(_onFetchFoodByCategoryEvent);
+    on<FetchCommunityFoodsByCategoryEvent>(_onFetchCommunityFoodsByCategoryEvent);
   }
 
 
@@ -40,4 +41,19 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     }
   }
 
+  Future<void> _onFetchCommunityFoodsByCategoryEvent(
+    FetchCommunityFoodsByCategoryEvent event,
+    Emitter<FoodState> emit) async {
+    emit(FoodLoading());
+    try {
+      // ถ้าไม่ได้เลือก category ให้ดึงทั้งหมด กดซ้ำเพื่อยกเลิก
+      final foods = event.categoryId.isEmpty
+          //? await repository.fetchFoods()
+          ? await repository.fetchCommuityAllFoodsByCategoryId()
+          : await repository.fetchCommunityFoodsByCategoryId(event.categoryId);
+      emit(FoodLoaded(foods));
+    } catch (e) {
+      emit(FoodError(message: e.toString()));
+    }
+  }
 }
