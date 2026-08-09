@@ -20,18 +20,16 @@ class FoodRepository {
   // get food qury by type
   Future<List<Food>> fetchOfficialFoodsByCategoryId(String categoryId) async {
     final url = '$baseUrl/categories/$categoryId?type=official';
-    debugPrint('Fetching foods by category from: $url');
+    //debugPrint('Fetching foods by category from: $url');
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final category = json.decode(response.body) as Map<String, dynamic>;
+      //debugPrint("test111111111111: $category");
       final recipes = category['recipes'] as List<dynamic>? ?? [];
       final foods = recipes
           .map((json) => Food.fromJson(json as Map<String, dynamic>))
           .toList();
-      // debugPrint(
-      //   'Parsed ${foods.length} foods in category ${category['name']}',
-      // );
       return foods;
       
     } else if (response.statusCode == 404) {
@@ -50,11 +48,14 @@ Future<List<Food>> fetchOfficialAllFoodsByCategoryId() async {
 
   if (response.statusCode == 200) {
     final List<dynamic> categories = json.decode(response.body);
+    //debugPrint("test111111111111: $categories");
     final foods = <Food>[];
     for (final cat in categories) {
       final recipes = (cat as Map<String, dynamic>)['recipes'] as List<dynamic>? ?? [];
+      //debugPrint("2222222222222222222: $recipes ");
       foods.addAll(recipes.map((r) => Food.fromJson(r as Map<String, dynamic>)));
     }
+    //debugPrint("333333333333333333: $foods");
     return foods;
   } else {
     throw Exception('Failed to load foods');
