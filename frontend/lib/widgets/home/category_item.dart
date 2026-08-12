@@ -8,6 +8,10 @@ class CategoryItem extends StatelessWidget {
   final String title;
   final String categoryId;
   final bool isSelected;
+  final double itemWidth;
+  final double iconSize;
+  final double fontSize;
+  final double verticalPadding;
 
   const CategoryItem({
     super.key,
@@ -15,6 +19,10 @@ class CategoryItem extends StatelessWidget {
     required this.title,
     required this.categoryId,
     required this.isSelected,
+    this.itemWidth = 80,
+    this.iconSize = 30,
+    this.fontSize = 12,
+    this.verticalPadding = 12,
   });
 
   @override
@@ -27,9 +35,9 @@ class CategoryItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 80,
+        width: itemWidth,
         margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: verticalPadding),
         decoration: BoxDecoration(
           gradient: isSelected
               ? const LinearGradient(
@@ -55,7 +63,7 @@ class CategoryItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 30,
+              size: iconSize,
               color: isSelected ? Colors.white : const Color(0xFFE64A19),
             ),
             const SizedBox(height: 8),
@@ -67,7 +75,7 @@ class CategoryItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: fontSize,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   color: isSelected ? Colors.white : const Color(0xFF5D4037),
                 ),
