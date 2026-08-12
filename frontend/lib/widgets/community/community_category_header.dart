@@ -74,6 +74,7 @@ class CommunityCategoryHeader extends StatelessWidget {
                 imageUrl,
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
+                webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
 
                 // Loading
                 loadingBuilder: (

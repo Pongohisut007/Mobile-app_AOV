@@ -17,6 +17,7 @@ class FoodImage extends StatelessWidget {
           ? const ImagePlaceholder()
           : Image.network(
               imageUrl,
+              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
               height: 240,
               fit: BoxFit.contain,
               errorBuilder: (_, _, _) => const ImagePlaceholder(),

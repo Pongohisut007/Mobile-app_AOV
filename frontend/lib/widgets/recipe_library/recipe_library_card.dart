@@ -117,6 +117,7 @@ class _RecipeImage extends StatelessWidget {
 
     return Image.network(
       imageUrl,
+      webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => const _ImagePlaceholder(),
     );

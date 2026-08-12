@@ -61,6 +61,7 @@ class CategoryCard extends StatelessWidget {
 
           child: Image.network(
             imageUrl,
+            webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
             fit: BoxFit.cover,
 
             errorBuilder: (
