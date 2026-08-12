@@ -14,7 +14,11 @@ class CommunityFoodGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.all(15),
+      padding: EdgeInsets.all(
+        MediaQuery.sizeOf(context).shortestSide >= 600
+            ? 24
+            : 15,
+      ),
       sliver: SliverGrid(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -33,12 +37,29 @@ class CommunityFoodGrid extends StatelessWidget {
           },
           childCount: foods.length,
         ),
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: .68,
-          crossAxisSpacing: 15,
-          mainAxisSpacing: 15,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          // Phone = 2 columns
+          // iPad = 3 columns
+          crossAxisCount:
+              MediaQuery.sizeOf(context).shortestSide >= 600
+                  ? 3
+                  : 2,
+
+          // iPad card จะกว้างขึ้นเล็กน้อย
+          childAspectRatio:
+              MediaQuery.sizeOf(context).shortestSide >= 600
+                  ? 0.72
+                  : 0.68,
+
+          crossAxisSpacing:
+              MediaQuery.sizeOf(context).shortestSide >= 600
+                  ? 20
+                  : 15,
+
+          mainAxisSpacing:
+              MediaQuery.sizeOf(context).shortestSide >= 600
+                  ? 20
+                  : 15,
         ),
       ),
     );

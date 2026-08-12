@@ -23,11 +23,21 @@ class CategoryCard extends StatelessWidget {
         rawImageUrl.isEmpty ? fallbackImage : rawImageUrl;
 
     return Card(
-      elevation: 5,
+      elevation:
+          MediaQuery.sizeOf(context).shortestSide >= 600
+              ? 6
+              : 5,
+
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(
+          MediaQuery.sizeOf(context).shortestSide >= 600
+              ? 24
+              : 20,
+        ),
       ),
+
       clipBehavior: Clip.antiAlias,
+
       child: InkWell(
         onTap: () {
           Navigator.pushNamed(
@@ -42,12 +52,22 @@ class CategoryCard extends StatelessWidget {
             },
           );
         },
+
         child: SizedBox(
-          height: 130,
+          height:
+              MediaQuery.sizeOf(context).shortestSide >= 600
+                  ? 240
+                  : 130,
+
           child: Image.network(
             imageUrl,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
+
+            errorBuilder: (
+              context,
+              error,
+              stackTrace,
+            ) {
               return Image.network(
                 fallbackImage,
                 fit: BoxFit.cover,

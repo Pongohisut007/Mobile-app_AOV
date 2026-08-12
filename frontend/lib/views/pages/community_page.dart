@@ -28,6 +28,8 @@ class _CommunityPageState extends State<CommunityPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isIpad = MediaQuery.sizeOf(context).shortestSide >= 600;
+    
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: SafeArea(
@@ -39,11 +41,14 @@ class _CommunityPageState extends State<CommunityPage> {
                   horizontal: 16,
                 ),
                 children: [
-                  const Center(
+                  SizedBox(
+                    height: isIpad ? 14 : 9,
+                  ),
+                  Center(
                     child: Text(
                       'COMMUNITY',
                       style: TextStyle(
-                        fontSize: 30,
+                        fontSize: isIpad ? 35 : 30,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -53,7 +58,9 @@ class _CommunityPageState extends State<CommunityPage> {
 
                   ...state.categories.map((category) {
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: EdgeInsets.only(
+                        bottom: isIpad ? 20 : 12,
+                      ),
                       child: CategoryCard(
                         category: category,
                       ),
