@@ -30,14 +30,32 @@ class CategoryList extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        // < 600 มือถือ, >= 600 iPad
-        final isMedium = width >= 600;
+        // >= 900 แท็บเล็ตใหญ่/แนวนอน, >= 600 แท็บเล็ต, < 600 มือถือ
+        final double listHeight;
+        final double itemWidth;
+        final double iconSize;
+        final double fontSize;
+        final double verticalPadding;
 
-        final listHeight = isMedium ? 110.0 : 90.0;
-        final itemWidth = isMedium ? 100.0 : 80.0;
-        final iconSize = isMedium ? 38.0 : 30.0;
-        final fontSize = isMedium ? 14.0 : 12.0;
-        final verticalPadding = isMedium ? 16.0 : 12.0;
+        if (width >= 900) {
+          listHeight = 130.0;
+          itemWidth = 120.0;
+          iconSize = 44.0;
+          fontSize = 16.0;
+          verticalPadding = 18.0;
+        } else if (width >= 600) {
+          listHeight = 110.0;
+          itemWidth = 100.0;
+          iconSize = 38.0;
+          fontSize = 14.0;
+          verticalPadding = 16.0;
+        } else {
+          listHeight = 90.0;
+          itemWidth = 80.0;
+          iconSize = 30.0;
+          fontSize = 12.0;
+          verticalPadding = 12.0;
+        }
 
         return BlocConsumer<CategoryBloc, CategoryState>(
           listenWhen: (previous, current) =>
