@@ -3,7 +3,7 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_image.dart';
 
-/// ส่วนหัวของหน้า: พื้นหลังโค้ง + ปุ่มย้อนกลับ + รูปอาหาร
+// พื้นหลังโค้ง ปุ่มย้อนกลับ  รูปอาหาร
 class FoodDetailHeader extends StatelessWidget {
   const FoodDetailHeader({super.key, required this.food});
 

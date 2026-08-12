@@ -28,7 +28,7 @@ class CommunityCategoryHeader extends StatelessWidget {
                 alignment: Alignment.bottomCenter,
               ),
               Container(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
               ),
             ],
           );

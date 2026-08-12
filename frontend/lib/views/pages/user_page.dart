@@ -61,6 +61,10 @@ class UserPage extends StatelessWidget {
     );
   }
 
+  void _openCart(BuildContext context) {
+    Navigator.pushNamed(context, AppRoutes.cart);
+  }
+
   void _openRecipeCollection(
     BuildContext context,
     RecipeCollectionType collectionType,
@@ -89,6 +93,7 @@ class UserPage extends StatelessWidget {
                 onRecipeCollectionPressed: (collectionType) =>
                     _openRecipeCollection(context, collectionType),
                 onSignOut: () => _confirmSignOut(context),
+                onCartPressed: () => _openCart(context),
               ),
               ProfileFailure(:final message) => ProfileErrorView(
                 message: message,
@@ -111,6 +116,7 @@ class _ProfileContent extends StatelessWidget {
     required this.onActionPressed,
     required this.onRecipeCollectionPressed,
     required this.onSignOut,
+    required this.onCartPressed,
   });
 
   final UserProfile profile;
@@ -118,6 +124,7 @@ class _ProfileContent extends StatelessWidget {
   final ValueChanged<String> onActionPressed;
   final ValueChanged<RecipeCollectionType> onRecipeCollectionPressed;
   final VoidCallback onSignOut;
+  final VoidCallback onCartPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +142,7 @@ class _ProfileContent extends StatelessWidget {
               children: [
                 ProfilePageHeader(
                   onSettingsPressed: () => onActionPressed('Settings'),
+                  onCartPressed: onCartPressed,
                 ),
                 const SizedBox(height: 22),
                 ProfileCard(

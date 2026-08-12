@@ -80,8 +80,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     ),
                   ),
                   const SizedBox(height: 33),
+                  //
                   FoodInfoCard(food: food),
                   const SizedBox(height: 30),
+                  //
                   FoodDescription(description: food.description),
                   const SizedBox(height: 28),
                   SizedBox(

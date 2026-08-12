@@ -3,6 +3,8 @@ class AppRoutes {
   
   static const String foodDetail = '/food-detail';
   
+  static const String cart = '/cart';
+
   static const String community = '/community';
   static const String communitySelectCategory = '/community-select-category';
   

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 
-/// แถบล่างของหน้า: ปุ่มตะกร้า + ปุ่ม Buy Now
 class BottomBuyBar extends StatelessWidget {
   const BottomBuyBar({
     super.key,

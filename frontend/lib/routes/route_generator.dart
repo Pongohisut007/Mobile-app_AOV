@@ -14,6 +14,7 @@ import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/main_tree.dart';
+import 'package:flutter_application_1/views/pages/cart_page.dart';
 import 'package:flutter_application_1/views/pages/community_page.dart';
 import 'package:flutter_application_1/views/pages/community_selectcategory_page.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
@@ -49,6 +50,9 @@ class RoutesGenerator {
             child: const MainTreeWidget(title: 'Flutter App'),
           ),
         );
+
+      case AppRoutes.cart:
+        return MaterialPageRoute(builder: (_) => const CartPage());
 
       case AppRoutes.community:
         return MaterialPageRoute(
