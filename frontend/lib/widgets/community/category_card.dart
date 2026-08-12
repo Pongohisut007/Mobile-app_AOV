@@ -71,6 +71,7 @@ class CategoryCard extends StatelessWidget {
             ) {
               return Image.network(
                 fallbackImage,
+                webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                 fit: BoxFit.cover,
               );
             },

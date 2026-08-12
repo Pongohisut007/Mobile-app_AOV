@@ -13,6 +13,27 @@ class CommunityFoodGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ไม่มีอาหาร
+    if (foods.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Center(
+            child: Text(
+              'ไม่พบอาหารในหมวดหมู่นี้',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // มีอาหาร
     return SliverPadding(
       padding: EdgeInsets.all(
         MediaQuery.sizeOf(context).shortestSide >= 600
@@ -37,7 +58,8 @@ class CommunityFoodGrid extends StatelessWidget {
           },
           childCount: foods.length,
         ),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate:
+            SliverGridDelegateWithFixedCrossAxisCount(
           // Phone = 2 columns
           // iPad = 3 columns
           crossAxisCount:
@@ -45,7 +67,6 @@ class CommunityFoodGrid extends StatelessWidget {
                   ? 3
                   : 2,
 
-          // iPad card จะกว้างขึ้นเล็กน้อย
           childAspectRatio:
               MediaQuery.sizeOf(context).shortestSide >= 600
                   ? 0.72
