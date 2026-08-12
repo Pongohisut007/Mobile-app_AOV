@@ -71,28 +71,40 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     }
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: state.foods.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: .68,
-                            crossAxisSpacing: 15,
-                            mainAxisSpacing: 15,
-                          ),
-                      itemBuilder: (_, index) {
-                        final food = state.foods[index];
-                        return FoodCard(
-                          food: food,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    FoodDetailPage(foodsId: food.idfoods),
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = constraints.maxWidth;
+                        // < 600 มือถือ, 600-899 iPad แนวตั้ง, >= 900 iPad แนวนอน
+                        final crossAxisCount = width >= 900
+                            ? 4
+                            : width >= 600
+                            ? 3
+                            : 2;
+
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: state.foods.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: .68,
+                                crossAxisSpacing: 15,
+                                mainAxisSpacing: 15,
                               ),
+                          itemBuilder: (_, index) {
+                            final food = state.foods[index];
+                            return FoodCard(
+                              food: food,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        FoodDetailPage(foodsId: food.idfoods),
+                                  ),
+                                );
+                              },
                             );
                           },
                         );
