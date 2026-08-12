@@ -40,11 +40,11 @@ class BottomNavbar extends StatelessWidget {
           activeIcon: Icon(Icons.person_rounded),
           label: "Profile",
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.warning_amber_rounded),
-          activeIcon: Icon(Icons.warning_rounded),
-          label: "! ! !",
-        ),
+        // BottomNavigationBarItem(
+        //   icon: Icon(Icons.warning_amber_rounded),
+        //   activeIcon: Icon(Icons.warning_rounded),
+        //   label: "! ! !",
+        // ),
       ],
     );
   }

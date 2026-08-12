@@ -20,9 +20,8 @@ class _MainTreeWidgetState extends State<MainTreeWidget> {
   List<Widget> pages = const [
     HomePage(),
     CommunityPage(),
-
     UserPage(),
-    Scaffold(body: Center(child: Text('No route defined'))),
+    //Scaffold(body: Center(child: Text('No route defined'))),
   ];
 
   @override
