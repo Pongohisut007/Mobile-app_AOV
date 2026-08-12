@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> {
                       builder: (context, constraints) {
                         final width = constraints.maxWidth;
                         // < 600 มือถือ = 2 คอลัมน์, >= 600 iPad = 3 คอลัมน์
-                        final crossAxisCount = width >= 600 ? 3 : 2;
+                        final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
 
                         return GridView.builder(
                           shrinkWrap: true,
