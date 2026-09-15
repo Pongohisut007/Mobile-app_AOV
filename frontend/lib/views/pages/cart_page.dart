@@ -2,23 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/cart/cart_state.dart';
+import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/models/cart_item.dart';
+import 'package:flutter_application_1/repositories/purchase_repository.dart';
 import 'package:flutter_application_1/widgets/cart/cart_empty_view.dart';
 import 'package:flutter_application_1/widgets/cart/cart_item_tile.dart';
 import 'package:flutter_application_1/widgets/cart/cart_summary_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class CartPage extends StatelessWidget {
+class CartPage extends StatefulWidget {
   const CartPage({super.key});
 
-  void _showComingSoon(BuildContext context, String feature) {
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  late final PurchaseRepository _purchaseRepository =
+      HttpMockPurchaseRepository(baseUrl: ApiConfig.apiBaseUrl);
+  bool _isCheckingOut = false;
+
+  void _showMessage(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('$feature is coming soon'),
+          content: Text(message),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: ProfileColors.ink,
+          backgroundColor: isError ? Colors.redAccent : ProfileColors.ink,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -26,7 +38,107 @@ class CartPage extends StatelessWidget {
       );
   }
 
-//
+  Future<void> _checkout(List<CartItem> items) async {
+    if (_isCheckingOut || items.isEmpty) return;
+    if (!ApiConfig.mockIapEnabled) {
+      _showMessage(
+        'โหมดซื้อจำลองถูกปิดอยู่ กรุณาเชื่อม Google Play Billing',
+        isError: true,
+      );
+      return;
+    }
+
+    final scenario = await _chooseMockScenario();
+    if (scenario == null || !mounted) return;
+    if (scenario == _MockPurchaseScenario.cancelled) {
+      _showMessage('จำลองการยกเลิกการชำระเงินแล้ว');
+      return;
+    }
+    if (scenario == _MockPurchaseScenario.failed) {
+      _showMessage('จำลองการชำระเงินไม่สำเร็จ', isError: true);
+      return;
+    }
+
+    setState(() => _isCheckingOut = true);
+    var completed = 0;
+    String? errorMessage;
+
+    for (final item in items) {
+      try {
+        await _purchaseRepository.purchase(item);
+        completed++;
+      } on Exception catch (error) {
+        errorMessage = error.toString();
+        break;
+      }
+    }
+
+    if (!mounted) return;
+    context.read<CartBloc>().add(const CartRequested());
+    setState(() => _isCheckingOut = false);
+
+    if (errorMessage != null) {
+      _showMessage(
+        completed == 0
+            ? errorMessage
+            : 'ซื้อสำเร็จ $completed รายการ แล้วหยุด: $errorMessage',
+        isError: true,
+      );
+      return;
+    }
+    _showMessage('ซื้อสูตรสำเร็จ $completed รายการ (โหมดทดสอบ)');
+  }
+
+  Future<_MockPurchaseScenario?> _chooseMockScenario() {
+    return showModalBottomSheet<_MockPurchaseScenario>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Google Play Billing — โหมดจำลอง',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'เลือกผลลัพธ์ที่ต้องการทดสอบ ระบบนี้ไม่ตัดเงินจริง',
+                style: TextStyle(color: ProfileColors.muted),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () =>
+                    Navigator.pop(sheetContext, _MockPurchaseScenario.success),
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                label: const Text('จำลองชำระสำเร็จ'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    Navigator.pop(sheetContext, _MockPurchaseScenario.failed),
+                icon: const Icon(Icons.error_outline_rounded),
+                label: const Text('จำลองชำระไม่สำเร็จ'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(
+                  sheetContext,
+                  _MockPurchaseScenario.cancelled,
+                ),
+                child: const Text('จำลองผู้ใช้ยกเลิก'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  //
   Future<void> _confirmClear(BuildContext context) async {
     final cartBloc = context.read<CartBloc>();
 
@@ -53,7 +165,7 @@ class CartPage extends StatelessWidget {
     );
   }
 
-//
+  //
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CartBloc, CartState>(
@@ -81,13 +193,12 @@ class CartPage extends StatelessWidget {
           ),
           body: switch (state.status) {
             // โหลดรอบแรกยังไม่รู้ว่ามีอะไรในตะกร้า อย่าเพิ่งบอกว่าว่าง
-            CartStatus.initial ||
-            CartStatus.loading when items.isEmpty => const Center(
-              child: CircularProgressIndicator(),
-            ),
+            CartStatus.initial || CartStatus.loading when items.isEmpty =>
+              const Center(child: CircularProgressIndicator()),
             CartStatus.failure when items.isEmpty => _CartErrorView(
               message: state.error ?? 'Could not load your cart.',
-              onRetry: () => context.read<CartBloc>().add(const CartRequested()),
+              onRetry: () =>
+                  context.read<CartBloc>().add(const CartRequested()),
             ),
             _ when items.isEmpty => CartEmptyView(
               onBrowsePressed: () => Navigator.pop(context),
@@ -112,13 +223,18 @@ class CartPage extends StatelessWidget {
               : CartSummaryBar(
                   itemCount: state.itemCount,
                   subtotal: state.subtotal,
-                  onCheckoutPressed: () => _showComingSoon(context, 'Checkout'),
+                  isCheckingOut: _isCheckingOut,
+                  onCheckoutPressed: _isCheckingOut
+                      ? null
+                      : () => _checkout(List<CartItem>.from(items)),
                 ),
         );
       },
     );
   }
 }
+
+enum _MockPurchaseScenario { success, failed, cancelled }
 
 // โหลดตะกร้าไม่ได้ตั้งแต่แรก ให้กดลองใหม่ได้
 class _CartErrorView extends StatelessWidget {

@@ -11,6 +11,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { DatabaseModule } from './database/database.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { IngredientsModule } from './ingredients/ingredients.module';
+import { IapModule } from './iap/iap.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { RecipeAccessModule } from './recipe-access/recipe-access.module';
@@ -34,6 +35,7 @@ import r2ClientConfig from '../config/r2.client.config';
     CategoriesModule,
     RecipesModule,
     IngredientsModule,
+    IapModule,
     OrdersModule,
     PaymentsModule,
     RecipeAccessModule,

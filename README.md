@@ -17,6 +17,18 @@ For help getting started with Flutter development, view the
 samples, guidance on mobile development, and a full API reference.
 
 
-LocalAuthGuard ใช้งานแค่ login เป็นหลัก 
-JwtAuthGuard ใช้ตอนเข้า API ที่ต้อง Login เป็นหลัก 
-RolesGuard ใช้ตรวจ "สิทธิ์" 
+LocalAuthGuard ใช้งานแค่ login เป็นหลัก
+JwtAuthGuard ใช้ตอนเข้า API ที่ต้อง Login เป็นหลัก
+RolesGuard ใช้ตรวจ "สิทธิ์"
+
+## Mock Android purchase flow
+
+The cart includes a development-only Google Play Billing simulation. In a debug
+build, Checkout lets a tester choose success, failure, or cancellation. A
+successful purchase calls `POST /iap/mock/purchases`; the backend creates a paid
+order and payment, grants recipe access, and removes that recipe from the cart.
+
+The backend always rejects mock purchases when `NODE_ENV=production`. Set
+`IAP_MOCK_ENABLED=false` to disable them in another environment. Flutter release
+builds hide the successful mock path by default; for a non-production release
+test build, pass `--dart-define=ENABLE_MOCK_IAP=true` explicitly.

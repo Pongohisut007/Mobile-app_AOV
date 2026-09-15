@@ -7,11 +7,13 @@ class CartSummaryBar extends StatelessWidget {
     required this.itemCount,
     required this.subtotal,
     required this.onCheckoutPressed,
+    this.isCheckingOut = false,
   });
 
   final int itemCount;
   final double subtotal;
-  final VoidCallback onCheckoutPressed;
+  final VoidCallback? onCheckoutPressed;
+  final bool isCheckingOut;
 
   @override
   Widget build(BuildContext context) {
@@ -56,15 +58,29 @@ class CartSummaryBar extends StatelessWidget {
               onPressed: onCheckoutPressed,
               style: FilledButton.styleFrom(
                 backgroundColor: ProfileColors.ink,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 18,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: const Text(
-                'Checkout',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-              ),
+              child: isCheckingOut
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : const Text(
+                      'Checkout',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
             ),
           ],
         ),
