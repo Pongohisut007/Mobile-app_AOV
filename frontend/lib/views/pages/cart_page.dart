@@ -5,6 +5,9 @@ import 'package:flutter_application_1/bloc/cart/cart_state.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:flutter_application_1/repositories/purchase_repository.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/views/pages/checkout_failure_page.dart';
+import 'package:flutter_application_1/views/pages/checkout_success_page.dart';
 import 'package:flutter_application_1/widgets/cart/cart_empty_view.dart';
 import 'package:flutter_application_1/widgets/cart/cart_item_tile.dart';
 import 'package:flutter_application_1/widgets/cart/cart_summary_bar.dart';
@@ -22,6 +25,29 @@ class _CartPageState extends State<CartPage> {
   late final PurchaseRepository _purchaseRepository =
       HttpMockPurchaseRepository(baseUrl: ApiConfig.apiBaseUrl);
   bool _isCheckingOut = false;
+  final Set<String> _unselectedItemIds = {};
+
+  void _setItemSelected(String itemId, bool selected) {
+    setState(() {
+      if (selected) {
+        _unselectedItemIds.remove(itemId);
+      } else {
+        _unselectedItemIds.add(itemId);
+      }
+    });
+  }
+
+  void _setAllSelected(List<CartItem> items, bool selected) {
+    setState(() {
+      for (final item in items) {
+        if (selected) {
+          _unselectedItemIds.remove(item.id);
+        } else {
+          _unselectedItemIds.add(item.id);
+        }
+      }
+    });
+  }
 
   void _showMessage(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context)
@@ -55,7 +81,7 @@ class _CartPageState extends State<CartPage> {
       return;
     }
     if (scenario == _MockPurchaseScenario.failed) {
-      _showMessage('จำลองการชำระเงินไม่สำเร็จ', isError: true);
+      _showFailure('จำลองการชำระเงินไม่สำเร็จ');
       return;
     }
 
@@ -78,15 +104,41 @@ class _CartPageState extends State<CartPage> {
     setState(() => _isCheckingOut = false);
 
     if (errorMessage != null) {
-      _showMessage(
-        completed == 0
-            ? errorMessage
-            : 'ซื้อสำเร็จ $completed รายการ แล้วหยุด: $errorMessage',
-        isError: true,
-      );
+      _showFailure(errorMessage, purchasedCount: completed);
       return;
     }
-    _showMessage('ซื้อสูตรสำเร็จ $completed รายการ (โหมดทดสอบ)');
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (resultContext) => CheckoutSuccessPage(
+          purchasedCount: completed,
+          onViewRecipes: () =>
+              Navigator.of(resultContext).pushNamedAndRemoveUntil(
+                AppRoutes.purchasedRecipes,
+                (route) => route.isFirst,
+              ),
+          onBackHome: () =>
+              Navigator.of(resultContext).popUntil((route) => route.isFirst),
+        ),
+      ),
+    );
+  }
+
+  void _showFailure(String message, {int purchasedCount = 0}) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (resultContext) => CheckoutFailurePage(
+          message: message,
+          purchasedCount: purchasedCount,
+          onRetry: () {
+            Navigator.of(resultContext).pop();
+            // A prior purchase may have removed some items from the cart.
+            // Reload before the user retries to avoid repurchasing them.
+            context.read<CartBloc>().add(const CartRequested());
+          },
+          onBackToCart: () => Navigator.of(resultContext).pop(),
+        ),
+      ),
+    );
   }
 
   Future<_MockPurchaseScenario?> _chooseMockScenario() {
@@ -171,6 +223,13 @@ class _CartPageState extends State<CartPage> {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, state) {
         final items = state.items;
+        final selectedItems = items
+            .where((item) => !_unselectedItemIds.contains(item.id))
+            .toList(growable: false);
+        final selectedSubtotal = selectedItems.fold<double>(
+          0,
+          (total, item) => total + item.price,
+        );
 
         return Scaffold(
           backgroundColor: ProfileColors.background,
@@ -206,14 +265,41 @@ class _CartPageState extends State<CartPage> {
             _ => ListView.separated(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-              itemCount: items.length,
+              itemCount: items.length + 1,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                final item = items[index];
+                if (index == 0) {
+                  return CheckboxListTile(
+                    value: selectedItems.length == items.length,
+                    onChanged: _isCheckingOut
+                        ? null
+                        : (selected) =>
+                              _setAllSelected(items, selected ?? false),
+                    title: const Text('เลือกทั้งหมด'),
+                    subtitle: Text(
+                      'เลือก ${selectedItems.length} จาก ${items.length} รายการ',
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    activeColor: ProfileColors.ink,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  );
+                }
+                final item = items[index - 1];
                 return CartItemTile(
                   item: item,
-                  onRemove: () =>
-                      context.read<CartBloc>().add(CartItemRemoved(item.id)),
+                  isSelected: !_unselectedItemIds.contains(item.id),
+                  onSelectedChanged: _isCheckingOut
+                      ? null
+                      : (selected) =>
+                            _setItemSelected(item.id, selected ?? false),
+                  onRemove: _isCheckingOut
+                      ? null
+                      : () {
+                          _unselectedItemIds.remove(item.id);
+                          context.read<CartBloc>().add(
+                            CartItemRemoved(item.id),
+                          );
+                        },
                 );
               },
             ),
@@ -221,12 +307,12 @@ class _CartPageState extends State<CartPage> {
           bottomNavigationBar: items.isEmpty
               ? null
               : CartSummaryBar(
-                  itemCount: state.itemCount,
-                  subtotal: state.subtotal,
+                  itemCount: selectedItems.length,
+                  subtotal: selectedSubtotal,
                   isCheckingOut: _isCheckingOut,
-                  onCheckoutPressed: _isCheckingOut
+                  onCheckoutPressed: _isCheckingOut || selectedItems.isEmpty
                       ? null
-                      : () => _checkout(List<CartItem>.from(items)),
+                      : () => _checkout(List<CartItem>.from(selectedItems)),
                 ),
         );
       },

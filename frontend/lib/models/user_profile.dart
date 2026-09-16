@@ -1,5 +1,3 @@
-import 'package:flutter_application_1/models/auth_response.dart';
-
 class UserProfile {
   const UserProfile({
     required this.id,
@@ -51,25 +49,6 @@ class UserProfile {
     _ => 'Food lover',
   };
 
-  factory UserProfile.fromAuthUser(
-    AuthUser user, {
-    required String apiBaseUrl,
-  }) {
-    return UserProfile(
-      id: user.id,
-      displayName: user.displayName,
-      email: user.email,
-      avatarUrl: _resolveAvatarUrl(user.avatarUrl, apiBaseUrl),
-      role: user.role,
-      status: 'active',
-      recipeCount: 0,
-      purchasedCount: 0,
-      savedCount: 0,
-      draftCount: 0,
-      rating: 0,
-    );
-  }
-
   factory UserProfile.fromJson(
     Map<String, dynamic> json, {
     required String apiBaseUrl,
@@ -80,51 +59,16 @@ class UserProfile {
       id: json['id'] as String,
       displayName: json['displayName'] as String,
       email: json['email'] as String,
-      // avatarUrl: json['avatarUrl'] as String  ,
       role: json['role'] as String,
       status: json['status'] as String,
-      recipeCount: json['recipeCount'] as int,
-      purchasedCount: json['purchasedCount'] as int,
-      savedCount: json['savedCount'] as int,
-      draftCount: json['draftCount'] as int,
+      recipeCount: (json['recipeCount'] as num).toInt(),
+      purchasedCount: (json['purchasedCount'] as num).toInt(),
+      savedCount: (json['savedCount'] as num).toInt(),
+      draftCount: (json['draftCount'] as num).toInt(),
       rating: (json['rating'] as num).toDouble(),
-      // id: _requiredString(json, 'id'),
-      // displayName: _requiredString(json, 'displayName'),
-      // email: _requiredString(json, 'email'),
       avatarUrl: _resolveAvatarUrl(rawAvatarUrl, apiBaseUrl),
-      // role: _requiredString(json, 'role'),
-      // status: _requiredString(json, 'status'),
-      // recipeCount: _requiredInt(json, 'recipeCount'),
-      // purchasedCount: _requiredInt(json, 'purchasedCount'),
-      // savedCount: _requiredInt(json, 'savedCount'),
-      // draftCount: _requiredInt(json, 'draftCount'),
-      // rating: _requiredNumber(json, 'rating').toDouble(),
     );
   }
-
-  // static String _requiredString(Map<String, dynamic> json, String key) {
-  //   final value = json[key];
-  //   if (value is! String || value.isEmpty) {
-  //     throw FormatException('Profile field "$key" must be a non-empty string');
-  //   }
-  //   return value;
-  // }
-
-  // static int _requiredInt(Map<String, dynamic> json, String key) {
-  //   final value = json[key];
-  //   if (value is! num) {
-  //     throw FormatException('Profile field "$key" must be a number');
-  //   }
-  //   return value.toInt();
-  // }
-
-  // static num _requiredNumber(Map<String, dynamic> json, String key) {
-  //   final value = json[key];
-  //   if (value is! num) {
-  //     throw FormatException('Profile field "$key" must be a number');
-  //   }
-  //   return value;
-  // }
 
   static String? _resolveAvatarUrl(Object? value, String apiBaseUrl) {
     if (value == null) return null;

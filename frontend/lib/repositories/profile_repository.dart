@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter_application_1/models/auth_response.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:http/http.dart' as http;
 
@@ -27,7 +26,7 @@ class HttpProfileRepository implements ProfileRepository {
     if (normalizedAccessToken.isEmpty) {
       throw const ProfileRepositoryException('Access token is missing.');
     }
-    final uri = Uri.parse('$_baseUrl/auth/me');
+    final uri = Uri.parse('$_baseUrl/auth/profile');
 
     try {
       final response = await _client
@@ -50,10 +49,7 @@ class HttpProfileRepository implements ProfileRepository {
       }
 
       try {
-        return UserProfile.fromAuthUser(
-          AuthUser.fromJson(decoded),
-          apiBaseUrl: _baseUrl,
-        );
+        return UserProfile.fromJson(decoded, apiBaseUrl: _baseUrl);
       } on FormatException catch (error) {
         throw ProfileRepositoryException(error.message);
       }

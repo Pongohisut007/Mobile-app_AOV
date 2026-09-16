@@ -8,6 +8,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '../users/entities/user.entity';
+import type { UserProfileResponse } from '../users/dto/user-profile-response.dto';
+import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from './decorators/roles.decorator';
@@ -23,7 +25,10 @@ import type {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('register')
   register(@Body() dto: RegisterDto): Promise<AuthResponse> {
@@ -42,6 +47,12 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: AuthUser): AuthUser {
     return user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  profile(@CurrentUser() user: AuthUser): Promise<UserProfileResponse> {
+    return this.usersService.findProfile(user.id);
   }
 
   

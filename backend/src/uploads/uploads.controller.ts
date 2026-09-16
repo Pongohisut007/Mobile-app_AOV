@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Headers,
@@ -8,12 +9,17 @@ import {
   Res,
   StreamableFile,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CompleteUploadDto } from './dto/complete-upload.dto';
+import { PresignUploadDto } from './dto/presign-upload.dto';
 import type { Response } from 'express';
 import {
   type UploadResult,
+  type PresignedUploadResult,
   UploadKind,
   type UploadedFileData,
   UploadsService,
@@ -22,6 +28,18 @@ import {
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
+
+  @Post('presign')
+  @UseGuards(JwtAuthGuard)
+  presign(@Body() dto: PresignUploadDto): Promise<PresignedUploadResult> {
+    return this.uploadsService.presign(dto.kind, dto.mimeType, dto.size);
+  }
+
+  @Post('complete')
+  @UseGuards(JwtAuthGuard)
+  complete(@Body() dto: CompleteUploadDto): Promise<UploadResult> {
+    return this.uploadsService.complete(dto.kind, dto.filename);
+  }
 
   @Post('images')
   @UseInterceptors(

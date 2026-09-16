@@ -41,7 +41,11 @@ class CartSummaryBar extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    subtotal == 0 ? 'Free' : '฿${subtotal.toStringAsFixed(0)}',
+                    itemCount == 0
+                        ? '฿0'
+                        : subtotal == 0
+                        ? 'Free'
+                        : '฿${subtotal.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: ProfileColors.ink,
                       fontSize: 24,

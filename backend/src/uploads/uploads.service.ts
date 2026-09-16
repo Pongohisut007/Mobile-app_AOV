@@ -30,6 +30,15 @@ export interface UploadResult {
   url: string;
 }
 
+export interface PresignedUploadResult {
+  filename: string;
+  url: string;
+  uploadUrl: string;
+  method: 'PUT';
+  headers: { 'Content-Type': string };
+  expiresIn: number;
+}
+
 export interface StoredFile {
   stream: Readable;
   mimeType: string;
@@ -69,12 +78,69 @@ const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
 export class UploadsService {
   constructor(private readonly r2: R2Provider) {}
 
+  async presign(
+    kind: UploadKind,
+    mimeType: string,
+    size: number,
+  ): Promise<PresignedUploadResult> {
+    const extension = this.validateUpload(kind, mimeType, size);
+    const filename = `${randomUUID()}${extension}`;
+    const expiresIn = 300;
+    const uploadUrl = await this.r2.presignUpload(
+      `${kind}/${filename}`,
+      mimeType,
+      expiresIn,
+    );
+    return {
+      filename,
+      url: `/uploads/${kind}/${filename}`,
+      uploadUrl,
+      method: 'PUT',
+      headers: { 'Content-Type': mimeType },
+      expiresIn,
+    };
+  }
+
+  async complete(kind: UploadKind, filename: string): Promise<UploadResult> {
+    const mimeType = MIME_BY_EXTENSION[extname(filename).toLowerCase()];
+    if (!mimeType || !this.allowedTypes(kind)[mimeType]) {
+      throw new BadRequestException('Invalid filename for upload kind');
+    }
+    const key = `${kind}/${filename}`;
+    let object: Awaited<ReturnType<R2Provider['head']>>;
+    try {
+      object = await this.r2.head(key);
+    } catch (error: unknown) {
+      const r2Error = error as { name?: string; Code?: string };
+      if (
+        r2Error.name === 'NoSuchKey' ||
+        r2Error.name === 'NotFound' ||
+        r2Error.Code === 'NoSuchKey'
+      ) {
+        throw new NotFoundException('Uploaded file not found');
+      }
+      throw error;
+    }
+    const size = object.ContentLength;
+    if (!size || size > this.maxSize(kind) || object.ContentType !== mimeType) {
+      await this.r2.delete(key);
+      throw new BadRequestException('Uploaded file has invalid size or type');
+    }
+    return {
+      filename,
+      originalName: filename,
+      mimeType,
+      size,
+      url: `/uploads/${kind}/${filename}`,
+    };
+  }
+
   saveImage(file?: UploadedFileData): Promise<UploadResult> {
-    return this.save(file, UploadKind.IMAGES, IMAGE_TYPES, 10 * 1024 * 1024);
+    return this.save(file, UploadKind.IMAGES);
   }
 
   saveVideo(file?: UploadedFileData): Promise<UploadResult> {
-    return this.save(file, UploadKind.VIDEOS, VIDEO_TYPES, 100 * 1024 * 1024);
+    return this.save(file, UploadKind.VIDEOS);
   }
 
   async open(
@@ -180,22 +246,10 @@ export class UploadsService {
   private async save(
     file: UploadedFileData | undefined,
     kind: UploadKind,
-    allowedTypes: Readonly<Record<string, string>>,
-    maxSize: number,
   ): Promise<UploadResult> {
     if (!file) throw new BadRequestException('File is required');
 
-    const extension = allowedTypes[file.mimetype];
-    if (!extension) {
-      throw new BadRequestException(
-        `Unsupported file type: ${file.mimetype || 'unknown'}`,
-      );
-    }
-    if (file.size > maxSize) {
-      throw new BadRequestException(
-        `File size must not exceed ${maxSize / 1024 / 1024} MB`,
-      );
-    }
+    const extension = this.validateUpload(kind, file.mimetype, file.size);
 
     const filename = `${randomUUID()}${extension}`;
     await this.r2.upload(`${kind}/${filename}`, file.buffer, file.mimetype);
@@ -207,5 +261,33 @@ export class UploadsService {
       size: file.size,
       url: `/uploads/${kind}/${filename}`,
     };
+  }
+
+  private validateUpload(
+    kind: UploadKind,
+    mimeType: string,
+    size: number,
+  ): string {
+    const extension = this.allowedTypes(kind)[mimeType];
+    if (!extension) {
+      throw new BadRequestException(
+        `Unsupported file type: ${mimeType || 'unknown'}`,
+      );
+    }
+    const maxSize = this.maxSize(kind);
+    if (!Number.isSafeInteger(size) || size < 1 || size > maxSize) {
+      throw new BadRequestException(
+        `File size must be between 1 byte and ${maxSize / 1024 / 1024} MB`,
+      );
+    }
+    return extension;
+  }
+
+  private allowedTypes(kind: UploadKind): Readonly<Record<string, string>> {
+    return kind === UploadKind.IMAGES ? IMAGE_TYPES : VIDEO_TYPES;
+  }
+
+  private maxSize(kind: UploadKind): number {
+    return kind === UploadKind.IMAGES ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
   }
 }

@@ -36,12 +36,6 @@ class ProfileAccountMenu extends StatelessWidget {
           ),
           const _MenuDivider(),
           _MenuTile(
-            icon: Icons.credit_card_rounded,
-            label: 'Payment methods',
-            onTap: () => onPressed('Payment methods'),
-          ),
-          const _MenuDivider(),
-          _MenuTile(
             icon: Icons.help_outline_rounded,
             label: 'Help & support',
             onTap: () => onPressed('Help & support'),

@@ -57,6 +57,29 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Direct upload to R2
+
+Configure `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and
+`R2_BUCKET_NAME`. Authenticated clients can upload without sending file bytes
+through the backend:
+
+1. `POST /uploads/presign` with `Authorization: Bearer <accessToken>` and JSON
+   `{"kind":"images","mimeType":"image/png","size":12345}`. `kind` is
+   `images` or `videos`. The response includes `filename`, `uploadUrl`,
+   `method: "PUT"`, `headers`, `url`, and `expiresIn` (300 seconds).
+2. PUT the raw file bytes to `uploadUrl` using the exact `Content-Type` header
+   returned in `headers`. Do not send multipart form data or the bearer token
+   to R2.
+3. `POST /uploads/complete` with the bearer token and JSON
+   `{"kind":"images","filename":"<filename from step 1>"}`. The backend checks
+   the uploaded object's type and size, then returns the existing `/uploads/...`
+   read URL. Save that URL in the relevant recipe or banner record.
+
+Images support JPEG, PNG, WebP, and GIF up to 10 MB. Videos support MP4, WebM,
+and QuickTime up to 100 MB. The R2 bucket must allow browser clients to send
+cross-origin `PUT` requests with `Content-Type` when uploads originate on web.
+The Flutter client helper is `lib/repositories/upload_repository.dart`.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

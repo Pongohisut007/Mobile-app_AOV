@@ -1,9 +1,11 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -31,6 +33,27 @@ export class R2Provider {
     });
 
     return this.client.send(command);
+  }
+
+  presignUpload(key: string, contentType: string, expiresIn: number) {
+    return getSignedUrl(
+      this.client,
+      new PutObjectCommand({
+        Bucket: this.config.getOrThrow<string>('r2.bucketName'),
+        Key: key,
+        ContentType: contentType,
+      }),
+      { expiresIn },
+    );
+  }
+
+  delete(key: string) {
+    return this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.config.getOrThrow<string>('r2.bucketName'),
+        Key: key,
+      }),
+    );
   }
 
   head(key: string) {
