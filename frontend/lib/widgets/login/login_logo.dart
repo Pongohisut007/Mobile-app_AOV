@@ -17,13 +17,34 @@ class LoginLogo extends StatelessWidget {
 
     return SizedBox(
       height: screenSize.height * heightFactor,
-      child: Center(
-        child: SvgPicture.asset(
-          'assets/images/recipy-logo.svg',
-          width: screenSize.width * widthFactor,
-          height: screenSize.width * widthFactor,
-          fit: BoxFit.contain,
-        ),
+      child: Stack(
+        children: [
+          // ปุ่มย้อนกลับ
+          Positioned(
+            left: 8,
+            top: 8,
+            child: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: const Icon(
+                Icons.arrow_back,
+                size: 35,
+              ),
+              color: Colors.white,
+              padding: EdgeInsets.zero,
+            ),
+          ),
+          // Logo
+          Center(
+            child: SvgPicture.asset(
+              'assets/images/recipy-logo.svg',
+              width: screenSize.width * widthFactor,
+              height: screenSize.width * widthFactor,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ],
       ),
     );
   }
