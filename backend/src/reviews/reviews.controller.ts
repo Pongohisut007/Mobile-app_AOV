@@ -1,17 +1,9 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { Review } from './entities/review.entity';
 import { ReviewsService } from './reviews.service';
 
+// อ่านอย่างเดียว การให้/แก้คะแนนย้ายไปที่ /recipes/:recipeId/reviews/me
+// ซึ่งอ่าน user จาก token แทนการรับ userId จาก body
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
@@ -24,23 +16,5 @@ export class ReviewsController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Review> {
     return this.reviewsService.findOne(id);
-  }
-
-  @Post()
-  create(@Body() data: Partial<Review>): Promise<Review> {
-    return this.reviewsService.create(data);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<Review>,
-  ): Promise<Review> {
-    return this.reviewsService.update(id, data);
-  }
-
-  @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.reviewsService.remove(id);
   }
 }

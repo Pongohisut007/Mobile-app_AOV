@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/widgets/banner_detail/banner_detail_colors.dart';
+import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 
 /// ดาว 5 ดวงแบบดูอย่างเดียว รองรับครึ่งดวง เช่น 3.5
 class StarRatingDisplay extends StatelessWidget {
@@ -26,8 +26,8 @@ class StarRatingDisplay extends StatelessWidget {
           icon,
           size: size,
           color: icon == Icons.star_outline_rounded
-              ? BannerDetailColors.starEmpty
-              : BannerDetailColors.star,
+              ? FoodDetailColors.starEmpty
+              : FoodDetailColors.star,
         );
       }),
     );
@@ -75,7 +75,7 @@ class StarRatingInput extends StatelessWidget {
                   isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
                   size: size,
                   color: isSelected
-                      ? BannerDetailColors.star
+                      ? FoodDetailColors.star
                       : Colors.grey.shade400,
                 ),
               ),

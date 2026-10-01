@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/recipe_review/recipe_review_bloc.dart';
+import 'package:flutter_application_1/bloc/recipe_review/recipe_review_event.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
+import 'package:flutter_application_1/repositories/recipe_review_repository.dart';
 import 'package:flutter_application_1/views/pages/cooking_steps_page.dart';
 import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
@@ -8,6 +12,8 @@ import 'package:flutter_application_1/widgets/food_detail/food_description.dart'
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
+import 'package:flutter_application_1/widgets/recipe_review/recipe_review_section.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FoodDetailPage extends StatefulWidget {
   const FoodDetailPage({super.key, required this.foodsId});
@@ -110,6 +116,17 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                         ),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 32),
+                  Divider(color: Colors.grey.shade200, height: 1),
+                  const SizedBox(height: 28),
+                  // หน้านี้ถูกเปิดจากหลายที่ จึงสร้าง bloc ของรีวิวไว้ที่นี่เลย
+                  BlocProvider(
+                    create: (_) => RecipeReviewBloc(
+                      HttpRecipeReviewRepository(baseUrl: ApiConfig.apiBaseUrl),
+                      recipeId: food.idfoods,
+                    )..add(const RecipeReviewRequested()),
+                    child: const RecipeReviewSection(),
                   ),
                   const SizedBox(height: 40),
                 ],

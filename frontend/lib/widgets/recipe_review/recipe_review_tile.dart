@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/models/banner_rating.dart';
-import 'package:flutter_application_1/widgets/banner_detail/banner_detail_colors.dart';
-import 'package:flutter_application_1/widgets/banner_detail/star_rating.dart';
+import 'package:flutter_application_1/models/recipe_review.dart';
+import 'package:flutter_application_1/models/review_tag.dart';
+import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
+import 'package:flutter_application_1/widgets/recipe_review/star_rating.dart';
 
-/// ความคิดเห็นหนึ่งรายการ: รูปโปรไฟล์ ชื่อ ดาว และข้อความ
-class BannerReviewTile extends StatelessWidget {
-  const BannerReviewTile({super.key, required this.review});
+/// รีวิวหนึ่งรายการ: รูปโปรไฟล์ ชื่อ ดาว และข้อความ
+class RecipeReviewTile extends StatelessWidget {
+  const RecipeReviewTile({super.key, required this.review});
 
-  final BannerRating review;
+  final RecipeReview review;
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +29,12 @@ class BannerReviewTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: BannerDetailColors.softOrange,
+            backgroundColor: FoodDetailColors.softOrange,
             foregroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
             child: Text(
               initial,
               style: const TextStyle(
-                color: BannerDetailColors.accentOrange,
+                color: FoodDetailColors.accentOrange,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -65,6 +66,34 @@ class BannerReviewTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 StarRatingDisplay(rating: review.rating.toDouble(), size: 16),
+                if (review.tags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final tag in review.tags)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: FoodDetailColors.softPurple,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            ReviewTag.labelOf(tag),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: FoodDetailColors.purple,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
                 if (review.comment.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(

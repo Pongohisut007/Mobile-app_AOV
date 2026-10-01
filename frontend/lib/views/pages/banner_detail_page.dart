@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/bloc/banner_rating/banner_rating_bloc.dart';
-import 'package:flutter_application_1/bloc/banner_rating/banner_rating_state.dart';
 import 'package:flutter_application_1/models/banner_item.dart';
 import 'package:flutter_application_1/widgets/banner_detail/banner_detail_colors.dart';
-import 'package:flutter_application_1/widgets/banner_detail/banner_rating_section.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// หน้ารายละเอียดของแบนเนอร์ (AppBar ใช้ชื่อว่า Event)
 /// รูปเต็มหัว แล้วเนื้อหาเป็นการ์ดขอบมนซ้อนขึ้นมาบนรูป
@@ -83,16 +79,10 @@ class BannerDetailPage extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (period != null)
-                        _InfoChip(icon: Icons.event_rounded, label: period),
-                      const _AverageRatingChip(),
-                    ],
-                  ),
+                  if (period != null) ...[
+                    const SizedBox(height: 14),
+                    _InfoChip(icon: Icons.event_rounded, label: period),
+                  ],
                   const SizedBox(height: 24),
                   const _SectionTitle('รายละเอียด'),
                   const SizedBox(height: 10),
@@ -106,12 +96,6 @@ class BannerDetailPage extends StatelessWidget {
                       color: Colors.grey.shade800,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Divider(color: Colors.grey.shade200, height: 1),
-                  const SizedBox(height: 24),
-                  const _SectionTitle('คะแนนและรีวิว'),
-                  const SizedBox(height: 14),
-                  const BannerRatingSection(),
                 ],
               ),
             ),
@@ -190,15 +174,10 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    this.color = BannerDetailColors.accentOrange,
-  });
+  const _InfoChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -211,37 +190,17 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: color),
+          Icon(icon, size: 18, color: BannerDetailColors.accentOrange),
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(fontWeight: FontWeight.w600, color: color),
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: BannerDetailColors.accentOrange,
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-/// ป้าย ★ 4.5 · 12 รีวิว ข้างวันที่ ซ่อนไว้ถ้ายังไม่มีใครให้คะแนน
-class _AverageRatingChip extends StatelessWidget {
-  const _AverageRatingChip();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<BannerRatingBloc, BannerRatingState>(
-      buildWhen: (previous, current) => previous.summary != current.summary,
-      builder: (context, state) {
-        final summary = state.summary;
-        if (summary.count == 0) return const SizedBox.shrink();
-
-        return _InfoChip(
-          icon: Icons.star_rounded,
-          label:
-              '${summary.average.toStringAsFixed(1)} · ${summary.count} รีวิว',
-          color: const Color(0xFFE65100),
-        );
-      },
     );
   }
 }

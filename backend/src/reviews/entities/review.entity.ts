@@ -38,6 +38,10 @@ export class Review extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   comment!: string | null;
 
+  // ชิป "ชอบอะไรในสูตรนี้" เก็บเป็น key ดู REVIEW_TAGS
+  @Column({ type: 'text', array: true, default: () => "'{}'" })
+  tags!: string[];
+
   @Column({ type: 'enum', enum: ReviewStatus, default: ReviewStatus.PUBLISHED })
   status!: ReviewStatus;
 }

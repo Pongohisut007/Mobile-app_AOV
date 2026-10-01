@@ -8,5 +8,6 @@ import { RecipeAccess } from './entities/recipe-access.entity';
   imports: [TypeOrmModule.forFeature([RecipeAccess])],
   controllers: [RecipeAccessController],
   providers: [RecipeAccessService],
+  exports: [RecipeAccessService],
 })
 export class RecipeAccessModule {}
