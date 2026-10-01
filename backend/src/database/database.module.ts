@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BannerRating } from '../banner/entities/banner-rating.entity';
 import { Banner } from '../banner/entities/banner.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Cart } from '../cart/entities/cart.entity';
@@ -33,6 +34,7 @@ const entities = [
   Review,
   Favorite,
   Banner,
+  BannerRating,
   Cart,
   CartItem,
 ];

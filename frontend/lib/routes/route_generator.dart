@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/banner/banner_bloc.dart';
 import 'package:flutter_application_1/bloc/banner/banner_event.dart';
+import 'package:flutter_application_1/bloc/banner_rating/banner_rating_bloc.dart';
+import 'package:flutter_application_1/bloc/banner_rating/banner_rating_event.dart';
+import 'package:flutter_application_1/repositories/banner_rating_repository.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
@@ -124,7 +127,13 @@ class RoutesGenerator {
         final BannerItem banner = setting.arguments as BannerItem;
 
         return MaterialPageRoute(
-          builder: (_) => BannerDetailPage(banner: banner),
+          builder: (_) => BlocProvider(
+            create: (_) => BannerRatingBloc(
+              HttpBannerRatingRepository(baseUrl: ApiConfig.apiBaseUrl),
+              bannerId: banner.id,
+            )..add(const BannerRatingRequested()),
+            child: BannerDetailPage(banner: banner),
+          ),
         );
 
       case AppRoutes.myRecipes:
