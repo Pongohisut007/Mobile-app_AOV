@@ -33,7 +33,7 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     final bool isIpad = MediaQuery.sizeOf(context).shortestSide >= 600;
-    int categorySortID = 0;
+    String? categoryUUID;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -80,14 +80,14 @@ class _CommunityPageState extends State<CommunityPage> {
 
                   CategorySelector(
                     categories: state.categories,
-                      onCategorySelected: (categorySID) {
-                      categorySortID = categorySID ?? 0;
+                      onCategorySelected: (uuid) {
+                      categoryUUID = uuid;
                     },
                   ),
 
                   const SizedBox(height: 9),
 
-                  PostCard(categorySortID: categorySortID),
+                  PostCard(uuid: categoryUUID),
                 ],
               );
             }

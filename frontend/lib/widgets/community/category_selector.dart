@@ -9,7 +9,7 @@ class CategorySelector extends StatefulWidget {
   });
 
   final List<Category> categories;
-  final ValueChanged<int?> onCategorySelected;
+  final ValueChanged<String?> onCategorySelected;
 
   @override
   State<CategorySelector> createState() => _CategorySelectorState();
@@ -41,11 +41,11 @@ class _CategorySelectorState extends State<CategorySelector> {
                     }
                   });
 
-                  final category = selectedCategory == null
+                  final uuid = selectedCategory == null
                       ? null
-                      : widget.categories[selectedCategory!];
+                      : widget.categories[selectedCategory!].id;
 
-                  widget.onCategorySelected(category?.sortOrder);
+                  widget.onCategorySelected(uuid);
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
