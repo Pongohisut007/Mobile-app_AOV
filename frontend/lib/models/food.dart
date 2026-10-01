@@ -40,7 +40,10 @@ class Food {
     this.publishedAt,
   });
 
-  factory Food.fromJson(Map<String, dynamic> json) {
+  factory Food.fromJson(
+    Map<String, dynamic> json, {
+    required String apiBaseUrl,
+  }) {
     // recipe หนึ่งอันมีได้หลาย category ที่นี่ใช้อันแรกมาโชว์บนการ์ด
     final categories = json['categories'] as List<dynamic>?;
     final creator = json['creator'] as Map<String, dynamic>?;
@@ -83,7 +86,7 @@ class Food {
       steps: steps,
       creatorId: creator?['id'] as String?,
       creatorName: creator?['displayName'] as String?,
-      creatorAvatar: creator?['avatarUrl'] as String?,
+      creatorAvatar: _resolveAvatarUrl(creator?['avatarUrl'], apiBaseUrl),
       publishedAt: json['publishedAt'] == null
           ? null
           : DateTime.tryParse(json['publishedAt'] as String),
@@ -102,5 +105,20 @@ class Food {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value.toString());
+  }
+
+  static String? _resolveAvatarUrl(Object? value, String apiBaseUrl) {
+    if (value == null) return null;
+    if (value is! String) {
+      throw const FormatException('Profile field "avatarUrl" is invalid');
+    }
+    if (value.trim().isEmpty) return null;
+
+    final uri = Uri.parse(value);
+    if (uri.hasScheme) return uri.toString();
+
+    final normalizedBaseUrl = apiBaseUrl.replaceAll(RegExp(r'/+$'), '');
+    final normalizedPath = value.startsWith('/') ? value : '/$value';
+    return '$normalizedBaseUrl$normalizedPath';
   }
 }
