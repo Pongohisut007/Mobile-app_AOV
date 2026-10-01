@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/food/food_bloc.dart';
+import 'package:flutter_application_1/bloc/food/food_event.dart';
+import 'package:flutter_application_1/widgets/community/category_selector.dart';
+import 'package:flutter_application_1/widgets/community/post_card.dart';
+import 'package:flutter_application_1/widgets/home/search_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
 import 'package:flutter_application_1/bloc/category/category_state.dart';
-import 'package:flutter_application_1/widgets/community/category_card.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -29,7 +33,8 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     final bool isIpad = MediaQuery.sizeOf(context).shortestSide >= 600;
-    
+    int categorySortID = 0;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: SafeArea(
@@ -44,9 +49,10 @@ class _CommunityPageState extends State<CommunityPage> {
                   SizedBox(
                     height: isIpad ? 14 : 9,
                   ),
-                  Center(
+                  Align(
+                    alignment: Alignment.centerLeft,
                     child: Text(
-                      'COMMUNITY',
+                      'Community',
                       style: TextStyle(
                         fontSize: isIpad ? 35 : 30,
                         fontWeight: FontWeight.bold,
@@ -54,18 +60,34 @@ class _CommunityPageState extends State<CommunityPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 9),
 
-                  ...state.categories.map((category) {
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: isIpad ? 20 : 12,
-                      ),
-                      child: CategoryCard(
-                        category: category,
-                      ),
-                    );
-                  }),
+                  SearchBarWidget(
+                    onSearch: (query) {
+                      final foodBloc = context.read<FoodBloc>();
+                      final selectedId = context.read<CategoryBloc>().state.selectedId;
+                      if (query.isEmpty) {
+                        // ล้างคำค้นหา = กลับไปแสดงตามหมวดที่เลือกไว้
+                        foodBloc.add(FetchCommunityFoodsByCategoryEvent(selectedId));
+                      } else {
+                        // ค้นหาในขอบเขตของหมวดที่เลือกอยู่
+                        foodBloc.add(SearchFoodEvent(query, categoryId: selectedId));
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 9),
+
+                  CategorySelector(
+                    categories: state.categories,
+                      onCategorySelected: (categorySID) {
+                      categorySortID = categorySID ?? 0;
+                    },
+                  ),
+
+                  const SizedBox(height: 9),
+
+                  PostCard(categorySortID: categorySortID),
                 ],
               );
             }
