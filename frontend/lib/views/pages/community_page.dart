@@ -53,12 +53,26 @@ class _CommunityPageState extends State<CommunityPage> {
                       SizedBox(height: isIpad ? 14 : 9),
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Community',
-                          style: TextStyle(
-                            fontSize: isIpad ? 35 : 30,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Community',
+                              style: TextStyle(
+                                fontSize: isIpad ? 30 : 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                // ทำสิ่งที่ต้องการเมื่อกด +
+                              },
+                              icon: const Icon(Icons.add),
+                              iconSize: isIpad ? 30 : 24,
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
                         ),
                       ),
 

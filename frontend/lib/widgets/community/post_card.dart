@@ -117,7 +117,7 @@ class PostCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     food.description,
-                    maxLines: 2,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 13),
                   ),
