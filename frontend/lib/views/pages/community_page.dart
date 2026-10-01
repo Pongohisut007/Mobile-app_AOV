@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/food/food_bloc.dart';
+import 'package:flutter_application_1/bloc/food/food_event.dart';
+import 'package:flutter_application_1/bloc/food/food_state.dart';
+import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/widgets/community/category_selector.dart';
+import 'package:flutter_application_1/widgets/community/post_card.dart';
+import 'package:flutter_application_1/widgets/home/search_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
 import 'package:flutter_application_1/bloc/category/category_state.dart';
-import 'package:flutter_application_1/widgets/community/category_card.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -18,73 +24,133 @@ class _CommunityPageState extends State<CommunityPage> {
     super.initState();
 
     final categoryBloc = context.read<CategoryBloc>();
-    final state = categoryBloc.state;
+    final categoryState = categoryBloc.state;
 
-    if (state is! CategoryLoaded &&
-        state is! CategoryLoading) {
+    if (categoryState is! CategoryLoaded &&
+        categoryState is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
+
+    // โหลด community foods ครั้งแรก (ทุกหมวด)
+    final foodBloc = context.read<FoodBloc>();
+    foodBloc.add(FetchCommunityFoodsByCategoryEvent(''));
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isIpad = MediaQuery.sizeOf(context).shortestSide >= 600;
-    
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: SafeArea(
         child: BlocBuilder<CategoryBloc, CategoryState>(
-          builder: (context, state) {
-            if (state is CategoryLoaded) {
-              return ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                ),
-                children: [
-                  SizedBox(
-                    height: isIpad ? 14 : 9,
-                  ),
-                  Center(
-                    child: Text(
-                      'COMMUNITY',
-                      style: TextStyle(
-                        fontSize: isIpad ? 35 : 30,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+          builder: (context, categoryState) {
+            if (categoryState is CategoryLoaded) {
+              return BlocBuilder<FoodBloc, FoodState>(
+                builder: (context, foodState) {
+                  final foods = foodState is FoodLoaded
+                      ? foodState.foods.toList()
+                      : <Food>[];
+                  foods.sort((left, right) {
+                    final leftPublishedAt = left.publishedAt;
+                    final rightPublishedAt = right.publishedAt;
+                    if (leftPublishedAt == null) {
+                      return rightPublishedAt == null ? 0 : 1;
+                    }
+                    if (rightPublishedAt == null) return -1;
+                    return rightPublishedAt.compareTo(leftPublishedAt);
+                  });
 
-                  const SizedBox(height: 8),
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      SizedBox(height: isIpad ? 14 : 9),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Community',
+                              style: TextStyle(
+                                fontSize: isIpad ? 30 : 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                // ทำสิ่งที่ต้องการเมื่อกด +
+                              },
+                              icon: const Icon(Icons.add),
+                              iconSize: isIpad ? 30 : 24,
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
+                        ),
+                      ),
 
-                  ...state.categories.map((category) {
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: isIpad ? 20 : 12,
+                      const SizedBox(height: 9),
+
+                      SearchBarWidget(
+                        onSearch: (query) {
+                          final foodBloc = context.read<FoodBloc>();
+                          final selectedId =
+                              context.read<CategoryBloc>().state.selectedId;
+                          if (query.isEmpty) {
+                            foodBloc.add(
+                                FetchCommunityFoodsByCategoryEvent(selectedId));
+                          } else {
+                            foodBloc.add(
+                                SearchFoodEvent(query, categoryId: selectedId));
+                          }
+                        },
                       ),
-                      child: CategoryCard(
-                        category: category,
+
+                      const SizedBox(height: 9),
+
+                      CategorySelector(
+                        categories: categoryState.categories,
+                        onCategorySelected: (uuid) {
+                          context.read<FoodBloc>().add(
+                                FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
+                              );
+                        },
                       ),
-                    );
-                  }),
-                ],
+
+                      const SizedBox(height: 9),
+
+                      // แสดง PostCard ตามจำนวน foods ที่ได้จาก FetchCommunityFoodsByCategoryEvent
+                      if (foodState is FoodLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 32),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (foodState is FoodLoaded)
+                        ...foods.map((food) => PostCard(food: food))
+                      else if (foodState is FoodError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 32),
+                          child: Center(
+                              child: Text('Error: ${foodState.message}')),
+                        ),
+                    ],
+                  );
+                },
               );
             }
 
-            if (state is CategoryLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+            if (categoryState is CategoryLoading) {
+              return const Center(child: CircularProgressIndicator());
             }
 
-            if (state is CategoryError) {
+            if (categoryState is CategoryError) {
               return Center(
-                child: Text('Error: ${state.message}'),
+                child: Text('Error: ${categoryState.message}'),
               );
             }
 
-            return const Center(
-              child: Text('No data available.'),
-            );
+            return const Center(child: Text('No data available.'));
           },
         ),
       ),

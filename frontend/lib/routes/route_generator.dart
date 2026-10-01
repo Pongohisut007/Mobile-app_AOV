@@ -23,7 +23,6 @@ import 'package:flutter_application_1/models/banner_item.dart';
 import 'package:flutter_application_1/views/pages/banner_detail_page.dart';
 import 'package:flutter_application_1/views/pages/cart_page.dart';
 import 'package:flutter_application_1/views/pages/community_page.dart';
-import 'package:flutter_application_1/views/pages/community_selectcategory_page.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/views/pages/draft_recipes_page.dart';
@@ -89,27 +88,6 @@ class RoutesGenerator {
             create: (_) =>
                 CategoryBloc(CategoryRepository())..add(FetchCategoriesEvent()),
             child: const CommunityPage(),
-          ),
-        );
-
-      case AppRoutes.communitySelectCategory:
-        final args = setting.arguments as Map<String, dynamic>;
-
-        final String categoryUUID = args['categoryUUID'];
-        final String categoryImageUrl = args['categoryImageUrl'];
-
-        final CategoryBloc categoryBloc = args['categoryBloc'];
-
-        return MaterialPageRoute(
-          builder: (_) => MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: categoryBloc),
-              BlocProvider(create: (_) => FoodBloc(FoodRepository())),
-            ],
-            child: CommunitySelectCategoryPage(
-              categoryUUID: categoryUUID,
-              categoryImageUrl: categoryImageUrl,
-            ),
           ),
         );
 
