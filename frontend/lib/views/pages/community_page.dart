@@ -32,10 +32,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
     // โหลด community foods ครั้งแรก (ทุกหมวด)
     final foodBloc = context.read<FoodBloc>();
-    final foodState = foodBloc.state;
-    if (foodState is! FoodLoaded && foodState is! FoodLoading) {
-      foodBloc.add(FetchCommunityFoodsByCategoryEvent(''));
-    }
+    foodBloc.add(FetchCommunityFoodsByCategoryEvent(''));
   }
 
   @override
@@ -132,4 +129,4 @@ class _CommunityPageState extends State<CommunityPage> {
       ),
     );
   }
-}
+}

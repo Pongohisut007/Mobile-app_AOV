@@ -21,6 +21,7 @@ export class CategoriesService {
       .leftJoinAndSelect('category.recipes', 'recipe', 'recipe.type = :type', {
         type,
       })
+      .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'categories')
       .orderBy('category.sortOrder', 'ASC')
       .getMany();
@@ -35,6 +36,7 @@ export class CategoriesService {
         type ? 'recipe.type = :type' : undefined,
         type ? { type } : undefined,
       )
+      .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'categories')
       .where('category.id = :id', { id });
 

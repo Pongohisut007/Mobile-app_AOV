@@ -14,6 +14,14 @@ class Food {
   final String? difficulty;
   final List<RecipeStep> steps;
 
+  // ข้อมูลเจ้าของ recipe (embed มาจาก backend)
+  final String? creatorId;
+  final String? creatorName;
+  final String? creatorAvatar;
+
+  // วันที่ publish (ใช้คำนวณว่า "โพสต์มานานแค่ไหนแล้ว")
+  final DateTime? publishedAt;
+
   Food({
     required this.idfoods,
     required this.name,
@@ -26,11 +34,16 @@ class Food {
     this.servingCount,
     this.difficulty,
     this.steps = const [],
+    this.creatorId,
+    this.creatorName,
+    this.creatorAvatar,
+    this.publishedAt,
   });
 
   factory Food.fromJson(Map<String, dynamic> json) {
     // recipe หนึ่งอันมีได้หลาย category ที่นี่ใช้อันแรกมาโชว์บนการ์ด
     final categories = json['categories'] as List<dynamic>?;
+    final creator = json['creator'] as Map<String, dynamic>?;
     final firstCategory = (categories != null && categories.isNotEmpty)
         ? categories.first as Map<String, dynamic>
         : null;
@@ -68,6 +81,12 @@ class Food {
       servingCount: _toInt(json['servingCount']),
       difficulty: json['difficulty'] as String?,
       steps: steps,
+      creatorId: creator?['id'] as String?,
+      creatorName: creator?['displayName'] as String?,
+      creatorAvatar: creator?['avatarUrl'] as String?,
+      publishedAt: json['publishedAt'] == null
+          ? null
+          : DateTime.tryParse(json['publishedAt'] as String),
     );
   }
 
