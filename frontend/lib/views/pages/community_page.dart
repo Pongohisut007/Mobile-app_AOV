@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
+import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/widgets/community/category_selector.dart';
 import 'package:flutter_application_1/widgets/community/post_card.dart';
 import 'package:flutter_application_1/widgets/home/search_bar.dart';
@@ -47,6 +48,19 @@ class _CommunityPageState extends State<CommunityPage> {
             if (categoryState is CategoryLoaded) {
               return BlocBuilder<FoodBloc, FoodState>(
                 builder: (context, foodState) {
+                  final foods = foodState is FoodLoaded
+                      ? foodState.foods.toList()
+                      : <Food>[];
+                  foods.sort((left, right) {
+                    final leftPublishedAt = left.publishedAt;
+                    final rightPublishedAt = right.publishedAt;
+                    if (leftPublishedAt == null) {
+                      return rightPublishedAt == null ? 0 : 1;
+                    }
+                    if (rightPublishedAt == null) return -1;
+                    return rightPublishedAt.compareTo(leftPublishedAt);
+                  });
+
                   return ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
@@ -113,8 +127,7 @@ class _CommunityPageState extends State<CommunityPage> {
                           child: Center(child: CircularProgressIndicator()),
                         )
                       else if (foodState is FoodLoaded)
-                        ...foodState.foods
-                            .map((food) => PostCard(food: food))
+                        ...foods.map((food) => PostCard(food: food))
                       else if (foodState is FoodError)
                         Padding(
                           padding: const EdgeInsets.only(top: 32),
