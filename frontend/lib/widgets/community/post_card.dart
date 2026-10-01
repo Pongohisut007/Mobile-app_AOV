@@ -45,7 +45,7 @@ class PostCard extends StatelessWidget {
           children: [
           // ── Header: รูปโปรไฟล์ + ชื่อ + เวลา ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
             child: Row(
               children: [
                 // รูปโปรไฟล์
@@ -92,27 +92,10 @@ class PostCard extends StatelessWidget {
 
           // ── ชื่ออาหาร + หมวดหมู่ + คำอธิบาย ──
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  food.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (food.category.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    food.category,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
                 if (food.description.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
@@ -122,6 +105,42 @@ class PostCard extends StatelessWidget {
                     style: const TextStyle(fontSize: 13),
                   ),
                 ],
+
+                const SizedBox(height: 12),
+
+                Container(
+                  height: 1,
+                  color: Colors.grey.shade300,
+                ),
+
+                const SizedBox(height: 8),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        print('Like');
+                      },
+                      child: const Icon(
+                        Icons.favorite_border,
+                        size: 22,
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    GestureDetector(
+                      onTap: () {
+                        print('Comment');
+                      },
+                      child: const Icon(
+                        Icons.comment_outlined,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
