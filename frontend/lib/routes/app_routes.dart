@@ -5,6 +5,8 @@ class AppRoutes {
 
   static const String foodDetail = '/food-detail';
 
+  static const String bannerDetail = '/banner-detail';
+
   static const String cart = '/cart';
 
   static const String community = '/community';

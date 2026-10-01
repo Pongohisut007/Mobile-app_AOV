@@ -19,6 +19,8 @@ import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/main_tree.dart';
+import 'package:flutter_application_1/models/banner_item.dart';
+import 'package:flutter_application_1/views/pages/banner_detail_page.dart';
 import 'package:flutter_application_1/views/pages/cart_page.dart';
 import 'package:flutter_application_1/views/pages/community_page.dart';
 import 'package:flutter_application_1/views/pages/community_selectcategory_page.dart';
@@ -116,6 +118,13 @@ class RoutesGenerator {
 
         return MaterialPageRoute(
           builder: (_) => FoodDetailPage(foodsId: foodId),
+        );
+
+      case AppRoutes.bannerDetail:
+        final BannerItem banner = setting.arguments as BannerItem;
+
+        return MaterialPageRoute(
+          builder: (_) => BannerDetailPage(banner: banner),
         );
 
       case AppRoutes.myRecipes:

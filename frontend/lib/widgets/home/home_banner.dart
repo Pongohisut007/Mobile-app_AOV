@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/banner/banner_bloc.dart';
 import 'package:flutter_application_1/bloc/banner/banner_state.dart';
 import 'package:flutter_application_1/models/banner_item.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
@@ -138,8 +139,13 @@ class _BannerCarouselState extends State<_BannerCarousel> {
             controller: _controller,
             itemCount: widget.banners.length,
             onPageChanged: (index) => setState(() => _currentIndex = index),
-            itemBuilder: (_, index) => _BannerImage(
-              imageUrl: widget.banners[index].imageUrl,
+            itemBuilder: (context, index) => GestureDetector(
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.bannerDetail,
+                arguments: widget.banners[index],
+              ),
+              child: _BannerImage(imageUrl: widget.banners[index].imageUrl),
             ),
           ),
         ),
