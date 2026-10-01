@@ -49,8 +49,8 @@ class _CategorySelectorState extends State<CategorySelector> {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 10,
+                    horizontal: 30,
+                    vertical: 15,
                   ),
                   decoration: BoxDecoration(
                     border: Border(

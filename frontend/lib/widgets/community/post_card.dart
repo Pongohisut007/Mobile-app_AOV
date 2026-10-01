@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -29,9 +30,19 @@ class PostCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FoodDetailPage(foodsId: food.idfoods),
+            ),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // ── Header: รูปโปรไฟล์ + ชื่อ + เวลา ──
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
@@ -114,7 +125,8 @@ class PostCard extends StatelessWidget {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
