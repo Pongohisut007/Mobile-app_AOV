@@ -1,6 +1,9 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class ChatMessageDto {
+  @IsUUID()
+  recipeId!: string;
+
   @IsString()
   @MinLength(1)
   @MaxLength(4000)

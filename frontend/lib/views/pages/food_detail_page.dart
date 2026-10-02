@@ -15,6 +15,7 @@ import 'package:flutter_application_1/widgets/food_detail/food_description.dart'
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
+import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_button.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_section.dart';
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -140,6 +141,11 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 12),
+
+                  // แสดงเฉพาะคนที่ซื้อสูตรแล้ว (เช็กกับ backend)
+                  RecipeChatButton(recipeId: food.idfoods),
 
                   const SizedBox(height: 32),
 
