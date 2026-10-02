@@ -84,7 +84,7 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
       // และถ้าเลือกหมวดอยู่ ต้องค้นหาเฉพาะในหมวดนั้น
       final foods = await repository.searchFoods(
         query,
-        type: 'official',
+        type: event.type,
         categoryId: event.categoryId.isEmpty ? null : event.categoryId,
       );
       if (requestId != _requestId) return;

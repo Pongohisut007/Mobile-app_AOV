@@ -20,5 +20,6 @@ class SearchFoodEvent extends FoodEvent {
   final String query;
   // หมวดที่เลือกอยู่ ค่าว่าง = ค้นหาทุกหมวด
   final String categoryId;
-  SearchFoodEvent(this.query, {this.categoryId = ''});
+  final String type;
+  SearchFoodEvent(this.query, {this.categoryId = '', this.type = 'official'});
 }
