@@ -9,6 +9,7 @@ class Food {
   final double price;
   final int favoriteCount;
   final int reviewCount;
+  final int commentCount;
 
   final int? preparationMinutes;
   final int? cookingMinutes;
@@ -33,6 +34,7 @@ class Food {
     this.price = 0,
     this.favoriteCount = 0,
     this.reviewCount = 0,
+    this.commentCount = 0,
     this.preparationMinutes,
     this.cookingMinutes,
     this.servingCount,
@@ -85,6 +87,7 @@ class Food {
       price: _toDouble(json['price']),
       favoriteCount: _toInt(json['favoriteCount']) ?? 0,
       reviewCount: _toInt(json['reviewCount']) ?? 0,
+      commentCount: _toInt(json['commentCount']) ?? 0,
       preparationMinutes: _toInt(json['preparationMinutes']),
       cookingMinutes: _toInt(json['cookingMinutes']),
       servingCount: _toInt(json['servingCount']),

@@ -42,7 +42,10 @@ class PostCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => FoodDetailPage(foodsId: food.idfoods),
+              builder: (_) => FoodDetailPage(
+                foodsId: food.idfoods,
+                scrollToComments: true,
+              ),
             ),
           );
         },
@@ -128,19 +131,7 @@ class PostCard extends StatelessWidget {
 
                     const SizedBox(width: 16),
 
-                    GestureDetector(
-                      onTap: () {
-                        print('Comment');
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.comment_outlined, size: 22),
-                          const SizedBox(width: 5),
-                          Text('${food.reviewCount}'),
-                        ],
-                      ),
-                    ),
+                    _PostCommentButton(food: food),
                   ],
                 ),
               ],
@@ -148,6 +139,55 @@ class PostCard extends StatelessWidget {
           ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PostCommentButton extends StatefulWidget {
+  const _PostCommentButton({required this.food});
+
+  final Food food;
+
+  @override
+  State<_PostCommentButton> createState() => _PostCommentButtonState();
+}
+
+class _PostCommentButtonState extends State<_PostCommentButton> {
+  late int _commentCount = widget.food.commentCount;
+
+  @override
+  void didUpdateWidget(covariant _PostCommentButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.food.idfoods != widget.food.idfoods ||
+        oldWidget.food.commentCount != widget.food.commentCount) {
+      _commentCount = widget.food.commentCount;
+    }
+  }
+
+  void _incrementCount() => setState(() => _commentCount++);
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'ดูความคิดเห็น',
+      visualDensity: VisualDensity.compact,
+      onPressed: () => Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => FoodDetailPage(
+            foodsId: widget.food.idfoods,
+            scrollToComments: true,
+            onCommentSubmitted: _incrementCount,
+          ),
+        ),
+      ),
+      icon: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.comment_outlined, size: 22),
+          const SizedBox(width: 5),
+          Text('$_commentCount'),
+        ],
       ),
     );
   }

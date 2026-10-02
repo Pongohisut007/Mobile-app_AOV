@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
+import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
@@ -46,6 +47,9 @@ export class RecipesService {
 
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+
+    @InjectRepository(RecipeComment)
+    private readonly commentRepository: Repository<RecipeComment>,
   ) {}
 
   async findAll(options: FindRecipesOptions = {}): Promise<Recipe[]> {
@@ -198,7 +202,7 @@ export class RecipesService {
     if (recipes.length === 0) return recipes;
 
     const recipeIds = [...new Set(recipes.map((recipe) => recipe.id))];
-    const [favoriteRows, reviewRows] = await Promise.all([
+    const [favoriteRows, reviewRows, commentRows] = await Promise.all([
       this.favoriteRepository
         .createQueryBuilder('favorite')
         .select('favorite.recipeId', 'recipeId')
@@ -214,6 +218,13 @@ export class RecipesService {
         .andWhere('review.status = :status', { status: ReviewStatus.PUBLISHED })
         .groupBy('review.recipeId')
         .getRawMany<{ recipeId: string; count: string }>(),
+      this.commentRepository
+        .createQueryBuilder('comment')
+        .select('comment.recipeId', 'recipeId')
+        .addSelect('COUNT(*)', 'count')
+        .where('comment.recipeId IN (:...recipeIds)', { recipeIds })
+        .groupBy('comment.recipeId')
+        .getRawMany<{ recipeId: string; count: string }>(),
     ]);
 
     const favoriteCounts = new Map(
@@ -222,10 +233,14 @@ export class RecipesService {
     const reviewCounts = new Map(
       reviewRows.map((row) => [row.recipeId, Number(row.count)]),
     );
+    const commentCounts = new Map(
+      commentRows.map((row) => [row.recipeId, Number(row.count)]),
+    );
 
     for (const recipe of recipes) {
       recipe.favoriteCount = favoriteCounts.get(recipe.id) ?? 0;
       recipe.reviewCount = reviewCounts.get(recipe.id) ?? 0;
+      recipe.commentCount = commentCounts.get(recipe.id) ?? 0;
     }
 
     return recipes;

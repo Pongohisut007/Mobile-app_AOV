@@ -130,6 +130,7 @@ export class Recipe extends BaseEntity {
 
   favoriteCount?: number;
   reviewCount?: number;
+  commentCount?: number;
 
   @OneToMany(() => CartItem, (item) => item.recipe)
   cartItems!: CartItem[];
