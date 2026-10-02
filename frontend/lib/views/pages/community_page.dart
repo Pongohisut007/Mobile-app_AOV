@@ -20,6 +20,13 @@ class CommunityPage extends StatefulWidget {
 }
 
 class _CommunityPageState extends State<CommunityPage> {
+  static const int _postsPerPage = 3;
+  int _visiblePostCount = _postsPerPage;
+
+  void _resetVisiblePosts() {
+    _visiblePostCount = _postsPerPage;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -27,8 +34,7 @@ class _CommunityPageState extends State<CommunityPage> {
     final categoryBloc = context.read<CategoryBloc>();
     final categoryState = categoryBloc.state;
 
-    if (categoryState is! CategoryLoaded &&
-        categoryState is! CategoryLoading) {
+    if (categoryState is! CategoryLoaded && categoryState is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
 
@@ -82,22 +88,23 @@ class _CommunityPageState extends State<CommunityPage> {
                             IconButton(
                               onPressed: () async {
                                 final foodBloc = context.read<FoodBloc>();
-                                final categoryBloc =
-                                    context.read<CategoryBloc>();
+                                final categoryBloc = context
+                                    .read<CategoryBloc>();
                                 final created = await Navigator.of(context)
                                     .push<bool>(
                                       MaterialPageRoute<bool>(
-                                        builder: (_) =>
-                                          CreateFoodcardPage(
-                                            categories:
-                                              categoryState.categories,
-                                          ),
+                                        builder: (_) => CreateFoodcardPage(
+                                          categories: categoryState.categories,
+                                        ),
                                       ),
                                     );
                                 if (!mounted || created != true) return;
-                                foodBloc.add(FetchCommunityFoodsByCategoryEvent(
-                                  categoryBloc.state.selectedId,
-                                ));
+                                _resetVisiblePosts();
+                                foodBloc.add(
+                                  FetchCommunityFoodsByCategoryEvent(
+                                    categoryBloc.state.selectedId,
+                                  ),
+                                );
                               },
                               icon: const Icon(Icons.add),
                               iconSize: isIpad ? 30 : 24,
@@ -112,18 +119,23 @@ class _CommunityPageState extends State<CommunityPage> {
                       SearchBarWidget(
                         onSearch: (query) {
                           final foodBloc = context.read<FoodBloc>();
-                          final selectedId =
-                              context.read<CategoryBloc>().state.selectedId;
+                          final selectedId = context
+                              .read<CategoryBloc>()
+                              .state
+                              .selectedId;
+                          _resetVisiblePosts();
                           if (query.isEmpty) {
                             foodBloc.add(
-                                FetchCommunityFoodsByCategoryEvent(selectedId));
+                              FetchCommunityFoodsByCategoryEvent(selectedId),
+                            );
                           } else {
                             foodBloc.add(
-                                SearchFoodEvent(
-                                  query,
-                                  categoryId: selectedId,
-                                  type: 'community',
-                                ));
+                              SearchFoodEvent(
+                                query,
+                                categoryId: selectedId,
+                                type: 'community',
+                              ),
+                            );
                           }
                         },
                       ),
@@ -133,9 +145,10 @@ class _CommunityPageState extends State<CommunityPage> {
                       CategorySelector(
                         categories: categoryState.categories,
                         onCategorySelected: (uuid) {
+                          _resetVisiblePosts();
                           context.read<FoodBloc>().add(
-                                FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
-                              );
+                            FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
+                          );
                         },
                       ),
 
@@ -148,12 +161,30 @@ class _CommunityPageState extends State<CommunityPage> {
                           child: Center(child: CircularProgressIndicator()),
                         )
                       else if (foodState is FoodLoaded)
-                        ...foods.map((food) => PostCard(food: food))
+                        ...foods
+                            .take(_visiblePostCount)
+                            .map((food) => PostCard(food: food)),
+                      if (foodState is FoodLoaded &&
+                          foods.length > _visiblePostCount)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 16),
+                          child: Center(
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _visiblePostCount += _postsPerPage;
+                                });
+                              },
+                              child: const Text('แสดงเพิ่ม'),
+                            ),
+                          ),
+                        )
                       else if (foodState is FoodError)
                         Padding(
                           padding: const EdgeInsets.only(top: 32),
                           child: Center(
-                              child: Text('Error: ${foodState.message}')),
+                            child: Text('Error: ${foodState.message}'),
+                          ),
                         ),
                     ],
                   );
@@ -166,9 +197,7 @@ class _CommunityPageState extends State<CommunityPage> {
             }
 
             if (categoryState is CategoryError) {
-              return Center(
-                child: Text('Error: ${categoryState.message}'),
-              );
+              return Center(child: Text('Error: ${categoryState.message}'));
             }
 
             return const Center(child: Text('No data available.'));
