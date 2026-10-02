@@ -23,11 +23,13 @@ class FoodDetailPage extends StatefulWidget {
   const FoodDetailPage({
     super.key,
     required this.foodsId,
+    this.showComments = false,
     this.scrollToComments = false,
     this.onCommentSubmitted,
   });
 
   final String foodsId;
+  final bool showComments;
   final bool scrollToComments;
   final VoidCallback? onCommentSubmitted;
 
@@ -60,7 +62,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: widget.scrollToComments
+        bottomNavigationBar: widget.showComments || widget.scrollToComments
           ? null
           : BottomBuyBar(
               onCartPressed: () {},
@@ -155,7 +157,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                   const SizedBox(height: 28),
 
-                  if (widget.scrollToComments)
+                  if (widget.showComments || widget.scrollToComments)
                     BlocProvider(
                       create: (_) => RecipeCommentBloc(
                         HttpRecipeCommentRepository(
