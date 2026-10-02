@@ -5,6 +5,13 @@ import OpenAI from 'openai';
 const DEFAULT_BASE_URL = 'https://ai.psu.blue/v1';
 const DEFAULT_MODEL = 'openai/gpt-5.6-luna';
 
+const INSTRUCTIONS = `
+คุณคือผู้ช่วยด้านอาหารของแอปสูตรอาหาร
+ตอบได้เฉพาะเรื่องอาหารเท่านั้น เช่น สูตรอาหาร วิธีทำ วัตถุดิบ เทคนิคการทำอาหาร โภชนาการ และการแนะนำเมนู
+ถ้าผู้ใช้ถามเรื่องอื่นที่ไม่เกี่ยวกับอาหาร ให้ปฏิเสธอย่างสุภาพ และชวนให้ถามเรื่องอาหารแทน
+ตอบเป็นภาษาเดียวกับที่ผู้ใช้ถาม กระชับ และอ่านง่าย
+`.trim();
+
 @Injectable()
 export class ChatService {
   private readonly client: OpenAI;
@@ -22,6 +29,7 @@ export class ChatService {
     try {
       const response = await this.client.responses.create({
         model: this.model,
+        instructions: INSTRUCTIONS,
         input: message,
       });
       return { message: response.output_text };

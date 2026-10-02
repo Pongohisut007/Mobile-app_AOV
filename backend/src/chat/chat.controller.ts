@@ -7,7 +7,7 @@ import { ChatMessageDto } from './dto/chat-message.dto';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  @UseGuards(JwtAuthGuard)
+  //@UseGuards(JwtAuthGuard)
   @Post()
   chat(@Body() dto: ChatMessageDto): Promise<{ message: string }> {
     return this.chatService.chat(dto.message);
