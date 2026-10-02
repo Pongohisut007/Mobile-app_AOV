@@ -56,52 +56,67 @@ class RecipeCommentTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(
-                        comment.userName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            comment.userName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          if (comment.createdAt != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                _formatDate(comment.createdAt!),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    if (comment.createdAt != null)
-                      Text(
-                        _formatDate(comment.createdAt!),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
                     if (isOwner)
-                      PopupMenuButton<String>(
-                        tooltip: 'จัดการความคิดเห็น',
-                        onSelected: (action) {
-                          if (action == 'edit') onEdit?.call();
-                          if (action == 'delete') onDelete?.call();
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit_outlined, size: 18),
-                                SizedBox(width: 8),
-                                Text('แก้ไข'),
-                              ],
+                      SizedBox.square(
+                        dimension: 32,
+                        child: PopupMenuButton<String>(
+                          tooltip: 'จัดการความคิดเห็น',
+                          padding: EdgeInsets.zero,
+                          iconSize: 18,
+                          icon: const Icon(Icons.more_horiz),
+                          onSelected: (action) {
+                            if (action == 'edit') onEdit?.call();
+                            if (action == 'delete') onDelete?.call();
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('แก้ไข'),
+                                ],
+                              ),
                             ),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline, size: 18),
-                                SizedBox(width: 8),
-                                Text('ลบ'),
-                              ],
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('ลบ'),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                   ],
                 ),
