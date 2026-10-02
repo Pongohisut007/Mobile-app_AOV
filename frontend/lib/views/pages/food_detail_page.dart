@@ -182,9 +182,6 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       child: const RecipeReviewSection(),
                     ),
 
-                  if (widget.scrollToComments)
-                    SizedBox(height: MediaQuery.sizeOf(context).height),
-
                   const SizedBox(height: 40),
                 ],
               ),
