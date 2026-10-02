@@ -127,9 +127,15 @@ export class RecipesService {
     options: FindRecipesOptions,
   ): void {
     if (options.search) {
-      query.andWhere("recipe.title ILIKE :search ESCAPE '\\'", {
-        search: `%${escapeLikeTerm(options.search)}%`,
-      });
+      const search = `%${escapeLikeTerm(options.search)}%`;
+      if (options.type === RecipeType.COMMUNITY) {
+        query.andWhere(
+          "(recipe.title ILIKE :search ESCAPE '\\' OR recipe.shortDescription ILIKE :search ESCAPE '\\')",
+          { search },
+        );
+      } else {
+        query.andWhere("recipe.title ILIKE :search ESCAPE '\\'", { search });
+      }
     }
 
     if (options.category) {

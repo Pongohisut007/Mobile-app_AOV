@@ -119,7 +119,11 @@ class _CommunityPageState extends State<CommunityPage> {
                                 FetchCommunityFoodsByCategoryEvent(selectedId));
                           } else {
                             foodBloc.add(
-                                SearchFoodEvent(query, categoryId: selectedId));
+                                SearchFoodEvent(
+                                  query,
+                                  categoryId: selectedId,
+                                  type: 'community',
+                                ));
                           }
                         },
                       ),
