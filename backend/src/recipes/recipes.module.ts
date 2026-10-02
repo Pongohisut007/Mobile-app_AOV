@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
+import { RecipeAccessModule } from '../recipe-access/recipe-access.module';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review } from '../reviews/entities/review.entity';
 import { RecipesController } from './recipes.controller';
@@ -21,6 +22,7 @@ import { Recipe } from './entities/recipe.entity';
       Review,
       RecipeComment,
     ]),
+    RecipeAccessModule,
   ],
   controllers: [RecipesController],
   providers: [RecipesService],

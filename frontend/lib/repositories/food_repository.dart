@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
 
 class FoodRepository {
@@ -129,7 +130,14 @@ class FoodRepository {
 
   Future<Food> _getFoodById(String url) async {
     debugPrint('Fetching food from: $url');
-    final response = await http.get(Uri.parse(url));
+    // แนบ token ถ้า login อยู่ สูตรที่ซื้อแล้วจะได้ขั้นตอนครบ (ไม่ login เห็นแค่ preview)
+    final token = await TokenStorage().readAccessToken();
+    final response = await http.get(
+      Uri.parse(url),
+      headers: token == null || token.trim().isEmpty
+          ? null
+          : {'Authorization': 'Bearer ${token.trim()}'},
+    );
 
     if (response.statusCode == 200) {
       final food = Food.fromJson(
