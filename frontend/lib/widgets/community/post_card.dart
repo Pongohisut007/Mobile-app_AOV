@@ -9,10 +9,7 @@ import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PostCard extends StatelessWidget {
-  const PostCard({
-    super.key,
-    required this.food,
-  });
+  const PostCard({super.key, required this.food});
 
   final Food food;
 
@@ -42,101 +39,102 @@ class PostCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => FoodDetailPage(
-                foodsId: food.idfoods,
-                showComments: true,
-              ),
+              builder: (_) =>
+                  FoodDetailPage(foodsId: food.idfoods, showComments: true),
             ),
           );
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // ── Header: รูปโปรไฟล์ + ชื่อ + เวลา ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
-            child: Row(
-              children: [
-                // รูปโปรไฟล์
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: (food.creatorAvatar != null &&
-                          food.creatorAvatar!.isNotEmpty)
-                      ? NetworkImage(food.creatorAvatar!)
-                      : null,
-                  child: (food.creatorAvatar == null ||
-                          food.creatorAvatar!.isEmpty)
-                      ? const Icon(Icons.person, size: 20, color: Colors.white)
-                      : null,
-                ),
-                const SizedBox(width: 10),
+            // ── Header: รูปโปรไฟล์ + ชื่อ + เวลา ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
+              child: Row(
+                children: [
+                  // รูปโปรไฟล์
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.grey.shade300,
+                    backgroundImage:
+                        (food.creatorAvatar != null &&
+                            food.creatorAvatar!.isNotEmpty)
+                        ? NetworkImage(food.creatorAvatar!)
+                        : null,
+                    child:
+                        (food.creatorAvatar == null ||
+                            food.creatorAvatar!.isEmpty)
+                        ? const Icon(
+                            Icons.person,
+                            size: 20,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
 
-                // ชื่อ + เวลา
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        food.creatorName ?? 'ผู้ใช้งาน',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (timeLabel.isNotEmpty)
+                  // ชื่อ + เวลา
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          timeLabel,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
+                          food.creatorName ?? 'ผู้ใช้งาน',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
                         ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── ชื่ออาหาร + หมวดหมู่ + คำอธิบาย ──
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (food.description.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    food.description,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13),
+                        if (timeLabel.isNotEmpty)
+                          Text(
+                            timeLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ],
-
-                const SizedBox(height: 12),
-
-                Container(
-                  height: 1,
-                  color: Colors.grey.shade300,
-                ),
-
-                const SizedBox(height: 8),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    _PostFavoriteButton(food: food),
-
-                    const SizedBox(width: 16),
-
-                    _PostCommentButton(food: food),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
+
+            // ── ชื่ออาหาร + หมวดหมู่ + คำอธิบาย ──
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (food.description.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      food.description,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+
+                  const SizedBox(height: 12),
+
+                  Container(height: 1, color: Colors.grey.shade300),
+
+                  const SizedBox(height: 8),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      _PostFavoriteButton(food: food),
+
+                      const SizedBox(width: 16),
+
+                      _PostCommentButton(food: food),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -165,7 +163,7 @@ class _PostCommentButtonState extends State<_PostCommentButton> {
     }
   }
 
-  void _incrementCount() => setState(() => _commentCount++);
+  void _setCommentCount(int count) => setState(() => _commentCount = count);
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +175,7 @@ class _PostCommentButtonState extends State<_PostCommentButton> {
           builder: (_) => FoodDetailPage(
             foodsId: widget.food.idfoods,
             scrollToComments: true,
-            onCommentSubmitted: _incrementCount,
+            onCommentCountChanged: _setCommentCount,
           ),
         ),
       ),
@@ -232,14 +230,16 @@ class _PostFavoriteButtonState extends State<_PostFavoriteButton> {
               : isFavorite;
         }
 
-        final favoriteDelta = _favoriteAtCountLoad == null ||
-                isFavorite == _favoriteAtCountLoad
+        final favoriteDelta =
+            _favoriteAtCountLoad == null || isFavorite == _favoriteAtCountLoad
             ? 0
             : isFavorite
             ? 1
             : -1;
-        final favoriteCount =
-            (widget.food.favoriteCount + favoriteDelta).clamp(0, 0x7fffffff);
+        final favoriteCount = (widget.food.favoriteCount + favoriteDelta).clamp(
+          0,
+          0x7fffffff,
+        );
 
         return IconButton(
           onPressed: state.isPending(recipeId)
@@ -252,9 +252,7 @@ class _PostFavoriteButtonState extends State<_PostFavoriteButton> {
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 40, minHeight: 36),
-          tooltip: isFavorite
-              ? 'เอาออกจากรายการโปรด'
-              : 'บันทึกลงรายการโปรด',
+          tooltip: isFavorite ? 'เอาออกจากรายการโปรด' : 'บันทึกลงรายการโปรด',
           icon: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

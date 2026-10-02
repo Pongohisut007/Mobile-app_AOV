@@ -1,5 +1,6 @@
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_state.dart';
+import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/repositories/recipe_comment_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -77,17 +78,32 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
 
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     try {
-      final page = await _repository.fetchComments(
-        recipeId,
-        page: state.page + 1,
-        limit: state.limit,
-      );
+      final visibleLimit = (state.page * state.limit).clamp(0, state.total);
+      final needsRefill = state.comments.length < visibleLimit;
+      final targetCount = needsRefill
+          ? visibleLimit
+          : ((state.page + 1) * state.limit).clamp(0, state.total);
+      final comments = needsRefill ? <RecipeComment>[] : [...state.comments];
+      var pageNumber = needsRefill ? 0 : state.page;
+      RecipeCommentPage? result;
+
+      while (comments.length < targetCount) {
+        result = await _repository.fetchComments(
+          recipeId,
+          page: pageNumber + 1,
+          limit: state.limit,
+        );
+        if (result.items.isEmpty) break;
+        comments.addAll(result.items);
+        pageNumber = result.page;
+      }
+
       emit(
         state.copyWith(
-          comments: [...state.comments, ...page.items],
-          total: page.total,
-          page: page.page,
-          limit: page.limit,
+          comments: comments,
+          total: result?.total ?? state.total,
+          page: result?.page ?? pageNumber,
+          limit: result?.limit ?? state.limit,
           isLoadingMore: false,
         ),
       );
@@ -110,6 +126,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
     emit(
       state.copyWith(
         submitStatus: RecipeCommentSubmitStatus.submitting,
+        mutationType: RecipeCommentMutationType.submit,
         clearError: true,
       ),
     );
@@ -172,6 +189,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
     emit(
       state.copyWith(
         mutationStatus: RecipeCommentMutationStatus.loading,
+        mutationType: RecipeCommentMutationType.edit,
         clearError: true,
       ),
     );
@@ -224,13 +242,50 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
     );
     try {
       await _repository.deleteComment(token, recipeId, event.commentId);
+      final totalAfterDelete = (state.total - 1).clamp(0, 0x7fffffff);
+      final targetCount = (state.page * state.limit).clamp(0, totalAfterDelete);
+      final comments = <RecipeComment>[];
+      var pageNumber = 0;
+      var refreshedTotal = totalAfterDelete;
+      var refreshedLimit = state.limit;
+
+      try {
+        while (comments.length < targetCount) {
+          final page = await _repository.fetchComments(
+            recipeId,
+            page: pageNumber + 1,
+            limit: state.limit,
+          );
+          if (page.items.isEmpty) break;
+          comments.addAll(page.items);
+          pageNumber = page.page;
+          refreshedTotal = page.total;
+          refreshedLimit = page.limit;
+        }
+      } on Exception catch (error) {
+        emit(
+          state.copyWith(
+            comments: state.comments
+                .where((comment) => comment.id != event.commentId)
+                .toList(growable: false),
+            total: totalAfterDelete,
+            mutationStatus: RecipeCommentMutationStatus.success,
+            mutationType: RecipeCommentMutationType.delete,
+            error: error.toString(),
+          ),
+        );
+        return;
+      }
+
       emit(
         state.copyWith(
-          comments: state.comments
-              .where((comment) => comment.id != event.commentId)
-              .toList(growable: false),
-          total: (state.total - 1).clamp(0, 0x7fffffff),
+          comments: comments,
+          total: refreshedTotal,
+          page: pageNumber,
+          limit: refreshedLimit,
           mutationStatus: RecipeCommentMutationStatus.success,
+          mutationType: RecipeCommentMutationType.delete,
+          clearError: true,
         ),
       );
     } on Exception catch (error) {

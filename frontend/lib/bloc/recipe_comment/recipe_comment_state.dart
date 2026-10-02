@@ -6,6 +6,8 @@ enum RecipeCommentSubmitStatus { idle, submitting, success, failure }
 
 enum RecipeCommentMutationStatus { idle, loading, success, failure }
 
+enum RecipeCommentMutationType { submit, edit, delete }
+
 class RecipeCommentState {
   const RecipeCommentState({
     this.status = RecipeCommentStatus.loading,
@@ -19,6 +21,7 @@ class RecipeCommentState {
     this.isLoadingMore = false,
     this.submitStatus = RecipeCommentSubmitStatus.idle,
     this.mutationStatus = RecipeCommentMutationStatus.idle,
+    this.mutationType,
     this.userId,
     this.error,
   });
@@ -34,10 +37,11 @@ class RecipeCommentState {
   final bool isLoadingMore;
   final RecipeCommentSubmitStatus submitStatus;
   final RecipeCommentMutationStatus mutationStatus;
+  final RecipeCommentMutationType? mutationType;
   final String? userId;
   final String? error;
 
-  bool get hasMore => page * limit < total;
+  bool get hasMore => comments.length < total;
   bool get isSubmitting => submitStatus == RecipeCommentSubmitStatus.submitting;
 
   RecipeCommentState copyWith({
@@ -52,6 +56,7 @@ class RecipeCommentState {
     bool? isLoadingMore,
     RecipeCommentSubmitStatus? submitStatus,
     RecipeCommentMutationStatus? mutationStatus,
+    RecipeCommentMutationType? mutationType,
     String? userId,
     String? error,
     bool clearError = false,
@@ -68,6 +73,7 @@ class RecipeCommentState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       submitStatus: submitStatus ?? this.submitStatus,
       mutationStatus: mutationStatus ?? this.mutationStatus,
+      mutationType: mutationType ?? this.mutationType,
       userId: userId ?? this.userId,
       error: clearError ? null : (error ?? this.error),
     );

@@ -13,12 +13,12 @@ class RecipeCommentSection extends StatelessWidget {
     super.key,
     this.headingKey,
     this.onReady,
-    this.onCommentSubmitted,
+    this.onCommentCountChanged,
   });
 
   final Key? headingKey;
   final VoidCallback? onReady;
-  final VoidCallback? onCommentSubmitted;
+  final ValueChanged<int>? onCommentCountChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +29,25 @@ class RecipeCommentSection extends StatelessWidget {
           (previous.submitStatus != current.submitStatus &&
               current.submitStatus == RecipeCommentSubmitStatus.success) ||
           (previous.mutationStatus != current.mutationStatus &&
-              current.mutationStatus == RecipeCommentMutationStatus.failure),
+              (current.mutationStatus == RecipeCommentMutationStatus.failure ||
+                  (current.mutationStatus ==
+                          RecipeCommentMutationStatus.success &&
+                      current.mutationType ==
+                          RecipeCommentMutationType.delete))),
       listener: (context, state) {
         if (state.status == RecipeCommentStatus.ready) onReady?.call();
-        if (state.submitStatus == RecipeCommentSubmitStatus.success) {
-          onCommentSubmitted?.call();
+        if (state.submitStatus == RecipeCommentSubmitStatus.success &&
+            state.mutationType == RecipeCommentMutationType.submit) {
+          onCommentCountChanged?.call(state.total);
         }
         if (state.mutationStatus == RecipeCommentMutationStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.error ?? 'ทำรายการไม่สำเร็จ')),
           );
+        }
+        if (state.mutationStatus == RecipeCommentMutationStatus.success &&
+            state.mutationType == RecipeCommentMutationType.delete) {
+          onCommentCountChanged?.call(state.total);
         }
       },
       builder: (context, state) {
@@ -162,9 +171,7 @@ class RecipeCommentSection extends StatelessWidget {
   Future<void> _editComment(BuildContext context, RecipeComment comment) async {
     final updatedText = await showDialog<String>(
       context: context,
-      builder: (_) => _EditRecipeCommentDialog(
-        initialComment: comment.comment,
-      ),
+      builder: (_) => _EditRecipeCommentDialog(initialComment: comment.comment),
     );
     if (updatedText == null || !context.mounted) return;
     context.read<RecipeCommentBloc>().add(

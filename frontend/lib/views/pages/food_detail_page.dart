@@ -25,13 +25,13 @@ class FoodDetailPage extends StatefulWidget {
     required this.foodsId,
     this.showComments = false,
     this.scrollToComments = false,
-    this.onCommentSubmitted,
+    this.onCommentCountChanged,
   });
 
   final String foodsId;
   final bool showComments;
   final bool scrollToComments;
-  final VoidCallback? onCommentSubmitted;
+  final ValueChanged<int>? onCommentCountChanged;
 
   @override
   State<FoodDetailPage> createState() => _FoodDetailPageState();
@@ -62,12 +62,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-        bottomNavigationBar: widget.showComments || widget.scrollToComments
+      bottomNavigationBar: widget.showComments || widget.scrollToComments
           ? null
-          : BottomBuyBar(
-              onCartPressed: () {},
-              onBuyPressed: () {},
-            ),
+          : BottomBuyBar(onCartPressed: () {}, onBuyPressed: () {}),
       body: FutureBuilder<Food>(
         future: _foodFuture,
         builder: (context, state) {
@@ -114,9 +111,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                   const SizedBox(height: 30),
 
-                  FoodDescription(
-                    description: food.description,
-                  ),
+                  FoodDescription(description: food.description),
 
                   const SizedBox(height: 28),
 
@@ -135,9 +130,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                           borderRadius: BorderRadius.circular(18),
                         ),
                       ),
-                      icon: const Icon(
-                        Icons.restaurant_menu_rounded,
-                      ),
+                      icon: const Icon(Icons.restaurant_menu_rounded),
                       label: const Text(
                         'เริ่มทำอาหาร',
                         style: TextStyle(
@@ -150,10 +143,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                   const SizedBox(height: 32),
 
-                  Divider(
-                    color: Colors.grey.shade200,
-                    height: 1,
-                  ),
+                  Divider(color: Colors.grey.shade200, height: 1),
 
                   const SizedBox(height: 28),
 
@@ -168,7 +158,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       child: RecipeCommentSection(
                         headingKey: _commentsTitleKey,
                         onReady: _scheduleScrollToComments,
-                        onCommentSubmitted: widget.onCommentSubmitted,
+                        onCommentCountChanged: widget.onCommentCountChanged,
                       ),
                     )
                   else
@@ -178,9 +168,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                           baseUrl: ApiConfig.apiBaseUrl,
                         ),
                         recipeId: food.idfoods,
-                      )..add(
-                          const RecipeReviewRequested(),
-                        ),
+                      )..add(const RecipeReviewRequested()),
                       child: const RecipeReviewSection(),
                     ),
 
