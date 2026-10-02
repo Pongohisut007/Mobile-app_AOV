@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from '../categories/entities/category.entity';
+import { Favorite } from '../favorites/entities/favorite.entity';
+import { Review } from '../reviews/entities/review.entity';
 import { RecipesController } from './recipes.controller';
 import { RecipesService } from './recipes.service';
 import { RecipeContent } from './entities/recipe-content.entity';
@@ -9,7 +11,14 @@ import { Recipe } from './entities/recipe.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Recipe, RecipeSection, RecipeContent, Category]),
+    TypeOrmModule.forFeature([
+      Recipe,
+      RecipeSection,
+      RecipeContent,
+      Category,
+      Favorite,
+      Review,
+    ]),
   ],
   controllers: [RecipesController],
   providers: [RecipesService],

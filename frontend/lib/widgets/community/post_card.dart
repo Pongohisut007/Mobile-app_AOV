@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
+import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
+import 'package:flutter_application_1/bloc/favorite/favorite_state.dart';
 import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -118,15 +124,7 @@ class PostCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        print('Like');
-                      },
-                      child: const Icon(
-                        Icons.favorite_border,
-                        size: 22,
-                      ),
-                    ),
+                    _PostFavoriteButton(food: food),
 
                     const SizedBox(width: 16),
 
@@ -134,9 +132,13 @@ class PostCard extends StatelessWidget {
                       onTap: () {
                         print('Comment');
                       },
-                      child: const Icon(
-                        Icons.comment_outlined,
-                        size: 22,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.comment_outlined, size: 22),
+                          const SizedBox(width: 5),
+                          Text('${food.reviewCount}'),
+                        ],
                       ),
                     ),
                   ],
@@ -149,4 +151,95 @@ class PostCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PostFavoriteButton extends StatefulWidget {
+  const _PostFavoriteButton({required this.food});
+
+  final Food food;
+
+  @override
+  State<_PostFavoriteButton> createState() => _PostFavoriteButtonState();
+}
+
+class _PostFavoriteButtonState extends State<_PostFavoriteButton> {
+  bool? _favoriteAtCountLoad;
+
+  @override
+  void didUpdateWidget(covariant _PostFavoriteButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.food.idfoods != widget.food.idfoods ||
+        oldWidget.food.favoriteCount != widget.food.favoriteCount) {
+      _favoriteAtCountLoad = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recipeId = widget.food.idfoods;
+
+    return BlocBuilder<FavoriteBloc, FavoriteState>(
+      buildWhen: (previous, current) =>
+          previous.isFavorite(recipeId) != current.isFavorite(recipeId) ||
+          previous.isPending(recipeId) != current.isPending(recipeId) ||
+          previous.status != current.status,
+      builder: (context, state) {
+        final isFavorite = state.isFavorite(recipeId);
+        if (_favoriteAtCountLoad == null &&
+            state.status == FavoriteStatus.ready) {
+          _favoriteAtCountLoad = state.isPending(recipeId)
+              ? !isFavorite
+              : isFavorite;
+        }
+
+        final favoriteDelta = _favoriteAtCountLoad == null ||
+                isFavorite == _favoriteAtCountLoad
+            ? 0
+            : isFavorite
+            ? 1
+            : -1;
+        final favoriteCount =
+            (widget.food.favoriteCount + favoriteDelta).clamp(0, 0x7fffffff);
+
+        return IconButton(
+          onPressed: state.isPending(recipeId)
+              ? null
+              : () async {
+                  final favoriteBloc = context.read<FavoriteBloc>();
+                  if (await _requireSignIn(context)) return;
+                  favoriteBloc.add(FavoriteToggled(recipeId));
+                },
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 36),
+          tooltip: isFavorite
+              ? 'เอาออกจากรายการโปรด'
+              : 'บันทึกลงรายการโปรด',
+          icon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                size: 22,
+                color: isFavorite ? Colors.redAccent : Colors.grey.shade700,
+              ),
+              const SizedBox(width: 5),
+              Text('$favoriteCount'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+Future<bool> _requireSignIn(BuildContext context) async {
+  final navigator = Navigator.of(context);
+  final accessToken = await TokenStorage().readAccessToken();
+
+  if (accessToken != null && accessToken.trim().isNotEmpty) return false;
+  if (!context.mounted) return true;
+
+  navigator.pushNamed(AppRoutes.login);
+  return true;
 }

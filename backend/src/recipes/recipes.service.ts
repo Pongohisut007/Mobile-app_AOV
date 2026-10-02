@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
+import { Favorite } from '../favorites/entities/favorite.entity';
+import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
@@ -38,19 +40,25 @@ export class RecipesService {
 
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+
+    @InjectRepository(Favorite)
+    private readonly favoriteRepository: Repository<Favorite>,
+
+    @InjectRepository(Review)
+    private readonly reviewRepository: Repository<Review>,
   ) {}
 
-  findAll(options: FindRecipesOptions = {}): Promise<Recipe[]> {
+  async findAll(options: FindRecipesOptions = {}): Promise<Recipe[]> {
     const query = this.recipeRepository
       .createQueryBuilder('recipe')
       .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'category')
       .orderBy('recipe.createdAt', 'DESC');
 
-//system search 
+    //system search
     this.applyFilters(query, options);
 
-    return query.getMany();
+    return this.attachRecipeCounts(await query.getMany());
   }
 
   // ค้นหาตามชื่ออาหาร พร้อมแบ่งหน้าและเรียงตามความใกล้เคียง
@@ -100,7 +108,7 @@ export class RecipesService {
       .filter((recipe): recipe is Recipe => recipe !== undefined);
 
     return {
-      data,
+      data: await this.attachRecipeCounts(data),
       total,
       page,
       limit,
@@ -133,8 +141,8 @@ export class RecipesService {
         { category: options.category },
       );
     }
-    
-// system search
+
+    // system search
     if (options.categoryId) {
       // ใช้ alias คนละชุดกับ options.category กันชนกันเวลากรองพร้อมกัน
       query.andWhere(
@@ -182,7 +190,45 @@ export class RecipesService {
       section.contents.sort((left, right) => left.sortOrder - right.sortOrder);
     }
 
-    return recipe;
+    const [recipeWithCounts] = await this.attachRecipeCounts([recipe]);
+    return recipeWithCounts;
+  }
+
+  private async attachRecipeCounts(recipes: Recipe[]): Promise<Recipe[]> {
+    if (recipes.length === 0) return recipes;
+
+    const recipeIds = [...new Set(recipes.map((recipe) => recipe.id))];
+    const [favoriteRows, reviewRows] = await Promise.all([
+      this.favoriteRepository
+        .createQueryBuilder('favorite')
+        .select('favorite.recipeId', 'recipeId')
+        .addSelect('COUNT(*)', 'count')
+        .where('favorite.recipeId IN (:...recipeIds)', { recipeIds })
+        .groupBy('favorite.recipeId')
+        .getRawMany<{ recipeId: string; count: string }>(),
+      this.reviewRepository
+        .createQueryBuilder('review')
+        .select('review.recipeId', 'recipeId')
+        .addSelect('COUNT(*)', 'count')
+        .where('review.recipeId IN (:...recipeIds)', { recipeIds })
+        .andWhere('review.status = :status', { status: ReviewStatus.PUBLISHED })
+        .groupBy('review.recipeId')
+        .getRawMany<{ recipeId: string; count: string }>(),
+    ]);
+
+    const favoriteCounts = new Map(
+      favoriteRows.map((row) => [row.recipeId, Number(row.count)]),
+    );
+    const reviewCounts = new Map(
+      reviewRows.map((row) => [row.recipeId, Number(row.count)]),
+    );
+
+    for (const recipe of recipes) {
+      recipe.favoriteCount = favoriteCounts.get(recipe.id) ?? 0;
+      recipe.reviewCount = reviewCounts.get(recipe.id) ?? 0;
+    }
+
+    return recipes;
   }
 
   async create(dto: CreateRecipeDto): Promise<Recipe> {
