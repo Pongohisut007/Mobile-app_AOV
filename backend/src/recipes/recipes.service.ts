@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
+import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
@@ -50,6 +51,8 @@ export class RecipesService {
 
     @InjectRepository(RecipeComment)
     private readonly commentRepository: Repository<RecipeComment>,
+
+    private readonly recipeAccessService: RecipeAccessService,
   ) {}
 
   async findAll(options: FindRecipesOptions = {}): Promise<Recipe[]> {
@@ -196,6 +199,30 @@ export class RecipesService {
 
     const [recipeWithCounts] = await this.attachRecipeCounts([recipe]);
     return recipeWithCounts;
+  }
+
+  /**
+   * สำหรับ GET /recipes/:id
+   * สูตร official ที่ยังไม่ซื้อ จะเห็นเฉพาะ section ที่เป็น preview
+   */
+  async findOneForViewer(id: string, userId?: string): Promise<Recipe> {
+    const recipe = await this.findOne(id);
+    if (await this.canViewFullRecipe(recipe, userId)) return recipe;
+
+    recipe.sections = recipe.sections.filter((section) => section.isPreview);
+    return recipe;
+  }
+
+  private async canViewFullRecipe(
+    recipe: Recipe,
+    userId?: string,
+  ): Promise<boolean> {
+    if (recipe.type === RecipeType.COMMUNITY) return true;
+    if (!userId) return false;
+    return (
+      recipe.creatorId === userId ||
+      this.recipeAccessService.hasActiveAccess(userId, recipe.id)
+    );
   }
 
   private async attachRecipeCounts(recipes: Recipe[]): Promise<Recipe[]> {

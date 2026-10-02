@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BannerModule } from './banner/banner.module';
 import { CartModule } from './cart/cart.module';
+import { ChatModule } from './chat/chat.module';
 import { CategoriesModule } from './categories/categories.module';
 import { DatabaseModule } from './database/database.module';
 import { FavoritesModule } from './favorites/favorites.module';
@@ -44,6 +45,7 @@ import r2ClientConfig from '../config/r2.client.config';
     ReviewsModule,
     FavoritesModule,
     CartModule,
+    ChatModule,
     UploadsModule,
     // FoodsModule,
   ],

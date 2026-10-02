@@ -8,7 +8,10 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
@@ -44,9 +47,14 @@ export class RecipesController {
     return this.recipesService.search(dto);
   }
 
+  // login ไม่บังคับ: ถ้าแนบ token มาและซื้อสูตรแล้ว จะได้ขั้นตอนครบ
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Recipe> {
-    return this.recipesService.findOne(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('id') userId?: string,
+  ): Promise<Recipe> {
+    return this.recipesService.findOneForViewer(id, userId);
   }
 
   @Post()
