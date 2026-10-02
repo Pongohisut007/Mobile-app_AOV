@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
 
 class FoodRepository {
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  static const String baseUrl = ApiConfig.apiBaseUrl;
   //static const String baseUrl = 'http://localhost:3000';
 
   // =========================== เรียกใช้ตรงนี้ ==================================
@@ -73,6 +75,27 @@ class FoodRepository {
   Future<Food> fetchFoodById(String id) async {
     final url = '$baseUrl/recipes/$id';
     return _getFoodById(url);
+  }
+
+  Future<void> createCommunityFood(Map<String, dynamic> recipe) async {
+    final token = await TokenStorage().readAccessToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null && token.trim().isNotEmpty) {
+      headers['Authorization'] = 'Bearer ${token.trim()}';
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/recipes'),
+      headers: headers,
+      body: jsonEncode(recipe),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = json.decode(response.body);
+      final message = body is Map<String, dynamic>
+          ? body['message']?.toString()
+          : null;
+      throw Exception(message ?? 'สร้างสูตรอาหารไม่สำเร็จ');
+    }
   }
 
   // ============================ อ่านฟังก์ชั่น ==============================

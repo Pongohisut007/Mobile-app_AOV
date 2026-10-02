@@ -6,6 +6,7 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/widgets/community/category_selector.dart';
 import 'package:flutter_application_1/widgets/community/post_card.dart';
 import 'package:flutter_application_1/widgets/home/search_bar.dart';
+import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
@@ -79,8 +80,24 @@ class _CommunityPageState extends State<CommunityPage> {
                               ),
                             ),
                             IconButton(
-                              onPressed: () {
-                                // ทำสิ่งที่ต้องการเมื่อกด +
+                              onPressed: () async {
+                                final foodBloc = context.read<FoodBloc>();
+                                final categoryBloc =
+                                    context.read<CategoryBloc>();
+                                final created = await Navigator.of(context)
+                                    .push<bool>(
+                                      MaterialPageRoute<bool>(
+                                        builder: (_) =>
+                                          CreateFoodcardPage(
+                                            categories:
+                                              categoryState.categories,
+                                          ),
+                                      ),
+                                    );
+                                if (!mounted || created != true) return;
+                                foodBloc.add(FetchCommunityFoodsByCategoryEvent(
+                                  categoryBloc.state.selectedId,
+                                ));
                               },
                               icon: const Icon(Icons.add),
                               iconSize: isIpad ? 30 : 24,
