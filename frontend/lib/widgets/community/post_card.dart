@@ -44,7 +44,6 @@ class PostCard extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => FoodDetailPage(
                 foodsId: food.idfoods,
-                scrollToComments: true,
               ),
             ),
           );

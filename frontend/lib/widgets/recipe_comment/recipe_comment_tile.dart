@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
+import 'package:flutter_application_1/widgets/recipe_comment/comment_text.dart';
 
 class RecipeCommentTile extends StatelessWidget {
   const RecipeCommentTile({super.key, required this.comment});
@@ -66,9 +67,8 @@ class RecipeCommentTile extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  comment.comment,
-                  style: TextStyle(color: Colors.grey.shade800, height: 1.5),
+                CommentText(
+                  comment: comment.comment,
                 ),
               ],
             ),
