@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_bloc.dart';
+import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
 import 'package:flutter_application_1/bloc/recipe_review/recipe_review_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_review/recipe_review_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
+import 'package:flutter_application_1/repositories/recipe_comment_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_review_repository.dart';
 import 'package:flutter_application_1/views/pages/cooking_steps_page.dart';
 import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
@@ -12,30 +15,46 @@ import 'package:flutter_application_1/widgets/food_detail/food_description.dart'
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
+import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_section.dart';
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FoodDetailPage extends StatefulWidget {
-  const FoodDetailPage({super.key, required this.foodsId});
+  const FoodDetailPage({
+    super.key,
+    required this.foodsId,
+    this.showComments = false,
+    this.scrollToComments = false,
+    this.onCommentCountChanged,
+  });
 
   final String foodsId;
+  final bool showComments;
+  final bool scrollToComments;
+  final ValueChanged<int>? onCommentCountChanged;
 
   @override
   State<FoodDetailPage> createState() => _FoodDetailPageState();
 }
 
 class _FoodDetailPageState extends State<FoodDetailPage> {
+  final GlobalKey _commentsTitleKey = GlobalKey();
+
   late Future<Food> _foodFuture;
+
+  bool _commentScrollScheduled = false;
 
   @override
   void initState() {
     super.initState();
+
     _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
   }
 
   void _reload() {
     setState(() {
       _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+      _commentScrollScheduled = false;
     });
   }
 
@@ -43,10 +62,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: BottomBuyBar(
-        onCartPressed: () {},
-        onBuyPressed: () {},
-      ),
+      bottomNavigationBar: widget.showComments || widget.scrollToComments
+          ? null
+          : BottomBuyBar(onCartPressed: () {}, onBuyPressed: () {}),
       body: FutureBuilder<Food>(
         future: _foodFuture,
         builder: (context, state) {
@@ -73,6 +91,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
         child: Column(
           children: [
             FoodDetailHeader(food: food),
+
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -85,13 +104,17 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 33),
-                  //
+
                   FoodInfoCard(food: food),
+
                   const SizedBox(height: 30),
-                  //
+
                   FoodDescription(description: food.description),
+
                   const SizedBox(height: 28),
+
                   SizedBox(
                     width: double.infinity,
                     height: 56,
@@ -117,17 +140,38 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 32),
+
                   Divider(color: Colors.grey.shade200, height: 1),
+
                   const SizedBox(height: 28),
-                  // หน้านี้ถูกเปิดจากหลายที่ จึงสร้าง bloc ของรีวิวไว้ที่นี่เลย
-                  BlocProvider(
-                    create: (_) => RecipeReviewBloc(
-                      HttpRecipeReviewRepository(baseUrl: ApiConfig.apiBaseUrl),
-                      recipeId: food.idfoods,
-                    )..add(const RecipeReviewRequested()),
-                    child: const RecipeReviewSection(),
-                  ),
+
+                  if (widget.showComments || widget.scrollToComments)
+                    BlocProvider(
+                      create: (_) => RecipeCommentBloc(
+                        HttpRecipeCommentRepository(
+                          baseUrl: ApiConfig.apiBaseUrl,
+                        ),
+                        recipeId: food.idfoods,
+                      )..add(const RecipeCommentsRequested()),
+                      child: RecipeCommentSection(
+                        headingKey: _commentsTitleKey,
+                        onReady: _scheduleScrollToComments,
+                        onCommentCountChanged: widget.onCommentCountChanged,
+                      ),
+                    )
+                  else
+                    BlocProvider(
+                      create: (_) => RecipeReviewBloc(
+                        HttpRecipeReviewRepository(
+                          baseUrl: ApiConfig.apiBaseUrl,
+                        ),
+                        recipeId: food.idfoods,
+                      )..add(const RecipeReviewRequested()),
+                      child: const RecipeReviewSection(),
+                    ),
+
                   const SizedBox(height: 40),
                 ],
               ),
@@ -136,5 +180,31 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
         ),
       ),
     );
+  }
+
+  void _scheduleScrollToComments() {
+    if (!widget.scrollToComments) return;
+
+    if (_commentScrollScheduled) return;
+
+    _commentScrollScheduled = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final targetContext = _commentsTitleKey.currentContext;
+
+      if (targetContext == null) {
+        _commentScrollScheduled = false;
+        return;
+      }
+
+      Scrollable.ensureVisible(
+        targetContext,
+        alignment: 0.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 }

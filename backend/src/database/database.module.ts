@@ -12,6 +12,7 @@ import { OrderItem } from '../orders/entities/order-item.entity';
 import { Order } from '../orders/entities/order.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { RecipeAccess } from '../recipe-access/entities/recipe-access.entity';
+import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { RecipeContent } from '../recipes/entities/recipe-content.entity';
 import { RecipeSection } from '../recipes/entities/recipe-section.entity';
 import { Recipe } from '../recipes/entities/recipe.entity';
@@ -30,6 +31,7 @@ const entities = [
   OrderItem,
   Payment,
   RecipeAccess,
+  RecipeComment,
   Review,
   Favorite,
   Banner,

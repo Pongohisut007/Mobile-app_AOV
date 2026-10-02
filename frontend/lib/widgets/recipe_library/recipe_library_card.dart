@@ -28,29 +28,28 @@ class RecipeLibraryCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   _RecipeImage(url: recipe.coverImageUrl),
-                  if (recipe.status == 'draft')
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ProfileColors.ink,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'DRAFT',
-                          style: TextStyle(
-                            color: ProfileColors.accent,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                          ),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ProfileColors.ink,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        recipe.type.toUpperCase(),
+                        style: TextStyle(
+                          color: ProfileColors.accent,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

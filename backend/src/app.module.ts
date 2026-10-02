@@ -15,6 +15,7 @@ import { IapModule } from './iap/iap.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { RecipeAccessModule } from './recipe-access/recipe-access.module';
+import { RecipeCommentsModule } from './recipe-comments/recipe-comments.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -39,6 +40,7 @@ import r2ClientConfig from '../config/r2.client.config';
     OrdersModule,
     PaymentsModule,
     RecipeAccessModule,
+    RecipeCommentsModule,
     ReviewsModule,
     FavoritesModule,
     CartModule,

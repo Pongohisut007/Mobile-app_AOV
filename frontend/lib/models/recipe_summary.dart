@@ -6,6 +6,7 @@ class RecipeSummary {
     required this.coverImageUrl,
     required this.price,
     required this.status,
+    required this.type,
     required this.categoryNames,
   });
 
@@ -15,6 +16,7 @@ class RecipeSummary {
   final String? coverImageUrl;
   final double price;
   final String status;
+  final String type;
   final List<String> categoryNames;
 
   factory RecipeSummary.fromJson(
@@ -30,6 +32,7 @@ class RecipeSummary {
       coverImageUrl: _resolveUrl(json['coverImageUrl'], apiBaseUrl),
       price: double.tryParse(json['price'].toString()) ?? 0,
       status: json['status'] as String? ?? 'draft',
+      type: json['type'] as String,
       categoryNames: categories is List
           ? categories
                 .whereType<Map<String, dynamic>>()
