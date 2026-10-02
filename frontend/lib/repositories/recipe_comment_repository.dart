@@ -5,10 +5,7 @@ import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:http/http.dart' as http;
 
 class RecipeCommentPermission {
-  const RecipeCommentPermission({
-    required this.canComment,
-    this.userAvatarUrl,
-  });
+  const RecipeCommentPermission({required this.canComment, this.userAvatarUrl});
 
   final bool canComment;
   final String? userAvatarUrl;
@@ -38,6 +35,19 @@ abstract interface class RecipeCommentRepository {
     String recipeId,
     String comment,
   );
+
+  Future<RecipeComment> updateComment(
+    String accessToken,
+    String recipeId,
+    String commentId,
+    String comment,
+  );
+
+  Future<void> deleteComment(
+    String accessToken,
+    String recipeId,
+    String commentId,
+  );
 }
 
 class HttpRecipeCommentRepository implements RecipeCommentRepository {
@@ -52,10 +62,12 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
   final http.Client _client;
   final Duration requestTimeout;
 
-  Uri _commentsUri(String recipeId, [String suffix = '']) =>
-      Uri.parse(
-        '$_baseUrl/recipes/${Uri.encodeComponent(recipeId)}/comments$suffix',
-      );
+  Uri _commentsUri(String recipeId, [String suffix = '']) => Uri.parse(
+    '$_baseUrl/recipes/${Uri.encodeComponent(recipeId)}/comments$suffix',
+  );
+
+  Uri _commentUri(String recipeId, String commentId) =>
+      _commentsUri(recipeId, '/${Uri.encodeComponent(commentId)}');
 
   @override
   Future<RecipeCommentPage> fetchComments(
@@ -63,9 +75,9 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
     int page = 1,
     int limit = 3,
   }) async {
-    final uri = _commentsUri(recipeId).replace(
-      queryParameters: {'page': '$page', 'limit': '$limit'},
-    );
+    final uri = _commentsUri(
+      recipeId,
+    ).replace(queryParameters: {'page': '$page', 'limit': '$limit'});
     final decoded = await _send(() => _client.get(uri), 'load comments');
     if (decoded is! Map<String, dynamic>) {
       throw const RecipeCommentException('Backend returned an invalid list.');
@@ -106,11 +118,54 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
         body: jsonEncode({'comment': comment.trim()}),
       ),
       'save comment',
+      forbiddenMessage: 'ต้องซื้อสูตรนี้ก่อนจึงจะแสดงความคิดเห็นได้',
     );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeCommentException('Backend returned an invalid comment.');
+      throw const RecipeCommentException(
+        'Backend returned an invalid comment.',
+      );
     }
     return RecipeComment.fromJson(decoded);
+  }
+
+  @override
+  Future<RecipeComment> updateComment(
+    String accessToken,
+    String recipeId,
+    String commentId,
+    String comment,
+  ) async {
+    final decoded = await _send(
+      () => _client.patch(
+        _commentUri(recipeId, commentId),
+        headers: _headers(accessToken),
+        body: jsonEncode({'comment': comment.trim()}),
+      ),
+      'update comment',
+      forbiddenMessage: 'แก้ไขได้เฉพาะความคิดเห็นของตัวเอง',
+    );
+    if (decoded is! Map<String, dynamic>) {
+      throw const RecipeCommentException(
+        'Backend returned an invalid comment.',
+      );
+    }
+    return RecipeComment.fromJson(decoded);
+  }
+
+  @override
+  Future<void> deleteComment(
+    String accessToken,
+    String recipeId,
+    String commentId,
+  ) async {
+    await _send(
+      () => _client.delete(
+        _commentUri(recipeId, commentId),
+        headers: _headers(accessToken),
+      ),
+      'delete comment',
+      forbiddenMessage: 'ลบได้เฉพาะความคิดเห็นของตัวเอง',
+    );
   }
 
   Map<String, String> _headers(String accessToken) {
@@ -126,8 +181,9 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
 
   Future<Object?> _send(
     Future<http.Response> Function() request,
-    String action,
-  ) async {
+    String action, {
+    String? forbiddenMessage,
+  }) async {
     try {
       final response = await request().timeout(requestTimeout);
       if (response.statusCode == 401) {
@@ -136,8 +192,8 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
         );
       }
       if (response.statusCode == 403) {
-        throw const RecipeCommentException(
-          'ต้องซื้อสูตรนี้ก่อนจึงจะแสดงความคิดเห็นได้',
+        throw RecipeCommentException(
+          forbiddenMessage ?? 'You do not have permission to $action.',
         );
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {

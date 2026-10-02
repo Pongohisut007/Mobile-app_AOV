@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Query,
@@ -48,5 +50,26 @@ export class RecipeCommentsController {
     @Body() dto: CreateRecipeCommentDto,
   ): Promise<RecipeCommentView> {
     return this.commentsService.create(recipeId, userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':commentId')
+  update(
+    @Param('recipeId', ParseUUIDPipe) recipeId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateRecipeCommentDto,
+  ): Promise<RecipeCommentView> {
+    return this.commentsService.update(recipeId, commentId, userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':commentId')
+  remove(
+    @Param('recipeId', ParseUUIDPipe) recipeId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+    @CurrentUser('id') userId: string,
+  ): Promise<void> {
+    return this.commentsService.remove(recipeId, commentId, userId);
   }
 }

@@ -112,6 +112,48 @@ export class RecipeCommentsService {
     return this.toView(created);
   }
 
+  async update(
+    recipeId: string,
+    commentId: string,
+    userId: string,
+    dto: CreateRecipeCommentDto,
+  ): Promise<RecipeCommentView> {
+    const comment = await this.findOwnedComment(recipeId, commentId, userId);
+    const text = dto.comment.trim();
+    if (!text) throw new BadRequestException('Comment cannot be empty');
+
+    comment.comment = text;
+    const updated = await this.commentRepository.save(comment);
+    return this.toView(updated);
+  }
+
+  async remove(
+    recipeId: string,
+    commentId: string,
+    userId: string,
+  ): Promise<void> {
+    const comment = await this.findOwnedComment(recipeId, commentId, userId);
+    await this.commentRepository.remove(comment);
+  }
+
+  private async findOwnedComment(
+    recipeId: string,
+    commentId: string,
+    userId: string,
+  ): Promise<RecipeComment> {
+    const comment = await this.commentRepository.findOne({
+      where: { id: commentId, recipeId },
+      relations: { user: true },
+    });
+    if (!comment) {
+      throw new NotFoundException(`Comment with id ${commentId} not found`);
+    }
+    if (comment.userId !== userId) {
+      throw new ForbiddenException('You can only change your own comments');
+    }
+    return comment;
+  }
+
   private async getRecipe(recipeId: string): Promise<Recipe> {
     const recipe = await this.recipeRepository.findOne({
       where: { id: recipeId },

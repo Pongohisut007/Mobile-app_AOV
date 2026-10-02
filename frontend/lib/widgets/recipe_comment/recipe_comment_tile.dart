@@ -5,9 +5,18 @@ import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dar
 import 'package:flutter_application_1/widgets/recipe_comment/comment_text.dart';
 
 class RecipeCommentTile extends StatelessWidget {
-  const RecipeCommentTile({super.key, required this.comment});
+  const RecipeCommentTile({
+    super.key,
+    required this.comment,
+    this.isOwner = false,
+    this.onEdit,
+    this.onDelete,
+  });
 
   final RecipeComment comment;
+  final bool isOwner;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +73,40 @@ class RecipeCommentTile extends StatelessWidget {
                           color: Colors.grey.shade500,
                         ),
                       ),
+                    if (isOwner)
+                      PopupMenuButton<String>(
+                        tooltip: 'จัดการความคิดเห็น',
+                        onSelected: (action) {
+                          if (action == 'edit') onEdit?.call();
+                          if (action == 'delete') onDelete?.call();
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined, size: 18),
+                                SizedBox(width: 8),
+                                Text('แก้ไข'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline, size: 18),
+                                SizedBox(width: 8),
+                                Text('ลบ'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                CommentText(
-                  comment: comment.comment,
-                ),
+                CommentText(comment: comment.comment),
               ],
             ),
           ),

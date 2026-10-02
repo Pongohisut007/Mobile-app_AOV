@@ -4,6 +4,7 @@ class RecipeComment {
     required this.comment,
     required this.createdAt,
     required this.userName,
+    required this.userId,
     this.userAvatarUrl,
   });
 
@@ -11,7 +12,19 @@ class RecipeComment {
   final String comment;
   final DateTime? createdAt;
   final String userName;
+  final String userId;
   final String? userAvatarUrl;
+
+  RecipeComment copyWith({String? comment}) {
+    return RecipeComment(
+      id: id,
+      comment: comment ?? this.comment,
+      createdAt: createdAt,
+      userName: userName,
+      userId: userId,
+      userAvatarUrl: userAvatarUrl,
+    );
+  }
 
   factory RecipeComment.fromJson(Map<String, dynamic> json) {
     final user = json['user'] as Map<String, dynamic>? ?? const {};
@@ -22,6 +35,7 @@ class RecipeComment {
         json['createdAt'] as String? ?? '',
       )?.toLocal(),
       userName: user['displayName'] as String? ?? 'ผู้ใช้',
+      userId: user['id']?.toString() ?? '',
       userAvatarUrl: user['avatarUrl'] as String?,
     );
   }

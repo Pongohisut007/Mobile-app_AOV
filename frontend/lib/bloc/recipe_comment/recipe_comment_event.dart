@@ -15,3 +15,16 @@ final class RecipeCommentSubmitted extends RecipeCommentEvent {
 
   final String comment;
 }
+
+final class RecipeCommentUpdated extends RecipeCommentEvent {
+  const RecipeCommentUpdated(this.commentId, this.comment);
+
+  final String commentId;
+  final String comment;
+}
+
+final class RecipeCommentDeleted extends RecipeCommentEvent {
+  const RecipeCommentDeleted(this.commentId);
+
+  final String commentId;
+}

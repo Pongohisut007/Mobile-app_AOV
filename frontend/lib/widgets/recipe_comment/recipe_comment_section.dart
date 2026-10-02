@@ -3,6 +3,7 @@ import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_bloc.da
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_state.dart';
 import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_tile.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,11 +27,18 @@ class RecipeCommentSection extends StatelessWidget {
           (previous.status != current.status &&
               current.status == RecipeCommentStatus.ready) ||
           (previous.submitStatus != current.submitStatus &&
-              current.submitStatus == RecipeCommentSubmitStatus.success),
-      listener: (_, state) {
+              current.submitStatus == RecipeCommentSubmitStatus.success) ||
+          (previous.mutationStatus != current.mutationStatus &&
+              current.mutationStatus == RecipeCommentMutationStatus.failure),
+      listener: (context, state) {
         if (state.status == RecipeCommentStatus.ready) onReady?.call();
         if (state.submitStatus == RecipeCommentSubmitStatus.success) {
           onCommentSubmitted?.call();
+        }
+        if (state.mutationStatus == RecipeCommentMutationStatus.failure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error ?? 'ทำรายการไม่สำเร็จ')),
+          );
         }
       },
       builder: (context, state) {
@@ -110,7 +118,12 @@ class RecipeCommentSection extends StatelessWidget {
                 )
               else ...[
                 for (final comment in state.comments) ...[
-                  RecipeCommentTile(comment: comment),
+                  RecipeCommentTile(
+                    comment: comment,
+                    isOwner: comment.userId == state.userId,
+                    onEdit: () => _editComment(context, comment),
+                    onDelete: () => _confirmDelete(context, comment),
+                  ),
                   const SizedBox(height: 10),
                 ],
                 if (state.hasMore || state.isLoadingMore)
@@ -145,6 +158,100 @@ class RecipeCommentSection extends StatelessWidget {
       },
     );
   }
+
+  Future<void> _editComment(BuildContext context, RecipeComment comment) async {
+    final updatedText = await showDialog<String>(
+      context: context,
+      builder: (_) => _EditRecipeCommentDialog(
+        initialComment: comment.comment,
+      ),
+    );
+    if (updatedText == null || !context.mounted) return;
+    context.read<RecipeCommentBloc>().add(
+      RecipeCommentUpdated(comment.id, updatedText),
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    RecipeComment comment,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ลบความคิดเห็น'),
+        content: const Text('ต้องการลบความคิดเห็นนี้ใช่ไหม'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('ลบ'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    context.read<RecipeCommentBloc>().add(RecipeCommentDeleted(comment.id));
+  }
+}
+
+class _EditRecipeCommentDialog extends StatefulWidget {
+  const _EditRecipeCommentDialog({required this.initialComment});
+
+  final String initialComment;
+
+  @override
+  State<_EditRecipeCommentDialog> createState() =>
+      _EditRecipeCommentDialogState();
+}
+
+class _EditRecipeCommentDialogState extends State<_EditRecipeCommentDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialComment);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('แก้ไขความคิดเห็น'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: 1000,
+        maxLines: 4,
+        decoration: const InputDecoration(
+          hintText: 'เขียนความคิดเห็น',
+          alignLabelWithHint: true,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('ยกเลิก'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final text = _controller.text.trim();
+            if (text.isNotEmpty) Navigator.pop(context, text);
+          },
+          child: const Text('บันทึก'),
+        ),
+      ],
+    );
+  }
 }
 
 class _InlineCommentComposer extends StatefulWidget {
@@ -161,8 +268,7 @@ class _InlineCommentComposer extends StatefulWidget {
   final ValueChanged<String> onSubmit;
 
   @override
-  State<_InlineCommentComposer> createState() =>
-      _InlineCommentComposerState();
+  State<_InlineCommentComposer> createState() => _InlineCommentComposerState();
 }
 
 class _InlineCommentComposerState extends State<_InlineCommentComposer> {
@@ -205,8 +311,10 @@ class _InlineCommentComposerState extends State<_InlineCommentComposer> {
   @override
   Widget build(BuildContext context) {
     final hasText = _controller.text.trim().isNotEmpty;
-    final resolvedAvatarUrl =
-        _resolveAvatarUrl(widget.avatarUrl, ApiConfig.apiBaseUrl);
+    final resolvedAvatarUrl = _resolveAvatarUrl(
+      widget.avatarUrl,
+      ApiConfig.apiBaseUrl,
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,11 +323,11 @@ class _InlineCommentComposerState extends State<_InlineCommentComposer> {
           radius: 19,
           backgroundColor: Colors.grey.shade200,
           foregroundImage: resolvedAvatarUrl == null
-            ? null
-            : NetworkImage(resolvedAvatarUrl),
+              ? null
+              : NetworkImage(resolvedAvatarUrl),
           child: resolvedAvatarUrl == null
-            ? Icon(Icons.person_outline, color: Colors.grey.shade700)
-            : null,
+              ? Icon(Icons.person_outline, color: Colors.grey.shade700)
+              : null,
         ),
         const SizedBox(width: 12),
         Expanded(
