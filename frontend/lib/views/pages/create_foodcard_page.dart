@@ -73,15 +73,22 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       return;
     }
     final sectionDraft = _sectionDraft;
-    if (sectionDraft == null || sectionDraft.contents.isEmpty) {
+    if (sectionDraft == null ||
+        sectionDraft.sections.isEmpty ||
+        sectionDraft.sections.any((section) => section.contents.isEmpty)) {
       _showMessage('เพิ่มขั้นตอนการทำอาหารก่อนเผยแพร่สูตร');
       return;
     }
-    if (sectionDraft.contents.any(
-      (step) =>
-          step.sectionTitle.trim().isEmpty ||
-          step.title.trim().isEmpty ||
-          step.textContent.trim().isEmpty,
+    final steps = sectionDraft.sections
+        .expand((section) => section.contents)
+        .toList();
+    if (sectionDraft.sections.any(
+      (section) =>
+          section.title.trim().isEmpty ||
+          section.contents.any(
+            (step) =>
+                step.title.trim().isEmpty || step.textContent.trim().isEmpty,
+          ),
     )) {
       _showMessage('กรอกชื่อและรายละเอียดให้ครบทุกขั้นตอน');
       return;
@@ -95,8 +102,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       }
 
       final hasFilesToUpload =
-          _coverSelection != null ||
-          sectionDraft.contents.any((step) => step.media != null);
+          _coverSelection != null || steps.any((step) => step.media != null);
       UploadedFile? coverUpload;
       final stepUploads = <UploadedFile?>[];
       if (hasFilesToUpload) {
@@ -104,7 +110,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         if (_coverSelection case final selection?) {
           coverUpload = await _uploadPendingFile(selection);
         }
-        for (final step in sectionDraft.contents) {
+        for (final step in steps) {
           final selection = step.media;
           stepUploads.add(
             selection == null ? null : await _uploadRecipeMedia(selection),
@@ -112,9 +118,44 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         }
         setState(() => _isUploading = false);
       } else {
-        stepUploads.addAll(
-          List<UploadedFile?>.filled(sectionDraft.contents.length, null),
-        );
+        stepUploads.addAll(List<UploadedFile?>.filled(steps.length, null));
+      }
+
+      var uploadIndex = 0;
+      final recipeSections = <Map<String, dynamic>>[];
+      for (
+        var sectionIndex = 0;
+        sectionIndex < sectionDraft.sections.length;
+        sectionIndex++
+      ) {
+        final section = sectionDraft.sections[sectionIndex];
+        final contents = <Map<String, dynamic>>[];
+        for (
+          var stepIndex = 0;
+          stepIndex < section.contents.length;
+          stepIndex++
+        ) {
+          final step = section.contents[stepIndex];
+          contents.add({
+            'contentType': step.media?.kind == RecipeMediaKind.video
+                ? 'video'
+                : step.contentType,
+            'title': step.title,
+            'textContent': step.textContent,
+            'mediaUrl': stepUploads[uploadIndex++]?.url,
+            'durationSeconds': step.durationMinutes == null
+                ? null
+                : step.durationMinutes! * 60,
+            'sortOrder': stepIndex,
+          });
+        }
+        recipeSections.add({
+          'title': section.title,
+          'description': null,
+          'sortOrder': sectionIndex,
+          'isPreview': false,
+          'contents': contents,
+        });
       }
 
       final recipe = <String, dynamic>{
@@ -132,32 +173,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         'type': 'community',
         'status': 'published',
         'categoryIds': _selectedCategoryIds.toList(),
-        'sections': [
-          for (var index = 0; index < sectionDraft.contents.length; index++)
-            {
-              'title': sectionDraft.contents[index].sectionTitle,
-              'description': null,
-              'sortOrder': index,
-              'isPreview': false,
-              'contents': [
-                {
-                  'contentType':
-                      sectionDraft.contents[index].media?.kind ==
-                          RecipeMediaKind.video
-                      ? 'video'
-                      : sectionDraft.contents[index].contentType,
-                  'title': sectionDraft.contents[index].title,
-                  'textContent': sectionDraft.contents[index].textContent,
-                  'mediaUrl': stepUploads[index]?.url,
-                  'durationSeconds':
-                      sectionDraft.contents[index].durationMinutes == null
-                      ? null
-                      : sectionDraft.contents[index].durationMinutes! * 60,
-                  'sortOrder': 0,
-                },
-              ],
-            },
-        ],
+        'sections': recipeSections,
       };
 
       await FoodRepository().createCommunityFood(recipe);
@@ -599,7 +615,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
             Text(
               _sectionDraft == null
                   ? 'ยังไม่ได้เพิ่มขั้นตอน'
-                  : '${_sectionDraft!.contents.length} ขั้นตอน',
+                  : '${_sectionDraft!.sections.length} ชุด · ${_sectionDraft!.sections.fold<int>(0, (count, section) => count + section.contents.length)} ขั้นตอน',
               style: TextStyle(color: Colors.grey.shade700),
             ),
             const SizedBox(height: 8),
