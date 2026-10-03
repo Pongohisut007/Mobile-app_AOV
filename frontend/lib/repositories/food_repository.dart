@@ -17,7 +17,8 @@ class FoodRepository {
   }
 
   Future<List<Food>> fetchCommunityFoodsByCategoryId(String categoryId) async {
-    final url = '$baseUrl/categories/$categoryId?type=community';
+    // community แสดงเฉพาะสูตรที่เผยแพร่แล้ว
+    final url = '$baseUrl/categories/$categoryId?type=community&status=published';
     return _getFoodsByCategoryId(url);
   }
 
@@ -29,7 +30,7 @@ class FoodRepository {
   // ================================
 
   Future<List<Food>> fetchCommuityAllFoodsByCategoryId() async {
-    final url = '$baseUrl/categories?type=community';
+    final url = '$baseUrl/categories?type=community&status=published';
     return _getAllFoodsByCategoryId(url);
   }
 
@@ -45,7 +46,7 @@ class FoodRepository {
   }
 
   Future<List<Food>> fetchCommunityFoods() async {
-    return _getFoods('$baseUrl/recipes?type=community');
+    return _getFoods('$baseUrl/recipes?type=community&status=published');
   }
 
   Future<List<Food>> fetchOfficialFoods() async {
@@ -58,11 +59,13 @@ class FoodRepository {
     String query, {
     String? type,
     String? categoryId,
+    String? status,
   }) async {
     final uri = Uri.parse('$baseUrl/recipes/search').replace(
       queryParameters: {
         'q': query,
         'type': ?type,
+        'status': ?status,
         'categoryId': ?categoryId,
         'limit': '50', // backend จำกัดไว้สูงสุด 50
       },

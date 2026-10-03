@@ -25,6 +25,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
   final _formKey = GlobalKey<FormState>();
   late final List<_StepEditor> _steps;
   bool _isPickingFile = false;
+  bool _isPopping = false;
 
   @override
   void initState() {
@@ -43,12 +44,19 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
   }
 
   /// Collect current step data as drafts without validation.
+  /// ขั้นตอนที่ไม่ได้กรอกอะไรเลย (เช่นการ์ดเปล่าที่สร้างให้อัตโนมัติ) จะไม่ถูกนับ
   List<RecipeContentDraft> _collectDrafts() {
-    return _steps.map((step) => step.toDraft()).toList();
+    return _steps
+        .where((step) => !step.isBlank)
+        .map((step) => step.toDraft())
+        .toList();
   }
 
   /// Auto-save: pop the current drafts back to the parent page.
   void _autoSaveAndPop() {
+    // กันกดย้อนกลับซ้ำระหว่าง animation ซึ่งจะไป pop หน้าก่อนหน้าด้วย
+    if (_isPopping) return;
+    _isPopping = true;
     Navigator.of(context).pop(_collectDrafts());
   }
 
@@ -384,6 +392,12 @@ class _StepEditor {
   bool isExpanded = true;
 
   bool get hasMedia => media != null || existingMediaUrl != null;
+
+  bool get isBlank =>
+      title.text.trim().isEmpty &&
+      description.text.trim().isEmpty &&
+      durationMinutes.text.trim().isEmpty &&
+      !hasMedia;
 
   RecipeContentDraft toDraft() {
     return RecipeContentDraft(

@@ -86,6 +86,8 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
         query,
         type: event.type,
         categoryId: event.categoryId.isEmpty ? null : event.categoryId,
+        // community แสดงเฉพาะสูตรที่เผยแพร่แล้ว
+        status: event.type == 'community' ? 'published' : null,
       );
       if (requestId != _requestId) return;
       emit(FoodLoaded(foods, query: query));

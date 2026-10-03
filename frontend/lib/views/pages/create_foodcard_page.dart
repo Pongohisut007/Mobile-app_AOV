@@ -55,11 +55,13 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   bool _isPickingFile = false;
   bool _isUploading = false;
   bool _isSaving = false;
+  bool _isSavingDraft = false;
   bool _canPop = false;
   bool _handlingExit = false;
 
   bool get _isBusy => _isPickingFile || _isUploading;
   bool get _isEditing => widget.initialFood != null;
+  bool get _isEditingDraft => widget.initialFood?.status == 'draft';
 
   @override
   void initState() {
@@ -133,6 +135,13 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     super.dispose();
   }
 
+  /// บันทึกการแก้ไขฉบับร่าง ไม่บังคับกรอกครบ สถานะยังเป็น draft
+  Future<void> _saveDraftEdit() async {
+    if (_isBusy || _isSaving) return;
+    if (!await _persistRecipe(asDraft: true) || !mounted) return;
+    _popPage(true);
+  }
+
   Future<void> _saveRecipe() async {
     if (_isBusy || _isSaving) return;
     if (!_formKey.currentState!.validate()) return;
@@ -168,7 +177,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
 
   Future<bool> _persistRecipe({required bool asDraft}) async {
     if (_isBusy || _isSaving) return false;
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSaving = true;
+      _isSavingDraft = asDraft;
+    });
     try {
       final creatorId = await TokenStorage().readUserId();
       if (!mounted) return false;
@@ -390,7 +402,8 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       ),
     );
     if (!mounted || draft == null) return;
-    setState(() => _sectionDraft = draft);
+    // ลบหมดแล้ว ให้กลับเป็นสถานะยังไม่มีขั้นตอน
+    setState(() => _sectionDraft = draft.sections.isEmpty ? null : draft);
   }
 
   Future<void> _pickCoverImage() async {
@@ -529,18 +542,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         appBar: AppBar(
           title: Text(_isEditing ? 'แก้ไขสูตรอาหาร' : 'สร้างสูตรอาหาร'),
           backgroundColor: const Color(0xFFF6F5F0),
-          actions: [
-            IconButton(
-              onPressed: _isSaving || _isBusy ? null : _saveRecipe,
-              tooltip: _isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตร',
-              icon: _isSaving
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.publish_rounded),
-            ),
-          ],
         ),
         body: Form(
           key: _formKey,
@@ -625,29 +626,76 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
 
               const SizedBox(height: 24),
 
-              FilledButton.icon(
-                onPressed:
-                    _isSaving || _isBusy ? null : _saveRecipe,
-                icon: const Icon(Icons.publish_rounded),
-                label: Text(
-                  _isUploading
-                      ? 'กำลังอัปโหลดไฟล์...'
-                      : _isSaving
-                          ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
-                          : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
+              if (_isEditingDraft)
+                _buildDraftActions()
+              else
+                FilledButton.icon(
+                  onPressed:
+                      _isSaving || _isBusy ? null : _saveRecipe,
+                  icon: const Icon(Icons.publish_rounded),
+                  label: Text(
+                    _isUploading
+                        ? 'กำลังอัปโหลดไฟล์...'
+                        : _isSaving
+                            ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
+                            : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFCE4D35),
+                    minimumSize: const Size.fromHeight(54),
+                  ),
                 ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFCE4D35),
-                  minimumSize: const Size.fromHeight(54),
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
   }
+
+  // ฉบับร่าง: บันทึกได้โดยไม่ต้องกรอกครบ หรือเผยแพร่ (ตรวจครบทุกช่อง)
+  Widget _buildDraftActions() {
+    final disabled = _isSaving || _isBusy;
+    final savingDraft = _isSaving && _isSavingDraft;
+    final publishing = _isSaving && !_isSavingDraft;
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: disabled ? null : _saveDraftEdit,
+            icon: const Icon(Icons.save_outlined),
+            label: Text(
+              savingDraft
+                  ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังบันทึก...')
+                  : 'บันทึกการแก้ไข',
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFCE4D35),
+              side: const BorderSide(color: Color(0xFFCE4D35)),
+              minimumSize: const Size.fromHeight(54),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: disabled ? null : _saveRecipe,
+            icon: const Icon(Icons.publish_rounded),
+            label: Text(
+              publishing
+                  ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังเผยแพร่...')
+                  : 'เผยแพร่',
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFCE4D35),
+              minimumSize: const Size.fromHeight(54),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
+
 
 class _PendingUpload {
   const _PendingUpload({

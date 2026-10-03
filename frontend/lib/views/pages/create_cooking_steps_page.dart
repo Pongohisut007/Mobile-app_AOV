@@ -20,6 +20,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
   final _formKey = GlobalKey<FormState>();
 
   late final List<SectionEditor> _sections;
+  bool _isPopping = false;
 
   @override
   void initState() {
@@ -40,15 +41,24 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
     super.dispose();
   }
 
-  RecipeSectionDraft? _collectDraft() {
-    if (_sections.isEmpty) return null;
-
+  // คืนค่าเสมอ (แม้ไม่มี section) เพื่อให้หน้าก่อนหน้ารู้ว่าผู้ใช้ลบหมดแล้ว
+  // ตัด section ที่ว่างทั้งหัวข้อและขั้นตอนทิ้ง จะได้ไม่ถูกนับจำนวน
+  RecipeSectionDraft _collectDraft() {
     return RecipeSectionDraft(
-      sections: _sections.map((section) => section.toDraft()).toList(),
+      sections: _sections
+          .map((section) => section.toDraft())
+          .where(
+            (section) =>
+                section.title.isNotEmpty || section.contents.isNotEmpty,
+          )
+          .toList(),
     );
   }
 
   void _autoSaveAndPop() {
+    // กันกดย้อนกลับซ้ำระหว่าง animation ซึ่งจะไป pop หน้าก่อนหน้าด้วย
+    if (_isPopping) return;
+    _isPopping = true;
     Navigator.of(context).pop(_collectDraft());
   }
 
@@ -98,7 +108,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
       ),
     );
 
-    if (!mounted || contents == null) return;
+    if (!mounted || _isPopping || contents == null) return;
 
     setState(() {
       section.contents = contents;
@@ -161,6 +171,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
             children: [
               for (var index = 0; index < _sections.length; index++)
                 SectionEditorCard(
+                  key: ObjectKey(_sections[index]),
                   section: _sections[index],
                   index: index,
                   firstStepNumber: _getFirstStepNumber(index),

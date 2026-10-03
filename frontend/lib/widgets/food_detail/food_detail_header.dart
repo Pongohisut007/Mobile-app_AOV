@@ -25,6 +25,10 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
   bool _isOwner = false;
   bool _isCheckingOwner = true;
 
+  // สูตร official ที่เผยแพร่แล้วไม่มีเมนูแก้ไข
+  bool get _canEdit =>
+      !(widget.food.type == 'official' && widget.food.status == 'published');
+
   @override
   void initState() {
     super.initState();
@@ -113,18 +117,19 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
                       break;
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem<String>(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined),
-                        SizedBox(width: 12),
-                        Text('แก้ไข'),
-                      ],
+                itemBuilder: (context) => [
+                  if (_canEdit)
+                    const PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined),
+                          SizedBox(width: 12),
+                          Text('แก้ไข'),
+                        ],
+                      ),
                     ),
-                  ),
-                  PopupMenuItem<String>(
+                  const PopupMenuItem<String>(
                     value: 'delete',
                     child: Row(
                       children: [
