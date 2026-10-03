@@ -221,5 +221,12 @@ class FoodRepository {
     }
   }
 
+  Future<void> deleteFood(String foodId) async {
+    final response = await http.delete(Uri.parse('$baseUrl/recipes/$foodId'));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete food');
+    }
+  }
+
   // =====================================================================
 }

@@ -322,7 +322,11 @@ export class RecipesService {
 
       return recipeRepository.findOneOrFail({
         where: { id: recipe.id },
-        relations: { creator: true, categories: true, sections: { contents: true } },
+        relations: {
+          creator: true,
+          categories: true,
+          sections: { contents: true },
+        },
       });
     });
   }

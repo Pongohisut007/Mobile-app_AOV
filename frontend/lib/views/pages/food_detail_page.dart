@@ -91,7 +91,54 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            FoodDetailHeader(food: food),
+            FoodDetailHeader(
+              food: food,
+
+              onEdit: () {
+                Navigator.pushNamed(
+                  context,
+                  '/edit-recipe',
+                  arguments: food.idfoods,
+                );
+              },
+
+              onDelete: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text('ลบสูตรอาหาร'),
+                      content: const Text(
+                        'คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\n'
+                        'ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('ยกเลิก'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text(
+                            'ลบ',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (confirmed != true || !context.mounted) {
+                  return;
+                }
+
+                // TODO: เรียก API ลบ recipe
+                await FoodRepository().deleteFood(food.idfoods);
+
+                Navigator.pop(context, true);
+              },
+            ),
 
             Padding(
               padding: const EdgeInsets.all(20),
