@@ -41,7 +41,7 @@ export const CHAT_IMAGE_TYPES = [
   'image/gif',
 ];
 
-type ChatMessage = { role: 'user' | 'assistant'; content: string };
+export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 type ChatImage = { mimetype: string; buffer: Buffer };
 type ChatSession = {
   recipeId: string;
@@ -125,6 +125,14 @@ export class ChatService implements OnModuleDestroy {
     await this.saveSession(userId, session);
 
     return { message: reply };
+  }
+
+  /** ประวัติแชทของสูตรนี้ ให้แอปโหลดกลับมาแสดงตอนเปิด popup ใหม่ */
+  async getHistory(userId: string, recipeId: string): Promise<ChatMessage[]> {
+    const raw = await this.redis.get(sessionKey(userId));
+    const session = raw ? (JSON.parse(raw) as ChatSession) : null;
+    // session เป็นของสูตรอื่น ถือว่าสูตรนี้ยังไม่มีแชท
+    return session?.recipeId === recipeId ? session.history : [];
   }
 
   async reset(userId: string) {

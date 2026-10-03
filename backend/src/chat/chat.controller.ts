@@ -15,7 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { UploadedFileData } from '../uploads/uploads.service';
-import { CHAT_IMAGE_TYPES, ChatService } from './chat.service';
+import { CHAT_IMAGE_TYPES, ChatMessage, ChatService } from './chat.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
 
 @UseGuards(JwtAuthGuard)
@@ -52,6 +52,15 @@ export class ChatController {
     @Param('recipeId', ParseUUIDPipe) recipeId: string,
   ): Promise<{ canChat: boolean }> {
     return { canChat: await this.chatService.canChat(userId, recipeId) };
+  }
+
+  /** ประวัติแชทของสูตรนี้ (หมดอายุแล้วหรือคุยสูตรอื่นอยู่ จะได้ []) */
+  @Get('recipes/:recipeId/history')
+  async history(
+    @CurrentUser('id') userId: string,
+    @Param('recipeId', ParseUUIDPipe) recipeId: string,
+  ): Promise<{ messages: ChatMessage[] }> {
+    return { messages: await this.chatService.getHistory(userId, recipeId) };
   }
 
   /** ล้างบทสนทนา เริ่มคุยใหม่ */

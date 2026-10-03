@@ -24,6 +24,14 @@ class ChatImage {
   }
 }
 
+/// ข้อความหนึ่งในประวัติแชทที่โหลดจาก backend
+class ChatHistoryEntry {
+  const ChatHistoryEntry({required this.isUser, required this.text});
+
+  final bool isUser;
+  final String text;
+}
+
 /// คุยกับ AI เกี่ยวกับสูตรอาหาร (backend จำบทสนทนาไว้ 20 นาที)
 class ChatRepository {
   ChatRepository({
@@ -73,6 +81,34 @@ class ChatRepository {
       throw const ChatException('AI ตอบกลับมาในรูปแบบที่ไม่ถูกต้อง');
     }
     return decoded['message'] as String;
+  }
+
+  /// ประวัติแชทที่ backend จำไว้ของสูตรนี้ (ไม่มีจะได้ list ว่าง)
+  Future<List<ChatHistoryEntry>> fetchHistory(
+    String accessToken,
+    String recipeId,
+  ) async {
+    final decoded = await _send(
+      () => _client.get(
+        Uri.parse(
+          '$_baseUrl/chat/recipes/${Uri.encodeComponent(recipeId)}/history',
+        ),
+        headers: _headers(accessToken),
+      ),
+    );
+    final messages = decoded is Map<String, dynamic>
+        ? decoded['messages']
+        : null;
+    if (messages is! List) return [];
+    return messages
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (item) => ChatHistoryEntry(
+            isUser: item['role'] == 'user',
+            text: item['content'] as String? ?? '',
+          ),
+        )
+        .toList();
   }
 
   /// ล้างบทสนทนาฝั่ง backend เพื่อเริ่มคุยใหม่

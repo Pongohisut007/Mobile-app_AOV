@@ -70,6 +70,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   final _picker = ImagePicker();
 
   bool _isSending = false;
+  bool _isLoadingHistory = false;
   // รูปที่เลือกไว้ รอส่งพร้อมคำถาม
   ChatImage? _image;
 
@@ -79,6 +80,33 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   void initState() {
     super.initState();
     widget.history.clearIfExpired();
+    // ออกจากหน้าสูตรแล้วกลับมา แชทในแอปหายไป แต่ backend ยังจำอยู่ เลยโหลดกลับมา
+    if (_messages.isEmpty) {
+      _isLoadingHistory = true;
+      _loadHistory();
+    }
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final entries = await widget.repository.fetchHistory(
+        widget.accessToken,
+        widget.recipeId,
+      );
+      // ระหว่างโหลด ผู้ใช้อาจพิมพ์ส่งไปแล้ว ไม่ต้องทับ
+      if (_messages.isEmpty) {
+        for (final entry in entries) {
+          widget.history.add(
+            ChatBubbleMessage(text: entry.text, isUser: entry.isUser),
+          );
+        }
+      }
+    } catch (_) {
+      // โหลดประวัติไม่ได้ ก็เริ่มแชทจากหน้าว่างได้ตามปกติ
+    }
+    if (!mounted) return;
+    setState(() => _isLoadingHistory = false);
+    _scrollToBottom();
   }
 
   @override
@@ -205,7 +233,11 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
             _buildHeader(),
             const Divider(height: 1),
             Expanded(
-              child: _messages.isEmpty ? _buildEmpty() : _buildMessages(),
+              child: _isLoadingHistory && _messages.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : _messages.isEmpty
+                  ? _buildEmpty()
+                  : _buildMessages(),
             ),
             if (_isSending) _buildTyping(),
             _buildInput(),
