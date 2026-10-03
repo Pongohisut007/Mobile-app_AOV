@@ -23,6 +23,10 @@ class Food {
   final String? difficulty;
   final List<RecipeStep> steps;
 
+  // ผู้ชมเห็นขั้นตอนครบไหม (backend ส่งมาเฉพาะ GET /recipes/:id)
+  // official ที่ยังไม่ซื้อจะเป็น false และได้มาแค่ขั้นตอน preview
+  final bool canViewFullRecipe;
+
   // ข้อมูลเจ้าของ recipe (embed มาจาก backend)
   final String? creatorId;
   final String? creatorName;
@@ -51,6 +55,7 @@ class Food {
     this.servingCount,
     this.difficulty,
     this.steps = const [],
+    this.canViewFullRecipe = true,
     this.creatorId,
     this.creatorName,
     this.creatorAvatar,
@@ -115,6 +120,7 @@ class Food {
       servingCount: _toInt(json['servingCount']),
       difficulty: json['difficulty'] as String?,
       steps: steps,
+      canViewFullRecipe: json['canViewFullRecipe'] as bool? ?? true,
       creatorId: creator?['id'] as String?,
       creatorName: creator?['displayName'] as String?,
       creatorAvatar: _resolveAvatarUrl(creator?['avatarUrl'], apiBaseUrl),

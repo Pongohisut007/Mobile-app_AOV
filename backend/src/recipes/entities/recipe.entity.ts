@@ -135,6 +135,9 @@ export class Recipe extends BaseEntity {
   reviewCount?: number;
   commentCount?: number;
 
+  // เฉพาะ GET /recipes/:id: ผู้ชมคนนี้เห็นขั้นตอนครบไหม (community / เจ้าของ / ซื้อแล้ว)
+  canViewFullRecipe?: boolean;
+
   @OneToMany(() => CartItem, (item) => item.recipe)
   cartItems!: CartItem[];
 }

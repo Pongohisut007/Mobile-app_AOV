@@ -16,7 +16,7 @@ class RecipeReviewsPage extends StatefulWidget {
 
   final String recipeId;
 
-  /// คะแนนเฉลี่ยจากหน้าสูตร เอามาโชว์หัวหน้าได้เลยไม่ต้องโหลดซ้ำ
+  /// คะแนนเฉลี่ยจากหน้าสูตร โชว์ไปก่อนระหว่างโหลดค่าล่าสุดจาก API
   final RecipeReviewSummary summary;
 
   final RecipeReviewRepository? repository;
@@ -32,20 +32,38 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage> {
       widget.repository ??
       HttpRecipeReviewRepository(baseUrl: ApiConfig.apiBaseUrl);
 
+  late RecipeReviewSummary _summary = widget.summary;
   final List<RecipeReview> _reviews = [];
   int _page = 0;
   bool _hasMore = true;
   bool _loading = false;
   String? _error;
 
+  // เพิ่มทุกครั้งที่ refresh ผลของ _loadMore ที่ยิงก่อนหน้าจะถูกทิ้ง กันรีวิวซ้ำ
+  int _generation = 0;
+
   @override
   void initState() {
     super.initState();
     _loadMore();
+    _loadSummary();
+  }
+
+  // ค่าที่ส่งมาจากหน้าสูตรอาจเก่าแล้ว (เช่นมีคนรีวิวเพิ่ม) จึงโหลดใหม่เสมอ
+  // โหลดไม่ได้ก็ใช้ค่าเดิมต่อ ไม่ต้องขึ้น error
+  Future<void> _loadSummary() async {
+    try {
+      final summary = await _repository.fetchSummary(widget.recipeId);
+      if (!mounted) return;
+      setState(() => _summary = summary);
+    } on Exception catch (_) {
+      // ใช้ค่าเดิม
+    }
   }
 
   Future<void> _loadMore() async {
     if (_loading || !_hasMore) return;
+    final generation = _generation;
     setState(() {
       _loading = true;
       _error = null;
@@ -57,18 +75,53 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage> {
         page: _page + 1,
         limit: _pageSize,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _page = result.page;
         _hasMore = result.hasMore;
         _reviews.addAll(result.items);
       });
     } on Exception catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() => _error = error.toString());
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _generation) {
+        setState(() => _loading = false);
+      }
     }
+  }
+
+  // ดึงลงเพื่อโหลดรีวิวหน้าแรกใหม่ โหลดพลาดก็โชว์รายการเดิมไว้
+  Future<void> _refresh() async {
+    final generation = ++_generation;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final summaryLoaded = _loadSummary();
+    try {
+      final result = await _repository.fetchReviewPage(
+        widget.recipeId,
+        page: 1,
+        limit: _pageSize,
+      );
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _page = result.page;
+        _hasMore = result.hasMore;
+        _reviews
+          ..clear()
+          ..addAll(result.items);
+      });
+    } on Exception catch (error) {
+      if (!mounted || generation != _generation) return;
+      setState(() => _error = error.toString());
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() => _loading = false);
+      }
+    }
+    await summaryLoaded;
   }
 
   @override
@@ -93,24 +146,28 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage> {
           }
           return false;
         },
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          // +1 หัวการ์ดคะแนน, +1 ท้ายรายการ (กำลังโหลด/ผิดพลาด/หมดแล้ว)
-          itemCount: _reviews.length + 2,
-          separatorBuilder: (_, index) =>
-              SizedBox(height: index == 0 ? 20 : 10),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return RecipeReviewSummaryCard(
-                summary: widget.summary,
-                title: 'คะแนนเฉลี่ย',
-              );
-            }
-            if (index <= _reviews.length) {
-              return RecipeReviewTile(review: _reviews[index - 1]);
-            }
-            return _buildFooter();
-          },
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            // +1 หัวการ์ดคะแนน, +1 ท้ายรายการ (กำลังโหลด/ผิดพลาด/หมดแล้ว)
+            itemCount: _reviews.length + 2,
+            separatorBuilder: (_, index) =>
+                SizedBox(height: index == 0 ? 20 : 10),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return RecipeReviewSummaryCard(
+                  summary: _summary,
+                  title: 'คะแนนเฉลี่ย',
+                );
+              }
+              if (index <= _reviews.length) {
+                return RecipeReviewTile(review: _reviews[index - 1]);
+              }
+              return _buildFooter();
+            },
+          ),
         ),
       ),
     );

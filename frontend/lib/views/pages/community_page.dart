@@ -53,7 +53,7 @@ class _CommunityPageState extends State<CommunityPage> {
   Future<void> _createFood(CategoryLoaded categoryState) async {
     final creatorId = await TokenStorage().readUserId();
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (creatorId == null || creatorId.trim().isEmpty) {
       await Navigator.of(context).pushNamed(AppRoutes.login);
@@ -74,10 +74,10 @@ class _CommunityPageState extends State<CommunityPage> {
     _resetVisiblePosts();
 
     context.read<FoodBloc>().add(
-          FetchCommunityFoodsByCategoryEvent(
-            context.read<CategoryBloc>().state.selectedId,
-          ),
-        );
+      FetchCommunityFoodsByCategoryEvent(
+        context.read<CategoryBloc>().state.selectedId,
+      ),
+    );
   }
 
   void _searchFood(String query) {
@@ -101,12 +101,31 @@ class _CommunityPageState extends State<CommunityPage> {
     }
   }
 
+  // ดึงลงเพื่อโหลดโพสต์ใหม่ ถ้ากำลังค้นหาอยู่ก็ค้นหาคำเดิมซ้ำ
+  Future<void> _refresh() async {
+    final foodBloc = context.read<FoodBloc>();
+    final selectedId = context.read<CategoryBloc>().state.selectedId;
+    final currentState = foodBloc.state;
+    final query = currentState is FoodLoaded ? currentState.query : null;
+
+    _resetVisiblePosts();
+    final done = foodBloc.stream.firstWhere(
+      (state) => state is FoodLoaded || state is FoodError,
+    );
+    foodBloc.add(
+      query == null
+          ? FetchCommunityFoodsByCategoryEvent(selectedId)
+          : SearchFoodEvent(query, categoryId: selectedId, type: 'community'),
+    );
+    await done;
+  }
+
   void _selectCategory(String? uuid) {
     _resetVisiblePosts();
 
     context.read<FoodBloc>().add(
-          FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
-        );
+      FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
+    );
   }
 
   List<Food> _sortFoods(List<Food> foods) {
@@ -145,47 +164,51 @@ class _CommunityPageState extends State<CommunityPage> {
                       ? _sortFoods(foodState.foods)
                       : <Food>[];
 
-                  return ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                  return RefreshIndicator(
+                    onRefresh: _refresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      children: [
+                        SizedBox(height: isIpad ? 14 : 9),
+
+                        CommunityHeader(
+                          isIpad: isIpad,
+                          onAddPressed: () {
+                            _createFood(categoryState);
+                          },
+                        ),
+
+                        const SizedBox(height: 9),
+
+                        CommunitySearch(
+                          onSearch: _searchFood,
+                        ),
+
+                        const SizedBox(height: 9),
+
+                        CategorySelector(
+                          categories: categoryState.categories,
+                          onCategorySelected: _selectCategory,
+                        ),
+
+                        const SizedBox(height: 9),
+
+                        CommunityPostList(
+                          foodState: foodState,
+                          foods: foods,
+                          visiblePostCount: _visiblePostCount,
+                          postsPerPage: _postsPerPage,
+                          onShowMore: () {
+                            setState(() {
+                              _visiblePostCount += _postsPerPage;
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                    children: [
-                      SizedBox(height: isIpad ? 14 : 9),
-
-                      CommunityHeader(
-                        isIpad: isIpad,
-                        onAddPressed: () {
-                          _createFood(categoryState);
-                        },
-                      ),
-
-                      const SizedBox(height: 9),
-
-                      CommunitySearch(
-                        onSearch: _searchFood,
-                      ),
-
-                      const SizedBox(height: 9),
-
-                      CategorySelector(
-                        categories: categoryState.categories,
-                        onCategorySelected: _selectCategory,
-                      ),
-
-                      const SizedBox(height: 9),
-
-                      CommunityPostList(
-                        foodState: foodState,
-                        foods: foods,
-                        visiblePostCount: _visiblePostCount,
-                        postsPerPage: _postsPerPage,
-                        onShowMore: () {
-                          setState(() {
-                            _visiblePostCount += _postsPerPage;
-                          });
-                        },
-                      ),
-                    ],
                   );
                 },
               );

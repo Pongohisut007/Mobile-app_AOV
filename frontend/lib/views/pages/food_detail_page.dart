@@ -59,6 +59,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   bool _commentScrollScheduled = false;
   bool _isOpeningEditor = false;
 
+  // เพิ่มทุกครั้งที่ดึงลง refresh ใช้เป็น key ให้รีวิว/คอมเมนต์โหลดใหม่ด้วย
+  int _refreshCount = 0;
+
   /// เมนูที่เพิ่งกด Buy Now รอผลจาก API ก่อนค่อยเล่น animation
   Food? _addingFood;
 
@@ -76,10 +79,35 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     });
   }
 
+  // ดึงลงเพื่อโหลดใหม่: โชว์ข้อมูลเดิมไว้ระหว่างรอ โหลดพลาดก็ไม่ทับของเดิม
+  Future<void> _refresh() async {
+    try {
+      final food = await FoodRepository().fetchFoodById(widget.foodsId);
+      if (!mounted) return;
+      setState(() {
+        _foodFuture = Future.value(food);
+        _refreshCount++;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // อ่านจาก state ที่โหลดไว้ทั้งแอป ไม่ต้องยิง API ใหม่ทุกครั้งที่เปิดหน้า
     // ยังโหลดไม่เสร็จก็ยังไม่โชว์ปุ่มซื้อ กันปุ่มโผล่แวบแล้วหายไป
+    // context.select ต้องเรียกใน build() เท่านั้น จึงอ่านไว้ตรงนี้แล้วส่งต่อให้ _buildBody
+    final isPurchased = context.select(
+      (PurchasedRecipesBloc bloc) => bloc.state.isPurchased(widget.foodsId),
+    );
     final canBuy = context.select((PurchasedRecipesBloc bloc) {
       final state = bloc.state;
       return state.isResolved && !state.isPurchased(widget.foodsId);
@@ -138,7 +166,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
         body: FutureBuilder<Food>(
           future: _foodFuture,
           builder: (context, state) {
-            if (state.connectionState == ConnectionState.waiting) {
+            // มีข้อมูลเดิมอยู่แล้ว (เช่นหลังแก้ไขสูตร) ให้โชว์ของเดิมไว้ระหว่างโหลด
+            if (state.connectionState == ConnectionState.waiting &&
+                !state.hasData) {
               return const LoadingView();
             }
 
@@ -149,164 +179,188 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
               );
             }
 
-            return _buildBody(state.data!);
+            return _buildBody(state.data!, isPurchased: isPurchased);
           },
         ),
       ),
     );
   }
 
-  Widget _buildBody(Food food) {
+  Widget _buildBody(Food food, {required bool isPurchased}) {
+    // official ที่ยังไม่ได้ซื้อ ไม่ให้เริ่มทำอาหาร
+    // เช็กการซื้อด้วย เพราะเพิ่งซื้อในหน้านี้ข้อมูลสูตรยังไม่ได้โหลดใหม่
+    final canStartCooking = food.canViewFullRecipe || isPurchased;
+
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            KeyedSubtree(
-              key: _headerKey,
-              child: FoodDetailHeader(
-                food: food,
-                onEdit: () => _editFood(food),
-                onDelete: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text('ลบสูตรอาหาร'),
-                        content: const Text(
-                          'คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\n'
-                          'ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(context, false),
-                            child: const Text('ยกเลิก'),
+      child: RefreshIndicator(
+        onRefresh: _refresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              KeyedSubtree(
+                key: _headerKey,
+                child: FoodDetailHeader(
+                  food: food,
+                  onEdit: () => _editFood(food),
+                  onDelete: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text('ลบสูตรอาหาร'),
+                          content: const Text(
+                            'คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\n'
+                            'ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
                           ),
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(context, true),
-                            child: const Text(
-                              'ลบ',
-                              style: TextStyle(color: Colors.red),
+                          actions: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pop(context, false),
+                              child: const Text('ยกเลิก'),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pop(context, true),
+                              child: const Text(
+                                'ลบ',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirmed != true || !context.mounted) {
+                      return;
+                    }
+
+                    await FoodRepository().deleteFood(food.idfoods);
+                    if (!mounted) return;
+
+                    Navigator.pop(context, true);
+                  },
+                ),
+              ),
+
+              Padding(
+                key: ValueKey(_refreshCount),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      food.name,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 33),
+
+                    FoodInfoCard(food: food),
+
+                    const SizedBox(height: 30),
+
+                    FoodDescription(description: food.description),
+
+                    const SizedBox(height: 28),
+
+                    if (canStartCooking) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton.icon(
+                          onPressed: () => _startCooking(food),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF6650A5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                        ],
-                      );
-                    },
-                  );
+                          icon: const Icon(
+                            Icons.restaurant_menu_rounded,
+                          ),
+                          label: const Text(
+                            'เริ่มทำอาหาร',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
 
-                  if (confirmed != true || !context.mounted) {
-                    return;
-                  }
+                      const SizedBox(height: 12),
+                    ],
 
-                  await FoodRepository().deleteFood(food.idfoods);
+                    // แสดงเฉพาะคนที่ซื้อสูตรแล้ว
+                    RecipeChatButton(recipeId: food.idfoods),
 
-                  Navigator.pop(context, true);
-                },
+                    const SizedBox(height: 32),
+
+                    Divider(
+                      color: Colors.grey.shade200,
+                      height: 1,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    if (widget.showComments || widget.scrollToComments)
+                      BlocProvider(
+                        create: (_) => RecipeCommentBloc(
+                          HttpRecipeCommentRepository(
+                            baseUrl: ApiConfig.apiBaseUrl,
+                          ),
+                          recipeId: food.idfoods,
+                        )..add(
+                            const RecipeCommentsRequested(),
+                          ),
+                        child: RecipeCommentSection(
+                          headingKey: _commentsTitleKey,
+                          onReady: _scheduleScrollToComments,
+                          onCommentCountChanged:
+                              widget.onCommentCountChanged,
+                        ),
+                      )
+                    else
+                      BlocProvider(
+                        create: (_) => RecipeReviewBloc(
+                          HttpRecipeReviewRepository(
+                            baseUrl: ApiConfig.apiBaseUrl,
+                          ),
+                          recipeId: food.idfoods,
+                        )..add(
+                            const RecipeReviewRequested(),
+                          ),
+                        child: const RecipeReviewSection(),
+                      ),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    food.name,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 33),
-
-                  FoodInfoCard(food: food),
-
-                  const SizedBox(height: 30),
-
-                  FoodDescription(description: food.description),
-
-                  const SizedBox(height: 28),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: FilledButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => CookingStepsPage(food: food),
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF6650A5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.restaurant_menu_rounded,
-                      ),
-                      label: const Text(
-                        'เริ่มทำอาหาร',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // แสดงเฉพาะคนที่ซื้อสูตรแล้ว
-                  RecipeChatButton(recipeId: food.idfoods),
-
-                  const SizedBox(height: 32),
-
-                  Divider(
-                    color: Colors.grey.shade200,
-                    height: 1,
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  if (widget.showComments || widget.scrollToComments)
-                    BlocProvider(
-                      create: (_) => RecipeCommentBloc(
-                        HttpRecipeCommentRepository(
-                          baseUrl: ApiConfig.apiBaseUrl,
-                        ),
-                        recipeId: food.idfoods,
-                      )..add(
-                          const RecipeCommentsRequested(),
-                        ),
-                      child: RecipeCommentSection(
-                        headingKey: _commentsTitleKey,
-                        onReady: _scheduleScrollToComments,
-                        onCommentCountChanged:
-                            widget.onCommentCountChanged,
-                      ),
-                    )
-                  else
-                    BlocProvider(
-                      create: (_) => RecipeReviewBloc(
-                        HttpRecipeReviewRepository(
-                          baseUrl: ApiConfig.apiBaseUrl,
-                        ),
-                        recipeId: food.idfoods,
-                      )..add(
-                          const RecipeReviewRequested(),
-                        ),
-                      child: const RecipeReviewSection(),
-                    ),
-
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _startCooking(Food food) async {
+    var target = food;
+    // เพิ่งซื้อในหน้านี้ ข้อมูลที่มียังมีแค่ขั้นตอน preview ต้องโหลดใหม่ก่อน
+    if (!food.canViewFullRecipe) {
+      await _refresh();
+      if (!mounted) return;
+      target = await _foodFuture;
+      if (!mounted) return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CookingStepsPage(food: target),
       ),
     );
   }
