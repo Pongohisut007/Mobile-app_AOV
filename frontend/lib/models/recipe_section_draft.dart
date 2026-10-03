@@ -18,6 +18,7 @@ class PendingRecipeUpload {
 
 class RecipeContentDraft {
   const RecipeContentDraft({
+    required this.sectionTitle,
     required this.title,
     required this.textContent,
     required this.contentType,
@@ -25,6 +26,7 @@ class RecipeContentDraft {
     this.media,
   });
 
+  final String sectionTitle;
   final String title;
   final String textContent;
   final String contentType;
@@ -33,8 +35,7 @@ class RecipeContentDraft {
 }
 
 class RecipeSectionDraft {
-  const RecipeSectionDraft({required this.title, required this.contents});
+  const RecipeSectionDraft({required this.contents});
 
-  final String title;
   final List<RecipeContentDraft> contents;
 }

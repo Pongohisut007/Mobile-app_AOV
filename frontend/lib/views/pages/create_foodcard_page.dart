@@ -78,7 +78,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       return;
     }
     if (sectionDraft.contents.any(
-      (step) => step.title.trim().isEmpty || step.textContent.trim().isEmpty,
+      (step) =>
+          step.sectionTitle.trim().isEmpty ||
+          step.title.trim().isEmpty ||
+          step.textContent.trim().isEmpty,
     )) {
       _showMessage('กรอกชื่อและรายละเอียดให้ครบทุกขั้นตอน');
       return;
@@ -130,13 +133,13 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         'status': 'published',
         'categoryIds': _selectedCategoryIds.toList(),
         'sections': [
-          {
-            'title': sectionDraft.title,
-            'description': null,
-            'sortOrder': 0,
-            'isPreview': false,
-            'contents': [
-              for (var index = 0; index < sectionDraft.contents.length; index++)
+          for (var index = 0; index < sectionDraft.contents.length; index++)
+            {
+              'title': sectionDraft.contents[index].sectionTitle,
+              'description': null,
+              'sortOrder': index,
+              'isPreview': false,
+              'contents': [
                 {
                   'contentType':
                       sectionDraft.contents[index].media?.kind ==
@@ -150,10 +153,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                       sectionDraft.contents[index].durationMinutes == null
                       ? null
                       : sectionDraft.contents[index].durationMinutes! * 60,
-                  'sortOrder': index,
+                  'sortOrder': 0,
                 },
-            ],
-          },
+              ],
+            },
         ],
       };
 
@@ -447,7 +450,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     label: 'เตรียม (นาที)',
                     keyboardType: TextInputType.number,
                     validator: (value) =>
-                      _requiredWholeNumber(value, 'เวลาเตรียม'),
+                        _requiredWholeNumber(value, 'เวลาเตรียม'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -457,7 +460,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     label: 'ปรุง (นาที)',
                     keyboardType: TextInputType.number,
                     validator: (value) =>
-                      _requiredWholeNumber(value, 'เวลาปรุง'),
+                        _requiredWholeNumber(value, 'เวลาปรุง'),
                   ),
                 ),
               ],
@@ -596,7 +599,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
             Text(
               _sectionDraft == null
                   ? 'ยังไม่ได้เพิ่มขั้นตอน'
-                  : '${_sectionDraft!.title} · ${_sectionDraft!.contents.length} ขั้นตอน',
+                  : '${_sectionDraft!.contents.length} ขั้นตอน',
               style: TextStyle(color: Colors.grey.shade700),
             ),
             const SizedBox(height: 8),
