@@ -20,6 +20,7 @@ final class CartItemAdded extends CartEvent {
   final bool showFeedback;
 }
 
+/// [itemId] คือ id ของแถวในตะกร้า (CartItem.id) ไม่ใช่ id สูตร
 final class CartItemRemoved extends CartEvent {
   const CartItemRemoved(this.itemId);
 

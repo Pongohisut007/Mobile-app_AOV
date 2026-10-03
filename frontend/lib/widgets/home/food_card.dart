@@ -119,7 +119,7 @@ class _FavoriteButton extends StatelessWidget {
   }
 }
 
-// ปุ่ม + เพิ่มสูตรลงตะกร้า อยู่ในตะกร้าแล้วจะกลายเป็นติ๊กถูกและกดซ้ำไม่เพิ่ม
+// ปุ่มเปิด/ปิดสูตรในตะกร้า อยู่ในตะกร้าแล้วไอคอนจะเป็นตะกร้าทึบ กดอีกครั้งเพื่อเอาออก
 class _AddToCartButton extends StatelessWidget {
   const _AddToCartButton({required this.food});
 
@@ -147,7 +147,15 @@ class _AddToCartButton extends StatelessWidget {
                 : () async {
                     final cartBloc = context.read<CartBloc>();
                     if (await _requireSignIn(context)) return;
-                    cartBloc.add(CartItemAdded(food));
+
+                    final cartItem = cartBloc.state.items
+                        .where((item) => item.recipeId == recipeId)
+                        .firstOrNull;
+                    cartBloc.add(
+                      cartItem == null
+                          ? CartItemAdded(food)
+                          : CartItemRemoved(cartItem.id),
+                    );
                   },
             child: SizedBox(
               width: 32,
@@ -162,9 +170,13 @@ class _AddToCartButton extends StatelessWidget {
                           color: Colors.black,
                         ),
                       )
+                    // ใช้ไอคอนตะกร้าทั้งสองสถานะ ติ๊กถูกดูเหมือนซื้อไปแล้ว
                     : Icon(
-                        inCart ? Icons.check : Icons.add,
+                        inCart
+                            ? Icons.shopping_cart
+                            : Icons.add_shopping_cart_outlined,
                         color: Colors.black,
+                        size: 18,
                       ),
               ),
             ),

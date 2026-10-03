@@ -131,6 +131,20 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     final accessToken = await _readAccessToken();
     if (accessToken == null) return;
 
+    // ใช้ pending ตัวเดียวกับตอนเพิ่ม ปุ่มบนการ์ดจะหมุนและกันกดรัวระหว่างลบ
+    final recipeId = state.items
+        .where((item) => item.id == event.itemId)
+        .map((item) => item.recipeId)
+        .firstOrNull;
+    if (recipeId != null) {
+      if (state.isPending(recipeId)) return;
+      emit(
+        state.copyWith(
+          pendingRecipeIds: {...state.pendingRecipeIds, recipeId},
+        ),
+      );
+    }
+
     try {
       await _repository.removeItem(accessToken, cartId, event.itemId);
       final items = state.items
@@ -141,12 +155,17 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         state.copyWith(
           status: CartStatus.ready,
           items: items,
+          pendingRecipeIds: recipeId == null ? null : _without(recipeId),
           clearError: true,
         ),
       );
     } on Exception catch (error) {
       emit(
-        state.copyWith(status: CartStatus.failure, error: error.toString()),
+        state.copyWith(
+          status: CartStatus.failure,
+          pendingRecipeIds: recipeId == null ? null : _without(recipeId),
+          error: error.toString(),
+        ),
       );
     }
   }
