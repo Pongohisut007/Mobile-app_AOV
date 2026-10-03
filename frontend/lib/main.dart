@@ -3,9 +3,12 @@ import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/repositories/cart_repository.dart';
 import 'package:flutter_application_1/repositories/favorite_repository.dart';
+import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/routes/route_generator.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +36,12 @@ class MyApp extends StatelessWidget {
           create: (_) => FavoriteBloc(
             HttpFavoriteRepository(baseUrl: ApiConfig.apiBaseUrl),
           )..add(const FavoritesRequested()),
+        ),
+        // โหลดสูตรที่ซื้อแล้วครั้งเดียว หน้า detail/สูตรที่ซื้อแล้วอ่านจากที่นี่
+        BlocProvider(
+          create: (_) => PurchasedRecipesBloc(
+            HttpRecipeLibraryRepository(baseUrl: ApiConfig.apiBaseUrl),
+          )..add(const PurchasedRecipesRequested()),
         ),
       ],
       child: MaterialApp(

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
+import 'package:flutter_application_1/bloc/cart/cart_event.dart';
+import 'package:flutter_application_1/bloc/cart/cart_state.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
 import 'package:flutter_application_1/bloc/recipe_review/recipe_review_bloc.dart';
@@ -8,11 +12,14 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_comment_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_review_repository.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/cooking_steps_page.dart';
 import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
+import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_button.dart';
@@ -45,6 +52,13 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
   bool _commentScrollScheduled = false;
 
+  // จุดเริ่มกับปลายทางของรูปที่ลอยลงตะกร้า
+  final GlobalKey _headerKey = GlobalKey();
+  final GlobalKey<CartBounceState> _cartKey = GlobalKey();
+
+  /// เมนูที่เพิ่งกด Buy Now รอผลจาก API ก่อนค่อยเล่น animation
+  Food? _addingFood;
+
   @override
   void initState() {
     super.initState();
@@ -61,27 +75,73 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      bottomNavigationBar: widget.showComments || widget.scrollToComments
-          ? null
-          : BottomBuyBar(onCartPressed: () {}, onBuyPressed: () {}),
-      body: FutureBuilder<Food>(
-        future: _foodFuture,
-        builder: (context, state) {
-          if (state.connectionState == ConnectionState.waiting) {
-            return const LoadingView();
-          }
+    // อ่านจาก state ที่โหลดไว้ทั้งแอป ไม่ต้องยิง API ใหม่ทุกครั้งที่เปิดหน้า
+    // ยังโหลดไม่เสร็จก็ยังไม่โชว์ปุ่มซื้อ กันปุ่มโผล่แวบแล้วหายไป
+    final canBuy = context.select((PurchasedRecipesBloc bloc) {
+      final state = bloc.state;
+      return state.isResolved && !state.isPurchased(widget.foodsId);
+    });
 
-          if (state.hasError || !state.hasData) {
-            return ErrorView(
-              message: state.error?.toString() ?? 'ไม่พบข้อมูลเมนูนี้',
-              onRetry: _reload,
-            );
-          }
+    return BlocListener<CartBloc, CartState>(
+      // เล่นเฉพาะตอนที่กดจากหน้านี้ และ API เพิ่มลงตะกร้าสำเร็จแล้ว
+      listenWhen: (previous, current) =>
+          _addingFood != null &&
+          previous.isPending(widget.foodsId) &&
+          !current.isPending(widget.foodsId),
+      listener: (context, state) {
+        final food = _addingFood;
+        _addingFood = null;
+        if (food != null && state.contains(food.idfoods)) {
+          _playFlyToCart(food);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        bottomNavigationBar:
+            widget.showComments || widget.scrollToComments || !canBuy
+            ? null
+            : FutureBuilder<Food>(
+                future: _foodFuture,
+                builder: (context, snapshot) {
+                  final food = snapshot.data;
+                  final isPending = context.select(
+                    (CartBloc bloc) => bloc.state.isPending(widget.foodsId),
+                  );
+                  final inCart = context.select(
+                    (CartBloc bloc) => bloc.state.contains(widget.foodsId),
+                  );
 
-          return _buildBody(state.data!);
-        },
+                  // อยู่ในตะกร้าแล้ว ปุ่มหลักเปลี่ยนเป็นพาไปจ่ายเงินที่หน้า Cart
+                  return BottomBuyBar(
+                    cartKey: _cartKey,
+                    onCartPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.cart),
+                    buyLabel: inCart ? 'Checkout now' : 'Buy Now',
+                    onBuyPressed: inCart
+                        ? () => Navigator.pushNamed(context, AppRoutes.cart)
+                        : food == null || isPending
+                        ? null
+                        : () => _addToCart(food),
+                  );
+                },
+              ),
+        body: FutureBuilder<Food>(
+          future: _foodFuture,
+          builder: (context, state) {
+            if (state.connectionState == ConnectionState.waiting) {
+              return const LoadingView();
+            }
+
+            if (state.hasError || !state.hasData) {
+              return ErrorView(
+                message: state.error?.toString() ?? 'ไม่พบข้อมูลเมนูนี้',
+                onRetry: _reload,
+              );
+            }
+
+            return _buildBody(state.data!);
+          },
+        ),
       ),
     );
   }
@@ -91,7 +151,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            FoodDetailHeader(food: food),
+            KeyedSubtree(
+              key: _headerKey,
+              child: FoodDetailHeader(food: food),
+            ),
 
             Padding(
               padding: const EdgeInsets.all(20),
@@ -188,6 +251,39 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     );
   }
 
+  // หน้านี้แสดงผลด้วย animation เอง จึงปิด SnackBar ของ MainTreeWidget
+  Future<void> _addToCart(Food food) async {
+    final cartBloc = context.read<CartBloc>();
+    if (await _requireSignIn(context)) return;
+    _addingFood = food;
+    cartBloc.add(CartItemAdded(food, showFeedback: false));
+  }
+
+  void _playFlyToCart(Food food) {
+    final cartRect = _cartKey.currentState?.globalRect;
+    if (cartRect == null) return;
+
+    const imageSize = 140.0;
+    final headerBox =
+        _headerKey.currentContext?.findRenderObject() as RenderBox?;
+    final headerCenter = headerBox != null && headerBox.attached
+        ? headerBox.localToGlobal(headerBox.size.center(Offset.zero))
+        : null;
+    // เลื่อนจนรูปพ้นจอไปแล้ว ให้ลอยจากกลางจอแทน
+    final screen = MediaQuery.sizeOf(context);
+    final start = headerCenter != null && headerCenter.dy > imageSize / 2
+        ? headerCenter
+        : Offset(screen.width / 2, screen.height / 2);
+
+    flyToCart(
+      context: context,
+      imageUrl: food.filePathImage,
+      from: Rect.fromCenter(center: start, width: imageSize, height: imageSize),
+      to: cartRect,
+      onArrived: () => _cartKey.currentState?.bounce(),
+    );
+  }
+
   void _scheduleScrollToComments() {
     if (!widget.scrollToComments) return;
 
@@ -213,4 +309,17 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       );
     });
   }
+}
+
+/// ตะกร้าผูกกับบัญชี ยังไม่ล็อกอินก็เด้งไปหน้า login ก่อน
+/// คืน true เมื่อไปต่อไม่ได้ (ผู้เรียกต้องหยุดทำงานต่อ)
+Future<bool> _requireSignIn(BuildContext context) async {
+  final navigator = Navigator.of(context);
+  final accessToken = await TokenStorage().readAccessToken();
+
+  if (accessToken != null && accessToken.trim().isNotEmpty) return false;
+  if (!context.mounted) return true;
+
+  navigator.pushNamed(AppRoutes.login);
+  return true;
 }

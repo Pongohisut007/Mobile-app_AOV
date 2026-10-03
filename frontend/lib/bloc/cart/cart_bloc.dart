@@ -73,6 +73,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     // อยู่ในตะกร้าแล้วไม่เพิ่มซ้ำ แค่บอกผู้ใช้ว่ามีอยู่แล้ว
     if (state.contains(recipeId)) {
+      if (!event.showFeedback) return;
       emit(
         state.copyWith(
           feedback: CartFeedback.alreadyInCart,
@@ -103,7 +104,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           cartId: cartId,
           items: items,
           pendingRecipeIds: _without(recipeId),
-          feedback: CartFeedback.added,
+          feedback: event.showFeedback ? CartFeedback.added : null,
           feedbackTitle: food.name,
         ),
       );
@@ -112,7 +113,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         state.copyWith(
           status: CartStatus.failure,
           pendingRecipeIds: _without(recipeId),
-          feedback: CartFeedback.failed,
+          feedback: event.showFeedback ? CartFeedback.failed : null,
           feedbackTitle: food.name,
           error: error.toString(),
         ),
@@ -130,6 +131,20 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     final accessToken = await _readAccessToken();
     if (accessToken == null) return;
 
+    // ใช้ pending ตัวเดียวกับตอนเพิ่ม ปุ่มบนการ์ดจะหมุนและกันกดรัวระหว่างลบ
+    final recipeId = state.items
+        .where((item) => item.id == event.itemId)
+        .map((item) => item.recipeId)
+        .firstOrNull;
+    if (recipeId != null) {
+      if (state.isPending(recipeId)) return;
+      emit(
+        state.copyWith(
+          pendingRecipeIds: {...state.pendingRecipeIds, recipeId},
+        ),
+      );
+    }
+
     try {
       await _repository.removeItem(accessToken, cartId, event.itemId);
       final items = state.items
@@ -140,12 +155,17 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         state.copyWith(
           status: CartStatus.ready,
           items: items,
+          pendingRecipeIds: recipeId == null ? null : _without(recipeId),
           clearError: true,
         ),
       );
     } on Exception catch (error) {
       emit(
-        state.copyWith(status: CartStatus.failure, error: error.toString()),
+        state.copyWith(
+          status: CartStatus.failure,
+          pendingRecipeIds: recipeId == null ? null : _without(recipeId),
+          error: error.toString(),
+        ),
       );
     }
   }

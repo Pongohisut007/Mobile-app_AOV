@@ -111,10 +111,8 @@ class RoutesGenerator {
           const MyRecipesPage(),
         );
       case AppRoutes.purchasedRecipes:
-        return _recipeCollectionRoute(
-          RecipeCollectionType.purchased,
-          const PurchasedRecipesPage(),
-        );
+        // อ่านจาก PurchasedRecipesBloc ที่อยู่เหนือ MaterialApp ไม่ต้องสร้าง bloc ใหม่
+        return MaterialPageRoute(builder: (_) => const PurchasedRecipesPage());
       case AppRoutes.favoriteRecipes:
         return _recipeCollectionRoute(
           RecipeCollectionType.favorites,
