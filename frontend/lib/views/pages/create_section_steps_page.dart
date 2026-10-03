@@ -85,7 +85,6 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
           kind: kind,
           mimeType: _mimeType(kind, file.extension),
         );
-        step.contentType = isVideo ? 'video' : 'image';
       });
       _showMessage('เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร');
     } catch (error) {
