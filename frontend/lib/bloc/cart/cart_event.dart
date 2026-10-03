@@ -12,9 +12,12 @@ final class CartRequested extends CartEvent {
 
 /// กดปุ่ม + บนการ์ด ถ้าสูตรนี้อยู่ในตะกร้าแล้วจะไม่เพิ่มซ้ำ
 final class CartItemAdded extends CartEvent {
-  const CartItemAdded(this.food);
+  const CartItemAdded(this.food, {this.showFeedback = true});
 
   final Food food;
+
+  /// false = ไม่ต้องเด้ง SnackBar เพราะหน้าที่กดแสดงผลเอง (เช่น animation หน้า detail)
+  final bool showFeedback;
 }
 
 final class CartItemRemoved extends CartEvent {

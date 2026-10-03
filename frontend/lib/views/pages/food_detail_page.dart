@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
+import 'package:flutter_application_1/bloc/cart/cart_state.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
@@ -18,6 +19,7 @@ import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
+import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_button.dart';
@@ -50,6 +52,13 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
   bool _commentScrollScheduled = false;
 
+  // จุดเริ่มกับปลายทางของรูปที่ลอยลงตะกร้า
+  final GlobalKey _headerKey = GlobalKey();
+  final GlobalKey<CartBounceState> _cartKey = GlobalKey();
+
+  /// เมนูที่เพิ่งกด Buy Now รอผลจาก API ก่อนค่อยเล่น animation
+  Food? _addingFood;
+
   @override
   void initState() {
     super.initState();
@@ -73,51 +82,66 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       return state.isResolved && !state.isPurchased(widget.foodsId);
     });
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      bottomNavigationBar:
-          widget.showComments || widget.scrollToComments || !canBuy
-          ? null
-          : FutureBuilder<Food>(
-              future: _foodFuture,
-              builder: (context, snapshot) {
-                final food = snapshot.data;
-                final isPending = context.select(
-                  (CartBloc bloc) => bloc.state.isPending(widget.foodsId),
-                );
-                final inCart = context.select(
-                  (CartBloc bloc) => bloc.state.contains(widget.foodsId),
-                );
+    return BlocListener<CartBloc, CartState>(
+      // เล่นเฉพาะตอนที่กดจากหน้านี้ และ API เพิ่มลงตะกร้าสำเร็จแล้ว
+      listenWhen: (previous, current) =>
+          _addingFood != null &&
+          previous.isPending(widget.foodsId) &&
+          !current.isPending(widget.foodsId),
+      listener: (context, state) {
+        final food = _addingFood;
+        _addingFood = null;
+        if (food != null && state.contains(food.idfoods)) {
+          _playFlyToCart(food);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        bottomNavigationBar:
+            widget.showComments || widget.scrollToComments || !canBuy
+            ? null
+            : FutureBuilder<Food>(
+                future: _foodFuture,
+                builder: (context, snapshot) {
+                  final food = snapshot.data;
+                  final isPending = context.select(
+                    (CartBloc bloc) => bloc.state.isPending(widget.foodsId),
+                  );
+                  final inCart = context.select(
+                    (CartBloc bloc) => bloc.state.contains(widget.foodsId),
+                  );
 
-                // อยู่ในตะกร้าแล้ว ปุ่มหลักเปลี่ยนเป็นพาไปจ่ายเงินที่หน้า Cart
-                return BottomBuyBar(
-                  onCartPressed: () =>
-                      Navigator.pushNamed(context, AppRoutes.cart),
-                  buyLabel: inCart ? 'Checkout now' : 'Buy Now',
-                  onBuyPressed: inCart
-                      ? () => Navigator.pushNamed(context, AppRoutes.cart)
-                      : food == null || isPending
-                      ? null
-                      : () => _addToCart(food),
-                );
-              },
-            ),
-      body: FutureBuilder<Food>(
-        future: _foodFuture,
-        builder: (context, state) {
-          if (state.connectionState == ConnectionState.waiting) {
-            return const LoadingView();
-          }
+                  // อยู่ในตะกร้าแล้ว ปุ่มหลักเปลี่ยนเป็นพาไปจ่ายเงินที่หน้า Cart
+                  return BottomBuyBar(
+                    cartKey: _cartKey,
+                    onCartPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.cart),
+                    buyLabel: inCart ? 'Checkout now' : 'Buy Now',
+                    onBuyPressed: inCart
+                        ? () => Navigator.pushNamed(context, AppRoutes.cart)
+                        : food == null || isPending
+                        ? null
+                        : () => _addToCart(food),
+                  );
+                },
+              ),
+        body: FutureBuilder<Food>(
+          future: _foodFuture,
+          builder: (context, state) {
+            if (state.connectionState == ConnectionState.waiting) {
+              return const LoadingView();
+            }
 
-          if (state.hasError || !state.hasData) {
-            return ErrorView(
-              message: state.error?.toString() ?? 'ไม่พบข้อมูลเมนูนี้',
-              onRetry: _reload,
-            );
-          }
+            if (state.hasError || !state.hasData) {
+              return ErrorView(
+                message: state.error?.toString() ?? 'ไม่พบข้อมูลเมนูนี้',
+                onRetry: _reload,
+              );
+            }
 
-          return _buildBody(state.data!);
-        },
+            return _buildBody(state.data!);
+          },
+        ),
       ),
     );
   }
@@ -127,7 +151,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            FoodDetailHeader(food: food),
+            KeyedSubtree(
+              key: _headerKey,
+              child: FoodDetailHeader(food: food),
+            ),
 
             Padding(
               padding: const EdgeInsets.all(20),
@@ -224,11 +251,37 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     );
   }
 
-  // ข้อความ เพิ่มแล้ว/มีอยู่แล้ว เด้งจาก BlocListener ใน MainTreeWidget ที่ยังอยู่ใต้หน้านี้
+  // หน้านี้แสดงผลด้วย animation เอง จึงปิด SnackBar ของ MainTreeWidget
   Future<void> _addToCart(Food food) async {
     final cartBloc = context.read<CartBloc>();
     if (await _requireSignIn(context)) return;
-    cartBloc.add(CartItemAdded(food));
+    _addingFood = food;
+    cartBloc.add(CartItemAdded(food, showFeedback: false));
+  }
+
+  void _playFlyToCart(Food food) {
+    final cartRect = _cartKey.currentState?.globalRect;
+    if (cartRect == null) return;
+
+    const imageSize = 140.0;
+    final headerBox =
+        _headerKey.currentContext?.findRenderObject() as RenderBox?;
+    final headerCenter = headerBox != null && headerBox.attached
+        ? headerBox.localToGlobal(headerBox.size.center(Offset.zero))
+        : null;
+    // เลื่อนจนรูปพ้นจอไปแล้ว ให้ลอยจากกลางจอแทน
+    final screen = MediaQuery.sizeOf(context);
+    final start = headerCenter != null && headerCenter.dy > imageSize / 2
+        ? headerCenter
+        : Offset(screen.width / 2, screen.height / 2);
+
+    flyToCart(
+      context: context,
+      imageUrl: food.filePathImage,
+      from: Rect.fromCenter(center: start, width: imageSize, height: imageSize),
+      to: cartRect,
+      onArrived: () => _cartKey.currentState?.bounce(),
+    );
   }
 
   void _scheduleScrollToComments() {

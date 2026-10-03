@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
+import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 
 class BottomBuyBar extends StatelessWidget {
   const BottomBuyBar({
@@ -7,6 +8,7 @@ class BottomBuyBar extends StatelessWidget {
     required this.onCartPressed,
     required this.onBuyPressed,
     this.buyLabel = 'Buy Now',
+    this.cartKey,
   });
 
   final VoidCallback onCartPressed;
@@ -14,25 +16,31 @@ class BottomBuyBar extends StatelessWidget {
   final VoidCallback? onBuyPressed;
   final String buyLabel;
 
+  /// ปลายทางของรูปที่ลอยลงตะกร้า และใช้สั่งปุ่มตะกร้าเด้ง
+  final GlobalKey<CartBounceState>? cartKey;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       minimum: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade300),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: onCartPressed,
-              icon: const Icon(
-                Icons.shopping_bag_outlined,
-                color: FoodDetailColors.primaryRed,
+          CartBounce(
+            key: cartKey,
+            child: Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.shade300),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: onCartPressed,
+                icon: const Icon(
+                  Icons.shopping_bag_outlined,
+                  color: FoodDetailColors.primaryRed,
+                ),
               ),
             ),
           ),
