@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/repositories/chat_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_sheet.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// ปุ่ม "ถาม AI" แสดงเฉพาะคนที่ login และมีสิทธิ์ใช้สูตรนี้
 class RecipeChatButton extends StatefulWidget {
@@ -47,7 +49,11 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
     }
   }
 
-  void _openChat() {
+  Future<void> _openChat() async {
+    // ปุ่มอาจโชว์จาก PurchasedRecipesBloc ก่อนที่เช็กสิทธิ์จะเสร็จ token จึงยังไม่มี
+    final accessToken = _accessToken ?? await _tokenStorage.readAccessToken();
+    if (accessToken == null || accessToken.trim().isEmpty || !mounted) return;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -58,7 +64,7 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
       ),
       builder: (_) => RecipeChatSheet(
         repository: _repository,
-        accessToken: _accessToken!,
+        accessToken: accessToken,
         recipeId: widget.recipeId,
         history: _history,
       ),
@@ -67,7 +73,12 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_canChat) return const SizedBox.shrink();
+    // สูตรที่ซื้อแล้วรู้ได้ทันทีจาก state ที่โหลดไว้ทั้งแอป ไม่ต้องรอ API
+    // ปุ่มจึงไม่โผล่ทีหลังจนดันเนื้อหาด้านล่าง ส่วนสิทธิ์แบบอื่น (เช่น เจ้าของสูตร) รอผลจาก backend
+    final purchased = context.select(
+      (PurchasedRecipesBloc bloc) => bloc.state.isPurchased(widget.recipeId),
+    );
+    if (!purchased && !_canChat) return const SizedBox.shrink();
 
     return SizedBox(
       width: double.infinity,
