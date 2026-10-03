@@ -56,6 +56,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
 
   Future<void> _saveRecipe() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_coverSelection == null) {
+      _showMessage('เลือกรูปตัวอย่างอาหารก่อนเผยแพร่สูตร');
+      return;
+    }
     if (_isBusy || _isSaving) {
       return;
     }
@@ -295,11 +299,16 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     return null;
   }
 
-  String? _optionalWholeNumber(String? value, String label) {
-    if (value == null || value.trim().isEmpty) return null;
+  String? _requiredWholeNumber(
+    String? value,
+    String label, {
+    bool mustBePositive = false,
+  }) {
+    if (value == null || value.trim().isEmpty) return 'กรอก$label';
     final number = int.tryParse(value.trim());
-    if (number == null || number < 0) {
-      return '$labelต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป';
+    final minimum = mustBePositive ? 1 : 0;
+    if (number == null || number < minimum) {
+      return '$labelต้องเป็นจำนวนเต็มตั้งแต่ $minimum ขึ้นไป';
     }
     return null;
   }
@@ -391,10 +400,21 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
               const SizedBox(height: 12),
               _ImagePreview(file: _coverSelection!.file),
               const SizedBox(height: 6),
-              Text(
-                _coverSelection!.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _coverSelection!.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => setState(() => _coverSelection = null),
+                    tooltip: 'ลบรูปภาพ',
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                ],
               ),
             ],
             const SizedBox(height: 22),
@@ -420,7 +440,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     label: 'เตรียม (นาที)',
                     keyboardType: TextInputType.number,
                     validator: (value) =>
-                        _optionalWholeNumber(value, 'เวลาเตรียม'),
+                      _requiredWholeNumber(value, 'เวลาเตรียม'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -430,7 +450,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     label: 'ปรุง (นาที)',
                     keyboardType: TextInputType.number,
                     validator: (value) =>
-                        _optionalWholeNumber(value, 'เวลาปรุง'),
+                      _requiredWholeNumber(value, 'เวลาปรุง'),
                   ),
                 ),
               ],
@@ -443,19 +463,11 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     controller: _servingsController,
                     label: 'จำนวนที่รับประทาน',
                     keyboardType: TextInputType.number,
-                    validator: (value) {
-                      final error = _optionalWholeNumber(
-                        value,
-                        'จำนวนที่รับประทาน',
-                      );
-                      if (error != null) return error;
-                      if (value != null &&
-                          value.trim().isNotEmpty &&
-                          int.parse(value.trim()) == 0) {
-                        return 'ต้องมากกว่า 0';
-                      }
-                      return null;
-                    },
+                    validator: (value) => _requiredWholeNumber(
+                      value,
+                      'จำนวนที่รับประทาน',
+                      mustBePositive: true,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -466,6 +478,8 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                       labelText: 'ระดับความยาก',
                       border: OutlineInputBorder(),
                     ),
+                    validator: (value) =>
+                        value == null ? 'เลือกระดับความยาก' : null,
                     items: const [
                       DropdownMenuItem(value: 'easy', child: Text('ง่าย')),
                       DropdownMenuItem(value: 'medium', child: Text('ปานกลาง')),
