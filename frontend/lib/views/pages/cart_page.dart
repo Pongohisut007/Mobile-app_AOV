@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/cart/cart_state.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:flutter_application_1/repositories/purchase_repository.dart';
@@ -101,6 +103,12 @@ class _CartPageState extends State<CartPage> {
 
     if (!mounted) return;
     context.read<CartBloc>().add(const CartRequested());
+    // โหลดใหม่ครั้งเดียวหลังจ่าย หน้า detail จะซ่อนปุ่มซื้อและหน้าสูตรที่ซื้อแล้วจะมีสูตรใหม่
+    if (completed > 0) {
+      context.read<PurchasedRecipesBloc>().add(
+        const PurchasedRecipesRefreshed(),
+      );
+    }
     setState(() => _isCheckingOut = false);
 
     if (errorMessage != null) {

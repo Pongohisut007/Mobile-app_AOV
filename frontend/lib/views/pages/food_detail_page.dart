@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
 import 'package:flutter_application_1/bloc/recipe_review/recipe_review_bloc.dart';
@@ -61,9 +62,17 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    // อ่านจาก state ที่โหลดไว้ทั้งแอป ไม่ต้องยิง API ใหม่ทุกครั้งที่เปิดหน้า
+    // ยังโหลดไม่เสร็จก็ยังไม่โชว์ปุ่มซื้อ กันปุ่มโผล่แวบแล้วหายไป
+    final canBuy = context.select((PurchasedRecipesBloc bloc) {
+      final state = bloc.state;
+      return state.isResolved && !state.isPurchased(widget.foodsId);
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: widget.showComments || widget.scrollToComments
+      bottomNavigationBar:
+          widget.showComments || widget.scrollToComments || !canBuy
           ? null
           : BottomBuyBar(onCartPressed: () {}, onBuyPressed: () {}),
       body: FutureBuilder<Food>(
