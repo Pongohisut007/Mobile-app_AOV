@@ -95,6 +95,7 @@ class _CommunityPageState extends State<CommunityPage> {
                                       MaterialPageRoute<bool>(
                                         builder: (_) => CreateFoodcardPage(
                                           categories: categoryState.categories,
+                                          isFromCommunity: true,
                                         ),
                                       ),
                                     );

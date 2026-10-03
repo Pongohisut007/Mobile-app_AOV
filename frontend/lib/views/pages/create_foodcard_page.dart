@@ -12,9 +12,14 @@ import 'package:flutter_application_1/repositories/upload_repository.dart';
 import 'package:flutter_application_1/views/pages/create_cooking_steps_page.dart';
 
 class CreateFoodcardPage extends StatefulWidget {
-  const CreateFoodcardPage({super.key, required this.categories});
+  const CreateFoodcardPage({
+    super.key,
+    required this.categories,
+    this.isFromCommunity = false,
+  });
 
   final List<Category> categories;
+  final bool isFromCommunity;
 
   @override
   State<CreateFoodcardPage> createState() => _CreateFoodcardPageState();
@@ -420,18 +425,20 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
             const SizedBox(height: 22),
             _sectionHeading('รายละเอียดสูตร', Icons.tune_rounded),
             const SizedBox(height: 12),
-            _textField(
-              controller: _priceController,
-              label: 'ราคา (บาท)',
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            if (!widget.isFromCommunity) ...[
+              _textField(
+                controller: _priceController,
+                label: 'ราคา (บาท)',
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return 'กรอกราคา';
+                  return _nonNegativeNumber(value, 'ราคา');
+                },
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) return 'กรอกราคา';
-                return _nonNegativeNumber(value, 'ราคา');
-              },
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Expanded(
