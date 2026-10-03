@@ -73,6 +73,8 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   bool _isLoadingHistory = false;
   // รูปที่เลือกไว้ รอส่งพร้อมคำถาม
   ChatImage? _image;
+  // ข้อผิดพลาดล่าสุด แสดงในชีตเอง เพราะ SnackBar จะไปโผล่หลังชีตจนมองไม่เห็น
+  String? _errorText;
 
   List<ChatBubbleMessage> get _messages => widget.history.messages;
 
@@ -123,6 +125,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
 
     _inputController.clear();
     setState(() {
+      _errorText = null;
       widget.history.add(
         ChatBubbleMessage(text: text, isUser: true, imageBytes: image?.bytes),
       );
@@ -203,9 +206,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
 
   void _showError(Object error) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(error.toString())));
+    setState(() => _errorText = error.toString());
   }
 
   void _scrollToBottom() {
@@ -240,6 +241,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
                   : _buildMessages(),
             ),
             if (_isSending) _buildTyping(),
+            if (_errorText != null) _buildError(_errorText!),
             _buildInput(),
           ],
         ),
@@ -297,6 +299,35 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
       padding: const EdgeInsets.all(16),
       itemCount: _messages.length,
       itemBuilder: (context, index) => _ChatBubble(message: _messages[index]),
+    );
+  }
+
+  Widget _buildError(String message) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: Colors.red.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: Colors.red.shade900),
+            ),
+          ),
+          IconButton(
+            tooltip: 'ปิด',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => setState(() => _errorText = null),
+            icon: Icon(Icons.close_rounded, color: Colors.red.shade700),
+          ),
+        ],
+      ),
     );
   }
 

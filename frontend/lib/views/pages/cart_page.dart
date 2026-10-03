@@ -225,6 +225,19 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
+  // ดึงลงเพื่อโหลดตะกร้าใหม่ ระหว่างจ่ายเงินไม่ให้โหลดทับ
+  Future<void> _refresh() async {
+    if (_isCheckingOut) return;
+    final cartBloc = context.read<CartBloc>();
+    final done = cartBloc.stream.firstWhere(
+      (state) =>
+          state.status == CartStatus.ready ||
+          state.status == CartStatus.failure,
+    );
+    cartBloc.add(const CartRequested());
+    await done;
+  }
+
   //
   @override
   Widget build(BuildContext context) {
@@ -267,49 +280,67 @@ class _CartPageState extends State<CartPage> {
               onRetry: () =>
                   context.read<CartBloc>().add(const CartRequested()),
             ),
-            _ when items.isEmpty => CartEmptyView(
-              onBrowsePressed: () => Navigator.pop(context),
+            _ when items.isEmpty => RefreshIndicator(
+              onRefresh: _refresh,
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: CartEmptyView(
+                      onBrowsePressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            _ => ListView.separated(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-              itemCount: items.length + 1,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return CheckboxListTile(
-                    value: selectedItems.length == items.length,
-                    onChanged: _isCheckingOut
+            _ => RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                itemCount: items.length + 1,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return CheckboxListTile(
+                      value: selectedItems.length == items.length,
+                      onChanged: _isCheckingOut
+                          ? null
+                          : (selected) =>
+                                _setAllSelected(items, selected ?? false),
+                      title: const Text('เลือกทั้งหมด'),
+                      subtitle: Text(
+                        'เลือก ${selectedItems.length} จาก ${items.length} รายการ',
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: ProfileColors.ink,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    );
+                  }
+                  final item = items[index - 1];
+                  return CartItemTile(
+                    item: item,
+                    isSelected: !_unselectedItemIds.contains(item.id),
+                    onSelectedChanged: _isCheckingOut
                         ? null
                         : (selected) =>
-                              _setAllSelected(items, selected ?? false),
-                    title: const Text('เลือกทั้งหมด'),
-                    subtitle: Text(
-                      'เลือก ${selectedItems.length} จาก ${items.length} รายการ',
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    activeColor: ProfileColors.ink,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                              _setItemSelected(item.id, selected ?? false),
+                    onRemove: _isCheckingOut
+                        ? null
+                        : () {
+                            _unselectedItemIds.remove(item.id);
+                            context.read<CartBloc>().add(
+                              CartItemRemoved(item.id),
+                            );
+                          },
                   );
-                }
-                final item = items[index - 1];
-                return CartItemTile(
-                  item: item,
-                  isSelected: !_unselectedItemIds.contains(item.id),
-                  onSelectedChanged: _isCheckingOut
-                      ? null
-                      : (selected) =>
-                            _setItemSelected(item.id, selected ?? false),
-                  onRemove: _isCheckingOut
-                      ? null
-                      : () {
-                          _unselectedItemIds.remove(item.id);
-                          context.read<CartBloc>().add(
-                            CartItemRemoved(item.id),
-                          );
-                        },
-                );
-              },
+                },
+              ),
             ),
           },
           bottomNavigationBar: items.isEmpty

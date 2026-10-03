@@ -215,7 +215,8 @@ export class RecipesService {
    */
   async findOneForViewer(id: string, userId?: string): Promise<Recipe> {
     const recipe = await this.findOne(id);
-    if (await this.canViewFullRecipe(recipe, userId)) return recipe;
+    recipe.canViewFullRecipe = await this.canViewFullRecipe(recipe, userId);
+    if (recipe.canViewFullRecipe) return recipe;
 
     recipe.sections = recipe.sections.filter((section) => section.isPreview);
     return recipe;

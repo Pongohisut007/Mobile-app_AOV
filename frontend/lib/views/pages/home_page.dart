@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/banner/banner_bloc.dart';
+import 'package:flutter_application_1/bloc/banner/banner_event.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
@@ -32,119 +34,142 @@ class _HomePageState extends State<HomePage> {
     ); // ดึงข้อมูลตาม food by CategoryBloc
   }
 
+  // ดึงลงเพื่อโหลดแบนเนอร์และเมนูใหม่ ถ้ากำลังค้นหาอยู่ก็ค้นหาคำเดิมซ้ำ
+  Future<void> _refresh() async {
+    final foodBloc = context.read<FoodBloc>();
+    final selectedId = context.read<CategoryBloc>().state.selectedId;
+    final currentState = foodBloc.state;
+    final query = currentState is FoodLoaded ? currentState.query : null;
+
+    context.read<BannerBloc>().add(FetchBannersEvent());
+    final done = foodBloc.stream.firstWhere(
+      (state) => state is FoodLoaded || state is FoodError,
+    );
+    foodBloc.add(
+      query == null
+          ? FetchFoodByCategoryEvent(selectedId)
+          : SearchFoodEvent(query, categoryId: selectedId),
+    );
+    await done;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              SearchBarWidget(
-                onSearch: (query) {
-                  final foodBloc = context.read<FoodBloc>();
-                  final selectedId = context.read<CategoryBloc>().state.selectedId;
-                  if (query.isEmpty) {
-                    // ล้างคำค้นหา = กลับไปแสดงตามหมวดที่เลือกไว้
-                    foodBloc.add(FetchFoodByCategoryEvent(selectedId));
-                  } else {
-                    // ค้นหาในขอบเขตของหมวดที่เลือกอยู่
-                    foodBloc.add(SearchFoodEvent(query, categoryId: selectedId));
-                  }
-                },
-              ),
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                SearchBarWidget(
+                  onSearch: (query) {
+                    final foodBloc = context.read<FoodBloc>();
+                    final selectedId = context.read<CategoryBloc>().state.selectedId;
+                    if (query.isEmpty) {
+                      // ล้างคำค้นหา = กลับไปแสดงตามหมวดที่เลือกไว้
+                      foodBloc.add(FetchFoodByCategoryEvent(selectedId));
+                    } else {
+                      // ค้นหาในขอบเขตของหมวดที่เลือกอยู่
+                      foodBloc.add(SearchFoodEvent(query, categoryId: selectedId));
+                    }
+                  },
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              const HomeBanner(),
+                const HomeBanner(),
 
-              const SizedBox(height: 25),
+                const SizedBox(height: 25),
 
-              const CategoryList(),
+                const CategoryList(),
 
-              const SizedBox(height: 25),
+                const SizedBox(height: 25),
 
-              const SectionTitle(),
+                const SectionTitle(),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              BlocBuilder<FoodBloc, FoodState>(
-                builder: (context, state) {
-                  if (state is FoodInitial) {
-                    return const Center(child: Text("Initial Loading..."));
-                  }
-                  if (state is FoodLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (state is FoodLoaded) {
-                    // ซ่อนสูตรที่ซื้อแล้ว ไปเปิดได้จากหน้า "สูตรที่ซื้อแล้ว" แทน
-                    final purchased = context
-                        .watch<PurchasedRecipesBloc>()
-                        .state;
-                    final foods = state.foods
-                        .where((food) => !purchased.isPurchased(food.idfoods))
-                        .toList(growable: false);
+                BlocBuilder<FoodBloc, FoodState>(
+                  builder: (context, state) {
+                    if (state is FoodInitial) {
+                      return const Center(child: Text("Initial Loading..."));
+                    }
+                    if (state is FoodLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (state is FoodLoaded) {
+                      // ซ่อนสูตรที่ซื้อแล้ว ไปเปิดได้จากหน้า "สูตรที่ซื้อแล้ว" แทน
+                      final purchased = context
+                          .watch<PurchasedRecipesBloc>()
+                          .state;
+                      final foods = state.foods
+                          .where((food) => !purchased.isPurchased(food.idfoods))
+                          .toList(growable: false);
 
-                    if (foods.isEmpty) {
-                      final query = state.query;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
-                        child: Center(
-                          child: Text(
-                            query == null
-                                ? 'ยังไม่มีเมนูในหมวดนี้'
-                                : 'ไม่พบเมนูที่ชื่อ "$query"',
-                            style: const TextStyle(color: Colors.grey),
+                      if (foods.isEmpty) {
+                        final query = state.query;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Center(
+                            child: Text(
+                              query == null
+                                  ? 'ยังไม่มีเมนูในหมวดนี้'
+                                  : 'ไม่พบเมนูที่ชื่อ "$query"',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
                           ),
-                        ),
+                        );
+                      }
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.maxWidth;
+                          // < 600 มือถือ = 2 คอลัมน์, >= 600 iPad = 3 คอลัมน์
+                          final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
+
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: foods.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  childAspectRatio: .68,
+                                  crossAxisSpacing: 15,
+                                  mainAxisSpacing: 15,
+                                ),
+                            itemBuilder: (_, index) {
+                              final food = foods[index];
+                              return FoodCard(
+                                food: food,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          FoodDetailPage(foodsId: food.idfoods),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
                       );
                     }
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = constraints.maxWidth;
-                        // < 600 มือถือ = 2 คอลัมน์, >= 600 iPad = 3 คอลัมน์
-                        final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
-
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: foods.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                childAspectRatio: .68,
-                                crossAxisSpacing: 15,
-                                mainAxisSpacing: 15,
-                              ),
-                          itemBuilder: (_, index) {
-                            final food = foods[index];
-                            return FoodCard(
-                              food: food,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        FoodDetailPage(foodsId: food.idfoods),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                    );
-                  }
-                  // handle error state
-                  if (state is FoodError) {
-                    return Center(child: Text(state.message));
-                  }
-                  // return empty widget
-                  return const SizedBox.shrink();
-                },
-              ),
-            ],
+                    // handle error state
+                    if (state is FoodError) {
+                      return Center(child: Text(state.message));
+                    }
+                    // return empty widget
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
