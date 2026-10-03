@@ -1,7 +1,28 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+
+/// รูปที่แนบไปถาม AI
+class ChatImage {
+  const ChatImage({required this.bytes, required this.filename});
+
+  final Uint8List bytes;
+  final String filename;
+
+  /// backend รับเฉพาะ jpeg / png / webp / gif
+  MediaType get mediaType {
+    final extension = filename.split('.').last.toLowerCase();
+    return switch (extension) {
+      'png' => MediaType('image', 'png'),
+      'webp' => MediaType('image', 'webp'),
+      'gif' => MediaType('image', 'gif'),
+      _ => MediaType('image', 'jpeg'),
+    };
+  }
+}
 
 /// คุยกับ AI เกี่ยวกับสูตรอาหาร (backend จำบทสนทนาไว้ 20 นาที)
 class ChatRepository {
@@ -30,19 +51,24 @@ class ChatRepository {
     return decoded is Map<String, dynamic> && decoded['canChat'] == true;
   }
 
-  /// ส่งคำถาม ได้คำตอบของ AI กลับมา
+  /// ส่งคำถาม (แนบรูปได้) ได้คำตอบของ AI กลับมา
   Future<String> sendMessage(
     String accessToken,
     String recipeId,
-    String message,
-  ) async {
-    final decoded = await _send(
-      () => _client.post(
-        Uri.parse('$_baseUrl/chat'),
-        headers: _headers(accessToken),
-        body: jsonEncode({'recipeId': recipeId, 'message': message.trim()}),
-      ),
-    );
+    String message, {
+    ChatImage? image,
+  }) async {
+    final text = message.trim();
+    final decoded = await _send(() {
+      if (image == null) {
+        return _client.post(
+          Uri.parse('$_baseUrl/chat'),
+          headers: _headers(accessToken),
+          body: jsonEncode({'recipeId': recipeId, 'message': text}),
+        );
+      }
+      return _sendWithImage(accessToken, recipeId, text, image);
+    });
     if (decoded is! Map<String, dynamic> || decoded['message'] is! String) {
       throw const ChatException('AI ตอบกลับมาในรูปแบบที่ไม่ถูกต้อง');
     }
@@ -59,6 +85,28 @@ class ChatRepository {
     );
   }
 
+  /// มีรูปต้องส่งเป็น multipart/form-data (รูปอยู่ในฟิลด์ image)
+  Future<http.Response> _sendWithImage(
+    String accessToken,
+    String recipeId,
+    String message,
+    ChatImage image,
+  ) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/chat'))
+      ..headers['Authorization'] = 'Bearer ${accessToken.trim()}'
+      ..fields['recipeId'] = recipeId
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          image.bytes,
+          filename: image.filename,
+          contentType: image.mediaType,
+        ),
+      );
+    if (message.isNotEmpty) request.fields['message'] = message;
+    return http.Response.fromStream(await _client.send(request));
+  }
+
   Map<String, String> _headers(String accessToken) => {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ${accessToken.trim()}',
@@ -72,6 +120,9 @@ class ChatRepository {
       }
       if (response.statusCode == 403) {
         throw const ChatException('ต้องซื้อสูตรนี้ก่อนจึงจะถาม AI ได้');
+      }
+      if (response.statusCode == 413) {
+        throw const ChatException('รูปใหญ่เกินไป (ไม่เกิน 5MB)');
       }
       if (response.statusCode == 503) {
         throw const ChatException('AI ไม่พร้อมใช้งานชั่วคราว ลองใหม่อีกครั้ง');
