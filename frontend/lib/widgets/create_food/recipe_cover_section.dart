@@ -8,6 +8,7 @@ class RecipeCoverSection extends StatelessWidget {
     super.key,
     required this.coverFile,
     required this.fileName,
+    this.coverUrl,
     required this.showImgCommu,
     required this.isBusy,
     required this.isSaving,
@@ -20,6 +21,8 @@ class RecipeCoverSection extends StatelessWidget {
 
   final File? coverFile;
   final String? fileName;
+  // รูปเดิมที่อัปโหลดไว้แล้ว (ตอนแก้ไขสูตร) แสดงเมื่อยังไม่ได้เลือกไฟล์ใหม่
+  final String? coverUrl;
   final bool showImgCommu;
 
   final bool isBusy;
@@ -34,6 +37,7 @@ class RecipeCoverSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = isSaving || isBusy;
+    final hasCover = coverFile != null || coverUrl != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,22 +60,20 @@ class RecipeCoverSection extends StatelessWidget {
                 )
               : const Icon(Icons.upload_file_rounded),
           label: Text(
-            coverFile == null
-                ? 'เลือกรูปภาพ'
-                : 'เปลี่ยนรูปภาพ',
+            hasCover
+                ? 'เปลี่ยนรูปภาพ'
+                : 'เลือกรูปภาพ',
           ),
         ),
 
-        if (coverFile != null) ...[
+        if (hasCover) ...[
           const SizedBox(height: 12),
 
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: AspectRatio(
               aspectRatio: 16 / 9,
-              child: Image.file(
-                coverFile!,
-                fit: BoxFit.cover,
+              child: _buildImage(
                 errorBuilder: (
                   context,
                   error,
@@ -96,7 +98,7 @@ class RecipeCoverSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  fileName ?? '',
+                  coverFile == null ? 'รูปเดิม' : fileName ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -126,6 +128,18 @@ class RecipeCoverSection extends StatelessWidget {
                 },
         ),
       ],
+    );
+  }
+
+  Widget _buildImage({required ImageErrorWidgetBuilder errorBuilder}) {
+    final file = coverFile;
+    if (file != null) {
+      return Image.file(file, fit: BoxFit.cover, errorBuilder: errorBuilder);
+    }
+    return Image.network(
+      coverUrl!,
+      fit: BoxFit.cover,
+      errorBuilder: errorBuilder,
     );
   }
 }

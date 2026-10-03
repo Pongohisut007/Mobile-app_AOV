@@ -332,13 +332,61 @@ export class RecipesService {
   }
 
   async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
-    const { categoryIds, ...recipeData } = dto;
-    const recipe = await this.findOne(id);
-    Object.assign(recipe, recipeData, { id: recipe.id });
-    if (categoryIds) {
-      recipe.categories = await this.resolveCategories(categoryIds);
-    }
-    return this.recipeRepository.save(recipe);
+    const { categoryIds, sections, ...recipeData } = dto;
+    const categories = categoryIds
+      ? await this.resolveCategories(categoryIds)
+      : undefined;
+
+    await this.recipeRepository.manager.transaction(async (manager) => {
+      const recipeRepository = manager.getRepository(Recipe);
+      const sectionRepository = manager.getRepository(RecipeSection);
+      const contentRepository = manager.getRepository(RecipeContent);
+
+      // โหลดเฉพาะ categories ไม่โหลด sections เพื่อไม่ให้ save ไปยุ่งกับ section เดิม
+      const recipe = await recipeRepository.findOne({
+        where: { id },
+        relations: { categories: true },
+      });
+      if (!recipe) {
+        throw new NotFoundException(`Recipe with id ${id} not found`);
+      }
+
+      Object.assign(recipe, recipeData, { id: recipe.id });
+      if (categories) recipe.categories = categories;
+      if (recipe.status === RecipeStatus.PUBLISHED && !recipe.publishedAt) {
+        recipe.publishedAt = new Date();
+      }
+      await recipeRepository.save(recipe);
+
+      if (!sections) return;
+
+      // content ถูกลบตามด้วย onDelete: CASCADE
+      await sectionRepository.delete({ recipeId: recipe.id });
+      for (const [sectionIndex, sectionData] of sections.entries()) {
+        const { contents = [], ...sectionFields } = sectionData;
+        const section = await sectionRepository.save(
+          sectionRepository.create({
+            ...sectionFields,
+            recipeId: recipe.id,
+            sortOrder: sectionData.sortOrder ?? sectionIndex,
+          }),
+        );
+
+        if (contents.length > 0) {
+          await contentRepository.save(
+            contents.map((content, contentIndex) =>
+              contentRepository.create({
+                ...content,
+                sectionId: section.id,
+                sortOrder: content.sortOrder ?? contentIndex,
+              }),
+            ),
+          );
+        }
+      }
+    });
+
+    return this.findOne(id);
   }
 
   // แปลง categoryIds -> Category entity จริง และเช็คว่ามีครบทุก id

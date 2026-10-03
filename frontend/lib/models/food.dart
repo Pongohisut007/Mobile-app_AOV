@@ -4,6 +4,11 @@ class Food {
   final String idfoods;
   final String name;
   final String category;
+  // ใช้ตอนแก้ไขสูตร (prefill หน้า CreateFoodcardPage)
+  final String slug;
+  final String? type;
+  final String? status;
+  final List<String> categoryIds;
   final String description;
   final String filePathImage;
   final bool showImgCommu;
@@ -30,6 +35,10 @@ class Food {
     required this.idfoods,
     required this.name,
     required this.category,
+    this.slug = '',
+    this.type,
+    this.status,
+    this.categoryIds = const [],
     required this.description,
     required this.filePathImage,
     this.showImgCommu = false,
@@ -63,6 +72,7 @@ class Food {
     final steps = <RecipeStep>[];
     for (final sectionValue in sections) {
       if (sectionValue is! Map<String, dynamic>) continue;
+      final sectionId = sectionValue['id'] as String? ?? '';
       final sectionTitle = sectionValue['title'] as String? ?? 'ขั้นตอน';
       final sectionDescription = sectionValue['description'] as String? ?? '';
       final contents = sectionValue['contents'] as List<dynamic>? ?? const [];
@@ -72,6 +82,7 @@ class Food {
         steps.add(
           RecipeStep.fromJson(
             contentValue,
+            sectionId: sectionId,
             sectionTitle: sectionTitle,
             sectionDescription: sectionDescription,
           ),
@@ -83,6 +94,14 @@ class Food {
       idfoods: json['id'] as String,
       name: json['title'] as String,
       category: firstCategory?['name'] as String? ?? '',
+      slug: json['slug'] as String? ?? '',
+      type: json['type'] as String?,
+      status: json['status'] as String?,
+      categoryIds: [
+        for (final value in categories ?? const [])
+          if (value is Map<String, dynamic> && value['id'] is String)
+            value['id'] as String,
+      ],
       description: json['shortDescription'] as String? ?? '',
       filePathImage: json['coverImageUrl'] as String? ?? '',
       showImgCommu: json['showImgCommu'] as bool? ?? false,

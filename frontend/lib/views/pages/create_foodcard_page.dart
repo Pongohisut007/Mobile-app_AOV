@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/category.dart';
+import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
@@ -21,10 +22,14 @@ class CreateFoodcardPage extends StatefulWidget {
     super.key,
     required this.categories,
     this.isFromCommunity = false,
+    this.initialFood,
   });
 
   final List<Category> categories;
   final bool isFromCommunity;
+
+  /// ถ้าส่งมา หน้านี้จะเป็นโหมดแก้ไข: กรอกข้อมูลเดิมไว้ให้ และบันทึกด้วย PATCH
+  final Food? initialFood;
 
   @override
   State<CreateFoodcardPage> createState() => _CreateFoodcardPageState();
@@ -45,6 +50,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   String? _difficulty;
   RecipeSectionDraft? _sectionDraft;
   _PendingUpload? _coverSelection;
+  String? _existingCoverUrl;
   bool _showImgCommu = false;
   bool _isPickingFile = false;
   bool _isUploading = false;
@@ -53,6 +59,40 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   bool _handlingExit = false;
 
   bool get _isBusy => _isPickingFile || _isUploading;
+  bool get _isEditing => widget.initialFood != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final food = widget.initialFood;
+    if (food == null) return;
+
+    _titleController.text = food.name;
+    _slugController.text = food.slug;
+    _descriptionController.text = food.description;
+    _priceController.text = _formatNumber(food.price);
+    _preparationController.text = food.preparationMinutes?.toString() ?? '';
+    _cookingController.text = food.cookingMinutes?.toString() ?? '';
+    _servingsController.text = food.servingCount?.toString() ?? '';
+    _difficulty = food.difficulty;
+    _showImgCommu = food.showImgCommu;
+    final coverUrl = food.filePathImage.trim();
+    _existingCoverUrl = coverUrl.isEmpty ? null : coverUrl;
+    // เก็บเฉพาะหมวดที่ยังมีอยู่ในรายการ ไม่งั้นจะเลือก/ลบไม่ได้จากหน้าจอ
+    final availableIds = widget.categories.map((category) => category.id);
+    _selectedCategoryIds.addAll(
+      food.categoryIds.where(availableIds.contains),
+    );
+    if (food.steps.isNotEmpty) {
+      _sectionDraft = RecipeSectionDraft.fromSteps(food.steps);
+    }
+  }
+
+  static String _formatNumber(double value) {
+    return value == value.truncateToDouble()
+        ? value.toInt().toString()
+        : value.toString();
+  }
 
   bool get _hasDraftContent {
     final sectionDraft = _sectionDraft;
@@ -60,6 +100,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         _slugController.text.trim().isNotEmpty ||
         _descriptionController.text.trim().isNotEmpty ||
         _coverSelection != null ||
+        _existingCoverUrl != null ||
         _preparationController.text.trim().isNotEmpty ||
         _cookingController.text.trim().isNotEmpty ||
         _servingsController.text.trim().isNotEmpty ||
@@ -74,7 +115,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                         step.title.trim().isNotEmpty ||
                         step.textContent.trim().isNotEmpty ||
                         step.durationMinutes != null ||
-                        step.media != null,
+                        step.hasMedia,
                   ),
             ) ??
             false);
@@ -95,7 +136,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   Future<void> _saveRecipe() async {
     if (_isBusy || _isSaving) return;
     if (!_formKey.currentState!.validate()) return;
-    if (_coverSelection == null) {
+    if (_coverSelection == null && _existingCoverUrl == null) {
       _showMessage('เลือกรูปตัวอย่างอาหารก่อนเผยแพร่สูตร');
       return;
     }
@@ -177,7 +218,8 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 : step.contentType,
             'title': step.title,
             'textContent': step.textContent,
-            'mediaUrl': stepUploads[uploadIndex++]?.url,
+            'mediaUrl':
+                stepUploads[uploadIndex++]?.url ?? step.existingMediaUrl,
             'durationSeconds': step.durationMinutes == null
                 ? null
                 : step.durationMinutes! * 60,
@@ -206,24 +248,29 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final price = double.tryParse(_priceController.text.trim()) ?? 0;
 
       final recipe = <String, dynamic>{
-        'creatorId': creatorId,
+        if (!_isEditing) 'creatorId': creatorId,
         'title': title.isEmpty && asDraft ? 'สูตรอาหารฉบับร่าง' : title,
         'slug': slug.isEmpty && asDraft ? generatedDraftSlug : slug,
         'shortDescription': _optionalText(_descriptionController.text),
-        'coverImageUrl': coverUpload?.url,
+        'coverImageUrl': coverUpload?.url ?? _existingCoverUrl,
         'showImgCommu': _showImgCommu,
         'price': price.toStringAsFixed(2),
         'preparationMinutes': int.tryParse(_preparationController.text.trim()),
         'cookingMinutes': int.tryParse(_cookingController.text.trim()),
         'servingCount': int.tryParse(_servingsController.text.trim()),
         'difficulty': _difficulty,
-        'type': 'community',
+        if (!_isEditing) 'type': 'community',
         'status': asDraft ? 'draft' : 'published',
         'categoryIds': _selectedCategoryIds.toList(),
         'sections': recipeSections,
       };
 
-      await FoodRepository().createCommunityFood(recipe);
+      final editingFood = widget.initialFood;
+      if (editingFood != null) {
+        await FoodRepository().updateFood(editingFood.idfoods, recipe);
+      } else {
+        await FoodRepository().createCommunityFood(recipe);
+      }
       if (!mounted) return false;
       if (asDraft) _showMessage('บันทึกฉบับร่างแล้ว');
       return true;
@@ -248,6 +295,11 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     try {
       if (!_hasDraftContent) {
         _popPage(false);
+        return;
+      }
+
+      if (_isEditing) {
+        await _confirmDiscardEdit();
         return;
       }
 
@@ -287,6 +339,29 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     } finally {
       _handlingExit = false;
     }
+  }
+
+  // โหมดแก้ไขไม่บันทึกเป็นฉบับร่าง เพราะจะทำให้สูตรที่เผยแพร่แล้วกลายเป็น draft
+  Future<void> _confirmDiscardEdit() async {
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ยกเลิกการแก้ไขไหม?'),
+        content: const Text('การแก้ไขที่ยังไม่ได้บันทึกจะหายไป'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('แก้ไขต่อ'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('ออกโดยไม่บันทึก'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || discard != true) return;
+    _popPage(false);
   }
 
   void _popPage(bool result) {
@@ -452,12 +527,12 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF6F5F0),
         appBar: AppBar(
-          title: const Text('สร้างสูตรอาหาร'),
+          title: Text(_isEditing ? 'แก้ไขสูตรอาหาร' : 'สร้างสูตรอาหาร'),
           backgroundColor: const Color(0xFFF6F5F0),
           actions: [
             IconButton(
               onPressed: _isSaving || _isBusy ? null : _saveRecipe,
-              tooltip: 'เผยแพร่สูตร',
+              tooltip: _isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตร',
               icon: _isSaving
                   ? const SizedBox.square(
                       dimension: 20,
@@ -484,6 +559,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
               RecipeCoverSection(
                 coverFile: _coverSelection?.file,
                 fileName: _coverSelection?.name,
+                coverUrl: _existingCoverUrl,
                 showImgCommu: _showImgCommu,
                 isBusy: _isBusy,
                 isSaving: _isSaving,
@@ -491,7 +567,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 isUploading: _isUploading,
                 onPickImage: _pickCoverImage,
                 onRemoveImage: () {
-                  setState(() => _coverSelection = null);
+                  setState(() {
+                    _coverSelection = null;
+                    _existingCoverUrl = null;
+                  });
                 },
                 onShowImgCommuChanged: (value) {
                   setState(() => _showImgCommu = value);
@@ -554,8 +633,8 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                   _isUploading
                       ? 'กำลังอัปโหลดไฟล์...'
                       : _isSaving
-                          ? 'กำลังเผยแพร่...'
-                          : 'เผยแพร่สูตรอาหาร',
+                          ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
+                          : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFCE4D35),

@@ -5,10 +5,12 @@ import 'package:flutter_application_1/bloc/recipe_review/recipe_review_bloc.dart
 import 'package:flutter_application_1/bloc/recipe_review/recipe_review_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/repositories/category_repository.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_comment_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_review_repository.dart';
 import 'package:flutter_application_1/views/pages/cooking_steps_page.dart';
+import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
 import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
@@ -44,6 +46,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   late Future<Food> _foodFuture;
 
   bool _commentScrollScheduled = false;
+  bool _isOpeningEditor = false;
 
   @override
   void initState() {
@@ -94,13 +97,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
             FoodDetailHeader(
               food: food,
 
-              onEdit: () {
-                Navigator.pushNamed(
-                  context,
-                  '/edit-recipe',
-                  arguments: food.idfoods,
-                );
-              },
+              onEdit: () => _editFood(food),
 
               onDelete: () async {
                 final confirmed = await showDialog<bool>(
@@ -233,6 +230,43 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _editFood(Food food) async {
+    if (_isOpeningEditor) return;
+    _isOpeningEditor = true;
+    try {
+      // หน้าแก้ไขต้องมีรายการหมวดหมู่ทั้งหมดเพื่อให้เลือก/แสดงหมวดเดิมได้
+      final categories = await CategoryRepository().fetchCategories();
+      if (!mounted) return;
+
+      final updated = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => CreateFoodcardPage(
+            categories: categories,
+            isFromCommunity: food.type != 'official',
+            initialFood: food,
+          ),
+        ),
+      );
+      if (!mounted || updated != true) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('บันทึกการแก้ไขแล้ว')));
+      _reload();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+    } finally {
+      _isOpeningEditor = false;
+    }
   }
 
   void _scheduleScrollToComments() {

@@ -1,6 +1,7 @@
 class RecipeStep {
   const RecipeStep({
     required this.id,
+    this.sectionId = '',
     required this.sectionTitle,
     required this.title,
     required this.description,
@@ -10,6 +11,7 @@ class RecipeStep {
   });
 
   final String id;
+  final String sectionId;
   final String sectionTitle;
   final String title;
   final String description;
@@ -19,11 +21,13 @@ class RecipeStep {
 
   factory RecipeStep.fromJson(
     Map<String, dynamic> json, {
+    String sectionId = '',
     required String sectionTitle,
     required String sectionDescription,
   }) {
     return RecipeStep(
       id: json['id'] as String? ?? '',
+      sectionId: sectionId,
       sectionTitle: sectionTitle,
       title: json['title'] as String? ?? sectionTitle,
       description: json['textContent'] as String? ?? sectionDescription,

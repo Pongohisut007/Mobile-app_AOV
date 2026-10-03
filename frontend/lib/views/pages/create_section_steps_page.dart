@@ -79,6 +79,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
 
       final kind = isVideo ? RecipeMediaKind.video : RecipeMediaKind.image;
       setState(() {
+        step.existingMediaUrl = null;
         step.media = PendingRecipeUpload(
           file: File(path),
           name: file.name,
@@ -252,7 +253,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                     ],
                     validator: (value) {
                       if ((value == 'image' || value == 'video') &&
-                          step.media == null) {
+                          !step.hasMedia) {
                         return 'เลือกไฟล์รูปภาพหรือวิดีโอ';
                       }
                       return null;
@@ -263,6 +264,11 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                         step.contentType = value;
                         if (value != 'image' && value != 'video') {
                           step.media = null;
+                          step.existingMediaUrl = null;
+                        } else if (step.existingMediaUrl != null &&
+                            step.media == null) {
+                          // ไม่รู้ชนิดไฟล์เดิมแน่ชัด ให้เลือกไฟล์ใหม่เมื่อเปลี่ยนชนิด
+                          step.existingMediaUrl = null;
                         } else if (step.media != null &&
                             value !=
                                 (step.media!.kind == RecipeMediaKind.video
@@ -299,7 +305,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                     )
                   : const Icon(Icons.upload_file_rounded),
               label: Text(
-                step.media == null ? 'เลือกรูปภาพหรือวิดีโอ' : 'เปลี่ยนไฟล์',
+                step.hasMedia ? 'เปลี่ยนไฟล์' : 'เลือกรูปภาพหรือวิดีโอ',
               ),
             ),
             if (step.media != null) ...[
@@ -311,6 +317,18 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+            ] else if (step.existingMediaUrl case final mediaUrl?) ...[
+              const SizedBox(height: 8),
+              if (step.contentType == 'video')
+                const Row(
+                  children: [
+                    Icon(Icons.videocam_outlined),
+                    SizedBox(width: 6),
+                    Expanded(child: Text('ใช้คลิปวิดีโอเดิม')),
+                  ],
+                )
+              else
+                _ImagePreview(url: mediaUrl),
             ],
           ],
           if (index == _steps.length - 1) ...[
@@ -339,6 +357,7 @@ class _StepEditor {
     this.contentType = 'text',
     int? durationMinutes,
     this.media,
+    this.existingMediaUrl,
   }) : title = TextEditingController(text: title),
        description = TextEditingController(text: description),
        durationMinutes = TextEditingController(
@@ -352,6 +371,7 @@ class _StepEditor {
       contentType: draft.contentType,
       durationMinutes: draft.durationMinutes,
       media: draft.media,
+      existingMediaUrl: draft.existingMediaUrl,
     );
   }
 
@@ -360,7 +380,10 @@ class _StepEditor {
   final TextEditingController durationMinutes;
   String contentType;
   PendingRecipeUpload? media;
+  String? existingMediaUrl;
   bool isExpanded = true;
+
+  bool get hasMedia => media != null || existingMediaUrl != null;
 
   RecipeContentDraft toDraft() {
     return RecipeContentDraft(
@@ -369,6 +392,7 @@ class _StepEditor {
       contentType: contentType,
       durationMinutes: int.tryParse(durationMinutes.text.trim()),
       media: media,
+      existingMediaUrl: media == null ? existingMediaUrl : null,
     );
   }
 
@@ -380,9 +404,11 @@ class _StepEditor {
 }
 
 class _ImagePreview extends StatelessWidget {
-  const _ImagePreview({required this.file});
+  const _ImagePreview({this.file, this.url})
+    : assert(file != null || url != null);
 
-  final File file;
+  final File? file;
+  final String? url;
 
   @override
   Widget build(BuildContext context) {
@@ -390,16 +416,22 @@ class _ImagePreview extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: AspectRatio(
         aspectRatio: 16 / 9,
-        child: Image.file(
-          file,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: const Color(0xFFE9E6DE),
-            alignment: Alignment.center,
-            child: const Icon(Icons.broken_image_outlined, size: 36),
-          ),
-        ),
+        child: file != null
+            ? Image.file(file!, fit: BoxFit.cover, errorBuilder: _broken)
+            : Image.network(url!, fit: BoxFit.cover, errorBuilder: _broken),
       ),
+    );
+  }
+
+  static Widget _broken(
+    BuildContext context,
+    Object error,
+    StackTrace? stackTrace,
+  ) {
+    return Container(
+      color: const Color(0xFFE9E6DE),
+      alignment: Alignment.center,
+      child: const Icon(Icons.broken_image_outlined, size: 36),
     );
   }
 }
