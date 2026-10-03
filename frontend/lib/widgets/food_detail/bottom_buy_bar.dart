@@ -6,10 +6,13 @@ class BottomBuyBar extends StatelessWidget {
     super.key,
     required this.onCartPressed,
     required this.onBuyPressed,
+    this.buyLabel = 'Buy Now',
   });
 
   final VoidCallback onCartPressed;
-  final VoidCallback onBuyPressed;
+  // null = ยังกดไม่ได้ (โหลดเมนูไม่เสร็จ หรือกำลังเพิ่มลงตะกร้า)
+  final VoidCallback? onBuyPressed;
+  final String buyLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -64,14 +67,16 @@ class BottomBuyBar extends StatelessWidget {
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.transparent,
+                    disabledForegroundColor: Colors.white70,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
-                    "Buy Now",
-                    style: TextStyle(
+                  child: Text(
+                    buyLabel,
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),

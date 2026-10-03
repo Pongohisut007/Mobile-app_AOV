@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
+import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
@@ -9,6 +11,8 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_comment_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_review_repository.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/cooking_steps_page.dart';
 import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
@@ -74,7 +78,30 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       bottomNavigationBar:
           widget.showComments || widget.scrollToComments || !canBuy
           ? null
-          : BottomBuyBar(onCartPressed: () {}, onBuyPressed: () {}),
+          : FutureBuilder<Food>(
+              future: _foodFuture,
+              builder: (context, snapshot) {
+                final food = snapshot.data;
+                final isPending = context.select(
+                  (CartBloc bloc) => bloc.state.isPending(widget.foodsId),
+                );
+                final inCart = context.select(
+                  (CartBloc bloc) => bloc.state.contains(widget.foodsId),
+                );
+
+                // อยู่ในตะกร้าแล้ว ปุ่มหลักเปลี่ยนเป็นพาไปจ่ายเงินที่หน้า Cart
+                return BottomBuyBar(
+                  onCartPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.cart),
+                  buyLabel: inCart ? 'Checkout now' : 'Buy Now',
+                  onBuyPressed: inCart
+                      ? () => Navigator.pushNamed(context, AppRoutes.cart)
+                      : food == null || isPending
+                      ? null
+                      : () => _addToCart(food),
+                );
+              },
+            ),
       body: FutureBuilder<Food>(
         future: _foodFuture,
         builder: (context, state) {
@@ -197,6 +224,13 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     );
   }
 
+  // ข้อความ เพิ่มแล้ว/มีอยู่แล้ว เด้งจาก BlocListener ใน MainTreeWidget ที่ยังอยู่ใต้หน้านี้
+  Future<void> _addToCart(Food food) async {
+    final cartBloc = context.read<CartBloc>();
+    if (await _requireSignIn(context)) return;
+    cartBloc.add(CartItemAdded(food));
+  }
+
   void _scheduleScrollToComments() {
     if (!widget.scrollToComments) return;
 
@@ -222,4 +256,17 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       );
     });
   }
+}
+
+/// ตะกร้าผูกกับบัญชี ยังไม่ล็อกอินก็เด้งไปหน้า login ก่อน
+/// คืน true เมื่อไปต่อไม่ได้ (ผู้เรียกต้องหยุดทำงานต่อ)
+Future<bool> _requireSignIn(BuildContext context) async {
+  final navigator = Navigator.of(context);
+  final accessToken = await TokenStorage().readAccessToken();
+
+  if (accessToken != null && accessToken.trim().isNotEmpty) return false;
+  if (!context.mounted) return true;
+
+  navigator.pushNamed(AppRoutes.login);
+  return true;
 }
