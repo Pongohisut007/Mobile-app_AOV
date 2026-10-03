@@ -38,8 +38,8 @@ export class ChatController {
 
   /** ล้างบทสนทนา เริ่มคุยใหม่ */
   @Delete()
-  reset(@CurrentUser('id') userId: string): { success: true } {
-    this.chatService.reset(userId);
+  async reset(@CurrentUser('id') userId: string): Promise<{ success: true }> {
+    await this.chatService.reset(userId);
     return { success: true };
   }
 }

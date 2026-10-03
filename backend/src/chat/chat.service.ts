@@ -1,9 +1,11 @@
 import {
   ForbiddenException,
   Injectable,
+  OnModuleDestroy,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 import OpenAI from 'openai';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeContentType } from '../recipes/entities/recipe-content.entity';
@@ -12,6 +14,7 @@ import { RecipesService } from '../recipes/recipes.service';
 
 const DEFAULT_BASE_URL = 'https://ai.psu.blue/v1';
 const DEFAULT_MODEL = 'openai/gpt-5.6-luna';
+const DEFAULT_REDIS_URL = 'redis://localhost:6379';
 
 const INSTRUCTIONS = `
 คุณคือผู้ช่วยของแอปสูตรอาหาร ผู้ใช้กำลังดูสูตรอาหารตามข้อมูลด้านล่าง
@@ -22,8 +25,8 @@ const INSTRUCTIONS = `
 ตอบเป็นภาษาเดียวกับที่ผู้ใช้ถาม กระชับ และอ่านง่าย
 `.trim();
 
-// ไม่มีการใช้งานเกิน 20 นาที ให้ลืมบทสนทนา
-const SESSION_TIMEOUT_MS = 20 * 60 * 1000;
+// ไม่มีการใช้งานเกิน 20 นาที ให้ลืมบทสนทนา (ใช้เป็น TTL ของ key ใน Redis)
+const SESSION_TTL_SECONDS = 20 * 60;
 // เก็บข้อความล่าสุดไม่เกินเท่านี้ กันไม่ให้ส่งไป AI ยาวเกินไป
 const MAX_HISTORY = 20;
 
@@ -33,15 +36,16 @@ type ChatSession = {
   // instructions + ข้อมูลสูตร ดึงจาก DB ครั้งเดียวตอนเริ่ม session
   instructions: string;
   history: ChatMessage[];
-  lastActiveAt: number;
 };
 
+const sessionKey = (userId: string) => `chat:session:${userId}`;
+
 @Injectable()
-export class ChatService {
+export class ChatService implements OnModuleDestroy {
   private readonly client: OpenAI;
   private readonly model: string;
-  // key = userId (เก็บในหน่วยความจำ restart server แล้วหาย)
-  private readonly sessions = new Map<string, ChatSession>();
+  // เก็บ session ใน Redis key = chat:session:{userId} หมดอายุเองตาม TTL
+  private readonly redis: Redis;
 
   constructor(
     config: ConfigService,
@@ -53,6 +57,13 @@ export class ChatService {
 
     this.client = new OpenAI({ apiKey, baseURL });
     this.model = config.get<string>('PSU_AI_MODEL') ?? DEFAULT_MODEL;
+    this.redis = new Redis(
+      config.get<string>('REDIS_URL') ?? DEFAULT_REDIS_URL,
+    );
+  }
+
+  async onModuleDestroy() {
+    await this.redis.quit();
   }
 
   async chat(userId: string, recipeId: string, message: string) {
@@ -77,13 +88,13 @@ export class ChatService {
     // บันทึกเฉพาะตอนที่ AI ตอบสำเร็จ
     input.push({ role: 'assistant', content: reply });
     session.history = input.slice(-MAX_HISTORY);
-    session.lastActiveAt = Date.now();
+    await this.saveSession(userId, session);
 
     return { message: reply };
   }
 
-  reset(userId: string) {
-    this.sessions.delete(userId);
+  async reset(userId: string) {
+    await this.redis.del(sessionKey(userId));
   }
 
   /** ใช้ได้เฉพาะสูตร official ที่เป็นเจ้าของหรือซื้อแล้ว (community ไม่มี AI) */
@@ -104,9 +115,8 @@ export class ChatService {
     userId: string,
     recipeId: string,
   ): Promise<ChatSession> {
-    this.removeExpiredSessions();
-
-    const existing = this.sessions.get(userId);
+    const raw = await this.redis.get(sessionKey(userId));
+    const existing = raw ? (JSON.parse(raw) as ChatSession) : null;
     // ยังคุยสูตรเดิมอยู่ ใช้ session เดิมต่อ
     if (existing && existing.recipeId === recipeId) return existing;
 
@@ -122,19 +132,19 @@ export class ChatService {
       recipeId,
       instructions: `${INSTRUCTIONS}\n\n# ข้อมูลสูตร\n${describeRecipe(recipe)}`,
       history: [],
-      lastActiveAt: Date.now(),
     };
-    this.sessions.set(userId, session);
+    await this.saveSession(userId, session);
     return session;
   }
 
-  private removeExpiredSessions() {
-    const now = Date.now();
-    for (const [userId, session] of this.sessions) {
-      if (now - session.lastActiveAt > SESSION_TIMEOUT_MS) {
-        this.sessions.delete(userId);
-      }
-    }
+  /** บันทึก session และต่ออายุ TTL ทุกครั้งที่มีการใช้งาน */
+  private async saveSession(userId: string, session: ChatSession) {
+    await this.redis.set(
+      sessionKey(userId),
+      JSON.stringify(session),
+      'EX',
+      SESSION_TTL_SECONDS,
+    );
   }
 }
 
