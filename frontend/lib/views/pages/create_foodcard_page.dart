@@ -88,7 +88,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final creatorId = await TokenStorage().readUserId();
       if (!mounted) return;
       if (creatorId == null || creatorId.trim().isEmpty) {
-        throw Exception('กรุณาเข้าสู่ระบบก่อนสร้างสูตรอาหาร');
+        throw Exception('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
       }
 
       final hasFilesToUpload =

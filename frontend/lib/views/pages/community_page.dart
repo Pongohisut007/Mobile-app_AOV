@@ -3,10 +3,12 @@ import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
 import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/widgets/community/category_selector.dart';
 import 'package:flutter_application_1/widgets/community/post_card.dart';
 import 'package:flutter_application_1/widgets/home/search_bar.dart';
 import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
@@ -87,6 +89,15 @@ class _CommunityPageState extends State<CommunityPage> {
                             ),
                             IconButton(
                               onPressed: () async {
+                                final creatorId = await TokenStorage().readUserId();
+                                if (!context.mounted) return;
+                                if (creatorId == null || creatorId.trim().isEmpty) {
+                                  await Navigator.of(
+                                    context,
+                                  ).pushNamed(AppRoutes.login);
+                                  return;
+                                }
+
                                 final foodBloc = context.read<FoodBloc>();
                                 final categoryBloc = context
                                     .read<CategoryBloc>();
