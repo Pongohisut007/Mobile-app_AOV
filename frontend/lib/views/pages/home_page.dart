@@ -3,6 +3,7 @@ import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_application_1/widgets/home/category_list.dart';
 import 'package:flutter_application_1/widgets/home/food_card.dart';
@@ -77,7 +78,15 @@ class _HomePageState extends State<HomePage> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (state is FoodLoaded) {
-                    if (state.foods.isEmpty) {
+                    // ซ่อนสูตรที่ซื้อแล้ว ไปเปิดได้จากหน้า "สูตรที่ซื้อแล้ว" แทน
+                    final purchased = context
+                        .watch<PurchasedRecipesBloc>()
+                        .state;
+                    final foods = state.foods
+                        .where((food) => !purchased.isPurchased(food.idfoods))
+                        .toList(growable: false);
+
+                    if (foods.isEmpty) {
                       final query = state.query;
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
@@ -100,7 +109,7 @@ class _HomePageState extends State<HomePage> {
                         return GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: state.foods.length,
+                          itemCount: foods.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: crossAxisCount,
@@ -109,7 +118,7 @@ class _HomePageState extends State<HomePage> {
                                 mainAxisSpacing: 15,
                               ),
                           itemBuilder: (_, index) {
-                            final food = state.foods[index];
+                            final food = foods[index];
                             return FoodCard(
                               food: food,
                               onTap: () {

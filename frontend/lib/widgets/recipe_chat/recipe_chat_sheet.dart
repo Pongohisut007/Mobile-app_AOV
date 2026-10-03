@@ -1,17 +1,26 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/repositories/chat_repository.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ChatBubbleMessage {
-  const ChatBubbleMessage({required this.text, required this.isUser});
+  const ChatBubbleMessage({
+    required this.text,
+    required this.isUser,
+    this.imageBytes,
+  });
 
   final String text;
   final bool isUser;
+  // รูปที่ผู้ใช้แนบ (เก็บไว้แสดงในแอปเท่านั้น backend ไม่ได้เก็บรูป)
+  final Uint8List? imageBytes;
 }
 
 /// แชทที่แสดงในแอป ต้องตรงกับที่ backend จำไว้
 class RecipeChatHistory {
-  // ต้องตรงกับ SESSION_TIMEOUT_MS ใน backend
+  // ต้องตรงกับ SESSION_TTL_SECONDS ใน backend
   static const sessionTimeout = Duration(minutes: 20);
 
   final List<ChatBubbleMessage> messages = [];
@@ -58,8 +67,12 @@ class RecipeChatSheet extends StatefulWidget {
 class _RecipeChatSheetState extends State<RecipeChatSheet> {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
+  final _picker = ImagePicker();
 
   bool _isSending = false;
+  bool _isLoadingHistory = false;
+  // รูปที่เลือกไว้ รอส่งพร้อมคำถาม
+  ChatImage? _image;
 
   List<ChatBubbleMessage> get _messages => widget.history.messages;
 
@@ -67,6 +80,33 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   void initState() {
     super.initState();
     widget.history.clearIfExpired();
+    // ออกจากหน้าสูตรแล้วกลับมา แชทในแอปหายไป แต่ backend ยังจำอยู่ เลยโหลดกลับมา
+    if (_messages.isEmpty) {
+      _isLoadingHistory = true;
+      _loadHistory();
+    }
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final entries = await widget.repository.fetchHistory(
+        widget.accessToken,
+        widget.recipeId,
+      );
+      // ระหว่างโหลด ผู้ใช้อาจพิมพ์ส่งไปแล้ว ไม่ต้องทับ
+      if (_messages.isEmpty) {
+        for (final entry in entries) {
+          widget.history.add(
+            ChatBubbleMessage(text: entry.text, isUser: entry.isUser),
+          );
+        }
+      }
+    } catch (_) {
+      // โหลดประวัติไม่ได้ ก็เริ่มแชทจากหน้าว่างได้ตามปกติ
+    }
+    if (!mounted) return;
+    setState(() => _isLoadingHistory = false);
+    _scrollToBottom();
   }
 
   @override
@@ -78,11 +118,15 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
 
   Future<void> _send() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty || _isSending) return;
+    final image = _image;
+    if ((text.isEmpty && image == null) || _isSending) return;
 
     _inputController.clear();
     setState(() {
-      widget.history.add(ChatBubbleMessage(text: text, isUser: true));
+      widget.history.add(
+        ChatBubbleMessage(text: text, isUser: true, imageBytes: image?.bytes),
+      );
+      _image = null;
       _isSending = true;
     });
     _scrollToBottom();
@@ -92,18 +136,60 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
         widget.accessToken,
         widget.recipeId,
         text,
+        image: image,
       );
       widget.history.add(ChatBubbleMessage(text: reply, isUser: false));
     } catch (error) {
-      // ส่งไม่สำเร็จ เอาคำถามคืนไปไว้ในช่องพิมพ์ ให้กดส่งใหม่ได้
+      // ส่งไม่สำเร็จ เอาคำถามและรูปคืนไปไว้ในช่องพิมพ์ ให้กดส่งใหม่ได้
       _messages.removeLast();
       _inputController.text = text;
+      _image = image;
       _showError(error);
     }
 
     if (!mounted) return;
     setState(() => _isSending = false);
     _scrollToBottom();
+  }
+
+  Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('เลือกจากคลังรูป'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('ถ่ายรูป'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+
+    try {
+      // ย่อรูปก่อนส่ง ให้ส่งเร็วและไม่เกิน 5MB ที่ backend รับ
+      final file = await _picker.pickImage(
+        source: source,
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 85,
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() => _image = ChatImage(bytes: bytes, filename: file.name));
+    } catch (error) {
+      _showError('เปิดรูปไม่ได้: $error');
+    }
   }
 
   Future<void> _reset() async {
@@ -147,7 +233,11 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
             _buildHeader(),
             const Divider(height: 1),
             Expanded(
-              child: _messages.isEmpty ? _buildEmpty() : _buildMessages(),
+              child: _isLoadingHistory && _messages.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : _messages.isEmpty
+                  ? _buildEmpty()
+                  : _buildMessages(),
             ),
             if (_isSending) _buildTyping(),
             _buildInput(),
@@ -230,46 +320,100 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
     );
   }
 
-  Widget _buildInput() {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
-        child: Row(
+  Widget _buildImagePreview(ChatImage image) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Stack(
           children: [
-            Expanded(
-              child: TextField(
-                controller: _inputController,
-                enabled: !_isSending,
-                minLines: 1,
-                maxLines: 4,
-                maxLength: 4000,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _send(),
-                decoration: InputDecoration(
-                  hintText: 'พิมพ์คำถาม...',
-                  counterText: '',
-                  filled: true,
-                  fillColor: FoodDetailColors.softPurple,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(
+                image.bytes,
+                width: 72,
+                height: 72,
+                fit: BoxFit.cover,
+              ),
+            ),
+            Positioned(
+              top: 2,
+              right: 2,
+              child: GestureDetector(
+                onTap: _isSending ? null : () => setState(() => _image = null),
+                child: const CircleAvatar(
+                  radius: 11,
+                  backgroundColor: Colors.black54,
+                  child: Icon(Icons.close, size: 14, color: Colors.white),
                 ),
               ),
             ),
-            const SizedBox(width: 4),
-            IconButton(
-              onPressed: _isSending ? null : _send,
-              color: FoodDetailColors.purple,
-              icon: const Icon(Icons.send_rounded),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInput() {
+    final image = _image;
+
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (image != null) _buildImagePreview(image),
+          _buildInputRow(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 8, 12),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'แนบรูป',
+            onPressed: _isSending ? null : _pickImage,
+            color: FoodDetailColors.purple,
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+          ),
+          Expanded(
+            child: TextField(
+              controller: _inputController,
+              enabled: !_isSending,
+              minLines: 1,
+              maxLines: 4,
+              maxLength: 4000,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _send(),
+              decoration: InputDecoration(
+                hintText: _image == null
+                    ? 'พิมพ์คำถาม...'
+                    : 'ถามเกี่ยวกับรูปนี้ (ไม่พิมพ์ก็ได้)',
+                counterText: '',
+                filled: true,
+                fillColor: FoodDetailColors.softPurple,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: _isSending ? null : _send,
+            color: FoodDetailColors.purple,
+            icon: const Icon(Icons.send_rounded),
+          ),
+        ],
       ),
     );
   }
@@ -283,6 +427,7 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
+    final imageBytes = message.imageBytes;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -301,13 +446,27 @@ class _ChatBubble extends StatelessWidget {
             bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
         ),
-        child: SelectableText(
-          message.text,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.black87,
-            fontSize: 15,
-            height: 1.4,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (imageBytes != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(imageBytes, width: 200, fit: BoxFit.cover),
+              ),
+            if (imageBytes != null && message.text.isNotEmpty)
+              const SizedBox(height: 8),
+            if (message.text.isNotEmpty)
+              SelectableText(
+                message.text,
+                style: TextStyle(
+                  color: isUser ? Colors.white : Colors.black87,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
+              ),
+          ],
         ),
       ),
     );

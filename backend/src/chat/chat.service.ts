@@ -1,9 +1,11 @@
 import {
   ForbiddenException,
   Injectable,
+  OnModuleDestroy,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 import OpenAI from 'openai';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeContentType } from '../recipes/entities/recipe-content.entity';
@@ -12,36 +14,50 @@ import { RecipesService } from '../recipes/recipes.service';
 
 const DEFAULT_BASE_URL = 'https://ai.psu.blue/v1';
 const DEFAULT_MODEL = 'openai/gpt-5.6-luna';
+const DEFAULT_REDIS_URL = 'redis://localhost:6379';
 
 const INSTRUCTIONS = `
 คุณคือผู้ช่วยของแอปสูตรอาหาร ผู้ใช้กำลังดูสูตรอาหารตามข้อมูลด้านล่าง
 ตอบได้เฉพาะเรื่องที่เกี่ยวกับสูตรนี้เท่านั้น เช่น วิธีทำ วัตถุดิบ วัตถุดิบทดแทน เทคนิค โภชนาการ การเก็บรักษา และกินคู่กับอะไร
 ถ้าผู้ใช้ถามถึงเมนูอื่น (เช่น ถามวิธีทำเมนูอื่น) หรือเรื่องที่ไม่เกี่ยวกับสูตรนี้ ห้ามตอบเนื้อหานั้น
 ให้ปฏิเสธอย่างสุภาพ บอกว่าตอบได้เฉพาะสูตรนี้ และแนะนำให้ไปเปิดสูตรเมนูนั้นในแอปแทน
+ถ้าผู้ใช้แนบรูปมา ให้ดูรูปในบริบทของสูตรนี้ เช่น อาหารที่ทำออกมาเป็นอย่างไร หรือวัตถุดิบในรูปใช้กับสูตรนี้ได้ไหม
+ถ้าผู้ใช้ส่งรูปที่ไม่เกี่ยวกับอาหารหรือสูตรนี้ ให้บอกสั้นๆ ว่าเป็นรูปอะไร แล้วแจ้งว่าช่วยได้เฉพาะเรื่องสูตรนี้
 ถ้าข้อมูลในสูตรไม่พอแต่คำถามยังเกี่ยวกับสูตรนี้ ให้ตอบได้ โดยบอกว่าเป็นคำแนะนำทั่วไป ไม่ใช่ข้อมูลจากสูตร
 ตอบเป็นภาษาเดียวกับที่ผู้ใช้ถาม กระชับ และอ่านง่าย
 `.trim();
 
-// ไม่มีการใช้งานเกิน 20 นาที ให้ลืมบทสนทนา
-const SESSION_TIMEOUT_MS = 20 * 60 * 1000;
+// ไม่มีการใช้งานเกิน 20 นาที ให้ลืมบทสนทนา (ใช้เป็น TTL ของ key ใน Redis)
+const SESSION_TTL_SECONDS = 20 * 60;
 // เก็บข้อความล่าสุดไม่เกินเท่านี้ กันไม่ให้ส่งไป AI ยาวเกินไป
 const MAX_HISTORY = 20;
+// รูปไม่เก็บใน Redis (ใหญ่เกิน) เก็บแค่ข้อความนี้ไว้ในประวัติแทน
+const IMAGE_PLACEHOLDER = '[แนบรูปภาพ]';
 
-type ChatMessage = { role: 'user' | 'assistant'; content: string };
+export const CHAT_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+
+export type ChatMessage = { role: 'user' | 'assistant'; content: string };
+type ChatImage = { mimetype: string; buffer: Buffer };
 type ChatSession = {
   recipeId: string;
   // instructions + ข้อมูลสูตร ดึงจาก DB ครั้งเดียวตอนเริ่ม session
   instructions: string;
   history: ChatMessage[];
-  lastActiveAt: number;
 };
 
+const sessionKey = (userId: string) => `chat:session:${userId}`;
+
 @Injectable()
-export class ChatService {
+export class ChatService implements OnModuleDestroy {
   private readonly client: OpenAI;
   private readonly model: string;
-  // key = userId (เก็บในหน่วยความจำ restart server แล้วหาย)
-  private readonly sessions = new Map<string, ChatSession>();
+  // เก็บ session ใน Redis key = chat:session:{userId} หมดอายุเองตาม TTL
+  private readonly redis: Redis;
 
   constructor(
     config: ConfigService,
@@ -53,37 +69,74 @@ export class ChatService {
 
     this.client = new OpenAI({ apiKey, baseURL });
     this.model = config.get<string>('PSU_AI_MODEL') ?? DEFAULT_MODEL;
+    this.redis = new Redis(
+      config.get<string>('REDIS_URL') ?? DEFAULT_REDIS_URL,
+    );
   }
 
-  async chat(userId: string, recipeId: string, message: string) {
-    const session = await this.getSession(userId, recipeId);
-    const input: ChatMessage[] = [
-      ...session.history,
-      { role: 'user', content: message },
-    ];
+  async onModuleDestroy() {
+    await this.redis.quit();
+  }
 
-    let reply: string;
+  async chat(
+    userId: string,
+    recipeId: string,
+    message = '',
+    image?: ChatImage,
+  ) {
+    const session = await this.getSession(userId, recipeId);
+
+    // ใช้ chat.completions แบบ stream เพราะ PSU AI ตัดรูปทิ้งถ้าส่งผ่าน responses API
+    const content: OpenAI.Chat.ChatCompletionContentPart[] = [];
+    if (message) content.push({ type: 'text', text: message });
+    if (image) {
+      const url = `data:${image.mimetype};base64,${image.buffer.toString('base64')}`;
+      content.push({ type: 'image_url', image_url: { url } });
+    }
+
+    let reply = '';
     try {
-      const response = await this.client.responses.create({
+      const stream = await this.client.chat.completions.create({
         model: this.model,
-        instructions: session.instructions,
-        input,
+        stream: true,
+        messages: [
+          { role: 'system', content: session.instructions },
+          ...session.history,
+          { role: 'user', content },
+        ],
       });
-      reply = response.output_text;
+      for await (const chunk of stream) {
+        reply += chunk.choices[0]?.delta?.content ?? '';
+      }
     } catch {
       throw new ServiceUnavailableException('Chat is temporarily unavailable');
     }
 
     // บันทึกเฉพาะตอนที่ AI ตอบสำเร็จ
-    input.push({ role: 'assistant', content: reply });
-    session.history = input.slice(-MAX_HISTORY);
-    session.lastActiveAt = Date.now();
+    const userText = image
+      ? [message, IMAGE_PLACEHOLDER].filter(Boolean).join(' ')
+      : message;
+    const history: ChatMessage[] = [
+      ...session.history,
+      { role: 'user', content: userText },
+      { role: 'assistant', content: reply },
+    ];
+    session.history = history.slice(-MAX_HISTORY);
+    await this.saveSession(userId, session);
 
     return { message: reply };
   }
 
-  reset(userId: string) {
-    this.sessions.delete(userId);
+  /** ประวัติแชทของสูตรนี้ ให้แอปโหลดกลับมาแสดงตอนเปิด popup ใหม่ */
+  async getHistory(userId: string, recipeId: string): Promise<ChatMessage[]> {
+    const raw = await this.redis.get(sessionKey(userId));
+    const session = raw ? (JSON.parse(raw) as ChatSession) : null;
+    // session เป็นของสูตรอื่น ถือว่าสูตรนี้ยังไม่มีแชท
+    return session?.recipeId === recipeId ? session.history : [];
+  }
+
+  async reset(userId: string) {
+    await this.redis.del(sessionKey(userId));
   }
 
   /** ใช้ได้เฉพาะสูตร official ที่เป็นเจ้าของหรือซื้อแล้ว (community ไม่มี AI) */
@@ -104,9 +157,8 @@ export class ChatService {
     userId: string,
     recipeId: string,
   ): Promise<ChatSession> {
-    this.removeExpiredSessions();
-
-    const existing = this.sessions.get(userId);
+    const raw = await this.redis.get(sessionKey(userId));
+    const existing = raw ? (JSON.parse(raw) as ChatSession) : null;
     // ยังคุยสูตรเดิมอยู่ ใช้ session เดิมต่อ
     if (existing && existing.recipeId === recipeId) return existing;
 
@@ -122,19 +174,19 @@ export class ChatService {
       recipeId,
       instructions: `${INSTRUCTIONS}\n\n# ข้อมูลสูตร\n${describeRecipe(recipe)}`,
       history: [],
-      lastActiveAt: Date.now(),
     };
-    this.sessions.set(userId, session);
+    await this.saveSession(userId, session);
     return session;
   }
 
-  private removeExpiredSessions() {
-    const now = Date.now();
-    for (const [userId, session] of this.sessions) {
-      if (now - session.lastActiveAt > SESSION_TIMEOUT_MS) {
-        this.sessions.delete(userId);
-      }
-    }
+  /** บันทึก session และต่ออายุ TTL ทุกครั้งที่มีการใช้งาน */
+  private async saveSession(userId: string, session: ChatSession) {
+    await this.redis.set(
+      sessionKey(userId),
+      JSON.stringify(session),
+      'EX',
+      SESSION_TTL_SECONDS,
+    );
   }
 }
 

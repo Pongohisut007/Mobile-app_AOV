@@ -36,55 +36,78 @@ class RecipeCollectionPage extends StatelessWidget {
         ),
       ),
       body: BlocBuilder<RecipeLibraryBloc, RecipeLibraryState>(
-        builder: (context, state) {
-          return switch (state) {
-            RecipeLibraryLoaded(:final recipes) when recipes.isEmpty =>
-              _EmptyView(
-                message: collectionType.emptyMessage,
-                onRefresh: () => _refresh(context),
-              ),
-            RecipeLibraryLoaded(:final recipes) => RefreshIndicator(
-              color: ProfileColors.ink,
-              onRefresh: () => _refresh(context),
-              child: GridView.builder(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.67,
-                ),
-                itemCount: recipes.length,
-                itemBuilder: (context, index) {
-                  final recipe = recipes[index];
-                  return RecipeLibraryCard(
-                    recipe: recipe,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => FoodDetailPage(foodsId: recipe.id),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            RecipeLibraryFailure(:final message) => _ErrorView(
-              message: message,
-              onRetry: () => context.read<RecipeLibraryBloc>().add(
-                const RecipeLibraryRequested(),
-              ),
-            ),
-            _ => const Center(
-              child: CircularProgressIndicator(color: ProfileColors.ink),
-            ),
-          };
-        },
+        builder: (context, state) => RecipeCollectionBody(
+          state: state,
+          emptyMessage: collectionType.emptyMessage,
+          onRefresh: () => _refresh(context),
+          onRetry: () => context.read<RecipeLibraryBloc>().add(
+            const RecipeLibraryRequested(),
+          ),
+        ),
       ),
     );
+  }
+}
+
+/// ตัวกริดสูตร + empty/error/loading แยกออกมาให้หน้าที่ใช้ bloc อื่นใช้ร่วมได้
+class RecipeCollectionBody extends StatelessWidget {
+  const RecipeCollectionBody({
+    super.key,
+    required this.state,
+    required this.emptyMessage,
+    required this.onRefresh,
+    required this.onRetry,
+  });
+
+  final RecipeLibraryState state;
+  final String emptyMessage;
+  final RefreshCallback onRefresh;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (state) {
+      RecipeLibraryLoaded(:final recipes) when recipes.isEmpty => _EmptyView(
+        message: emptyMessage,
+        onRefresh: onRefresh,
+      ),
+      RecipeLibraryLoaded(:final recipes) => RefreshIndicator(
+        color: ProfileColors.ink,
+        onRefresh: onRefresh,
+        child: GridView.builder(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.67,
+          ),
+          itemCount: recipes.length,
+          itemBuilder: (context, index) {
+            final recipe = recipes[index];
+            return RecipeLibraryCard(
+              recipe: recipe,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => FoodDetailPage(foodsId: recipe.id),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      RecipeLibraryFailure(:final message) => _ErrorView(
+        message: message,
+        onRetry: onRetry,
+      ),
+      _ => const Center(
+        child: CircularProgressIndicator(color: ProfileColors.ink),
+      ),
+    };
   }
 }
 

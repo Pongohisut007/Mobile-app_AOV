@@ -1,9 +1,11 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/banner_item.dart';
 import 'package:flutter_application_1/widgets/banner_detail/banner_detail_colors.dart';
 
 /// หน้ารายละเอียดของแบนเนอร์ (AppBar ใช้ชื่อว่า Event)
-/// รูปเต็มหัว แล้วเนื้อหาเป็นการ์ดขอบมนซ้อนขึ้นมาบนรูป
+/// รูปขนาดคงที่ใต้ AppBar แล้วเนื้อหาเป็นการ์ดขอบมนซ้อนขึ้นมา
 class BannerDetailPage extends StatelessWidget {
   const BannerDetailPage({super.key, required this.banner});
 
@@ -15,13 +17,16 @@ class BannerDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final period = _formatPeriod(banner.startDate, banner.endDate);
 
+    // ความสูงรูปคงที่ทุกแบนเนอร์ (มือถือ / iPad)
+    final imageHeight = MediaQuery.sizeOf(context).width >= 600 ? 320.0 : 230.0;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 300,
+            expandedHeight: kToolbarHeight + imageHeight + _cardRadius,
             centerTitle: true,
             backgroundColor: BannerDetailColors.primaryRed,
             foregroundColor: Colors.white,
@@ -34,13 +39,35 @@ class BannerDetailPage extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _HeaderImage(imageUrl: banner.imageUrl),
+                  // พื้นหลังเป็นรูปเดียวกันแบบเบลอ เติมช่องว่างรอบรูปจริง
+                  ImageFiltered(
+                    imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: _HeaderImage(
+                      imageUrl: banner.imageUrl,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // รูปจริงอยู่ระหว่าง AppBar กับการ์ด แสดงครบทั้งรูปไม่ถูกตัด
+                  SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        top: kToolbarHeight,
+                        bottom: _cardRadius,
+                      ),
+                      child: _HeaderImage(
+                        imageUrl: banner.imageUrl,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
                   // ไล่สีดำจาง ๆ ด้านบนให้ปุ่มย้อนกลับกับคำว่า Event อ่านออก
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
-                        end: Alignment.center,
+                        // ไล่แค่ช่วง AppBar ไม่ให้ทับรูปจริง
+                        end: Alignment(0, -0.5),
                         colors: [Colors.black54, Colors.transparent],
                       ),
                     ),
@@ -119,15 +146,16 @@ class BannerDetailPage extends StatelessWidget {
 }
 
 class _HeaderImage extends StatelessWidget {
-  const _HeaderImage({required this.imageUrl});
+  const _HeaderImage({required this.imageUrl, required this.fit});
 
   final String imageUrl;
+  final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
     return Image.network(
       imageUrl,
-      fit: BoxFit.cover,
+      fit: fit,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return Container(color: Colors.grey.shade200);

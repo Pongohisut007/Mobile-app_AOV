@@ -4,6 +4,8 @@ import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_state.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
@@ -43,6 +45,7 @@ class UserPage extends StatelessWidget {
   Future<void> _confirmSignOut(BuildContext context) async {
     final cartBloc = context.read<CartBloc>();
     final favoriteBloc = context.read<FavoriteBloc>();
+    final purchasedRecipesBloc = context.read<PurchasedRecipesBloc>();
 
     await showDialog<void>(
       context: context,
@@ -60,9 +63,10 @@ class UserPage extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(dialogContext);
               await TokenStorage().clearSession();
-              // อ่าน token ไม่เจอแล้ว ทั้งสอง bloc จะล้าง state ของคนเก่าทิ้งเอง
+              // อ่าน token ไม่เจอแล้ว ทุก bloc จะล้าง state ของคนเก่าทิ้งเอง
               cartBloc.add(const CartRequested());
               favoriteBloc.add(const FavoritesRequested());
+              purchasedRecipesBloc.add(const PurchasedRecipesRequested());
               if (!context.mounted) return;
               Navigator.pushNamedAndRemoveUntil(
                 context,
