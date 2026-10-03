@@ -17,7 +17,8 @@ class FoodRepository {
   }
 
   Future<List<Food>> fetchCommunityFoodsByCategoryId(String categoryId) async {
-    final url = '$baseUrl/categories/$categoryId?type=community';
+    // community แสดงเฉพาะสูตรที่เผยแพร่แล้ว
+    final url = '$baseUrl/categories/$categoryId?type=community&status=published';
     return _getFoodsByCategoryId(url);
   }
 
@@ -29,7 +30,7 @@ class FoodRepository {
   // ================================
 
   Future<List<Food>> fetchCommuityAllFoodsByCategoryId() async {
-    final url = '$baseUrl/categories?type=community';
+    final url = '$baseUrl/categories?type=community&status=published';
     return _getAllFoodsByCategoryId(url);
   }
 
@@ -45,7 +46,7 @@ class FoodRepository {
   }
 
   Future<List<Food>> fetchCommunityFoods() async {
-    return _getFoods('$baseUrl/recipes?type=community');
+    return _getFoods('$baseUrl/recipes?type=community&status=published');
   }
 
   Future<List<Food>> fetchOfficialFoods() async {
@@ -58,11 +59,13 @@ class FoodRepository {
     String query, {
     String? type,
     String? categoryId,
+    String? status,
   }) async {
     final uri = Uri.parse('$baseUrl/recipes/search').replace(
       queryParameters: {
         'q': query,
         'type': ?type,
+        'status': ?status,
         'categoryId': ?categoryId,
         'limit': '50', // backend จำกัดไว้สูงสุด 50
       },
@@ -95,6 +98,27 @@ class FoodRepository {
           ? body['message']?.toString()
           : null;
       throw Exception(message ?? 'สร้างสูตรอาหารไม่สำเร็จ');
+    }
+  }
+
+  Future<void> updateFood(String id, Map<String, dynamic> recipe) async {
+    final token = await TokenStorage().readAccessToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null && token.trim().isNotEmpty) {
+      headers['Authorization'] = 'Bearer ${token.trim()}';
+    }
+
+    final response = await http.patch(
+      Uri.parse('$baseUrl/recipes/$id'),
+      headers: headers,
+      body: jsonEncode(recipe),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = json.decode(response.body);
+      final message = body is Map<String, dynamic>
+          ? body['message']?.toString()
+          : null;
+      throw Exception(message ?? 'แก้ไขสูตรอาหารไม่สำเร็จ');
     }
   }
 
@@ -218,6 +242,13 @@ class FoodRepository {
     } else {
       debugPrint('Failed to load foods: ${response.statusCode}');
       throw Exception('Failed to load foods');
+    }
+  }
+
+  Future<void> deleteFood(String foodId) async {
+    final response = await http.delete(Uri.parse('$baseUrl/recipes/$foodId'));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete food');
     }
   }
 

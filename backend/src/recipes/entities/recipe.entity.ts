@@ -77,6 +77,9 @@ export class Recipe extends BaseEntity {
   @Column({ name: 'cover_image_url', type: 'text', nullable: true })
   coverImageUrl!: string | null;
 
+  @Column({ name: 'show_img_commu', type: 'boolean', default: false })
+  showImgCommu!: boolean;
+
   @Column({ type: 'numeric', precision: 12, scale: 2, default: 0 })
   price!: string;
 

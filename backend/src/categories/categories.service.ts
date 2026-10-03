@@ -5,7 +5,10 @@ import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { Category } from './entities/category.entity';
-import { RecipeType } from '../recipes/entities/recipe.entity';
+import {
+  RecipeStatus,
+  RecipeType,
+} from '../recipes/entities/recipe.entity';
 
 @Injectable()
 export class CategoriesService {
@@ -20,16 +23,23 @@ export class CategoriesService {
     private readonly commentRepository: Repository<RecipeComment>,
   ) {}
 
-  async findAll(type?: RecipeType): Promise<Category[]> {
-    if (!type) {
+  async findAll(
+    type?: RecipeType,
+    status?: RecipeStatus,
+  ): Promise<Category[]> {
+    if (!type && !status) {
       return this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
     }
 
+    const recipeFilter = this.recipeJoinFilter(type, status);
     const categories = await this.categoryRepository
       .createQueryBuilder('category')
-      .leftJoinAndSelect('category.recipes', 'recipe', 'recipe.type = :type', {
-        type,
-      })
+      .leftJoinAndSelect(
+        'category.recipes',
+        'recipe',
+        recipeFilter.condition,
+        recipeFilter.parameters,
+      )
       .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'categories')
       .orderBy('category.sortOrder', 'ASC')
@@ -38,14 +48,19 @@ export class CategoriesService {
     return this.attachRecipeCounts(categories);
   }
 
-  async findOne(id: string, type?: RecipeType): Promise<Category> {
+  async findOne(
+    id: string,
+    type?: RecipeType,
+    status?: RecipeStatus,
+  ): Promise<Category> {
+    const recipeFilter = this.recipeJoinFilter(type, status);
     const query = this.categoryRepository
       .createQueryBuilder('category')
       .leftJoinAndSelect(
         'category.recipes',
         'recipe',
-        type ? 'recipe.type = :type' : undefined,
-        type ? { type } : undefined,
+        recipeFilter.condition,
+        recipeFilter.parameters,
       )
       .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'categories')
@@ -59,6 +74,25 @@ export class CategoriesService {
 
     const [categoryWithCounts] = await this.attachRecipeCounts([category]);
     return categoryWithCounts;
+  }
+
+  // เงื่อนไขกรองสูตรตอน join เข้ากับหมวดหมู่ (ไม่ส่งมา = ไม่กรอง)
+  private recipeJoinFilter(
+    type?: RecipeType,
+    status?: RecipeStatus,
+  ): { condition?: string; parameters?: Record<string, unknown> } {
+    const conditions: string[] = [];
+    const parameters: Record<string, unknown> = {};
+    if (type) {
+      conditions.push('recipe.type = :type');
+      parameters.type = type;
+    }
+    if (status) {
+      conditions.push('recipe.status = :status');
+      parameters.status = status;
+    }
+    if (conditions.length === 0) return {};
+    return { condition: conditions.join(' AND '), parameters };
   }
 
   private async attachRecipeCounts(

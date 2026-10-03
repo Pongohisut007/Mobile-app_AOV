@@ -116,6 +116,30 @@ class PostCard extends StatelessWidget {
                     ),
                   ],
 
+                  // รูปเล็กใต้คำอธิบาย เฉพาะสูตรที่ติ๊ก "แสดงรูปในชุมชน"
+                  if (food.showImgCommu && food.filePathImage.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        food.filePathImage,
+                        width: 120,
+                        height: 90,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          width: 120,
+                          height: 90,
+                          color: Colors.grey.shade200,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 12),
 
                   Container(height: 1, color: Colors.grey.shade300),

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bloc/category/category_bloc.dart';
+import 'package:flutter_application_1/bloc/category/category_event.dart';
+import 'package:flutter_application_1/bloc/category/category_state.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
 import 'package:flutter_application_1/models/food.dart';
-import 'package:flutter_application_1/widgets/community/category_selector.dart';
-import 'package:flutter_application_1/widgets/community/post_card.dart';
-import 'package:flutter_application_1/widgets/home/search_bar.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
+import 'package:flutter_application_1/widgets/community/category_selector.dart';
+import 'package:flutter_application_1/widgets/community/community_header.dart';
+import 'package:flutter_application_1/widgets/community/community_post_list.dart';
+import 'package:flutter_application_1/widgets/community/community_search.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_application_1/bloc/category/category_bloc.dart';
-import 'package:flutter_application_1/bloc/category/category_event.dart';
-import 'package:flutter_application_1/bloc/category/category_state.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -21,10 +24,13 @@ class CommunityPage extends StatefulWidget {
 
 class _CommunityPageState extends State<CommunityPage> {
   static const int _postsPerPage = 3;
+
   int _visiblePostCount = _postsPerPage;
 
   void _resetVisiblePosts() {
-    _visiblePostCount = _postsPerPage;
+    setState(() {
+      _visiblePostCount = _postsPerPage;
+    });
   }
 
   @override
@@ -34,18 +40,98 @@ class _CommunityPageState extends State<CommunityPage> {
     final categoryBloc = context.read<CategoryBloc>();
     final categoryState = categoryBloc.state;
 
-    if (categoryState is! CategoryLoaded && categoryState is! CategoryLoading) {
+    if (categoryState is! CategoryLoaded &&
+        categoryState is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
 
-    // โหลด community foods ครั้งแรก (ทุกหมวด)
+    context
+        .read<FoodBloc>()
+        .add(FetchCommunityFoodsByCategoryEvent(''));
+  }
+
+  Future<void> _createFood(CategoryLoaded categoryState) async {
+    final creatorId = await TokenStorage().readUserId();
+
+    if (!context.mounted) return;
+
+    if (creatorId == null || creatorId.trim().isEmpty) {
+      await Navigator.of(context).pushNamed(AppRoutes.login);
+      return;
+    }
+
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => CreateFoodcardPage(
+          categories: categoryState.categories,
+          isFromCommunity: true,
+        ),
+      ),
+    );
+
+    if (!mounted || created != true) return;
+
+    _resetVisiblePosts();
+
+    context.read<FoodBloc>().add(
+          FetchCommunityFoodsByCategoryEvent(
+            context.read<CategoryBloc>().state.selectedId,
+          ),
+        );
+  }
+
+  void _searchFood(String query) {
     final foodBloc = context.read<FoodBloc>();
-    foodBloc.add(FetchCommunityFoodsByCategoryEvent(''));
+    final selectedId = context.read<CategoryBloc>().state.selectedId;
+
+    _resetVisiblePosts();
+
+    if (query.isEmpty) {
+      foodBloc.add(
+        FetchCommunityFoodsByCategoryEvent(selectedId),
+      );
+    } else {
+      foodBloc.add(
+        SearchFoodEvent(
+          query,
+          categoryId: selectedId,
+          type: 'community',
+        ),
+      );
+    }
+  }
+
+  void _selectCategory(String? uuid) {
+    _resetVisiblePosts();
+
+    context.read<FoodBloc>().add(
+          FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
+        );
+  }
+
+  List<Food> _sortFoods(List<Food> foods) {
+    final sortedFoods = foods.toList();
+
+    sortedFoods.sort((left, right) {
+      final leftPublishedAt = left.publishedAt;
+      final rightPublishedAt = right.publishedAt;
+
+      if (leftPublishedAt == null) {
+        return rightPublishedAt == null ? 0 : 1;
+      }
+
+      if (rightPublishedAt == null) return -1;
+
+      return rightPublishedAt.compareTo(leftPublishedAt);
+    });
+
+    return sortedFoods;
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isIpad = MediaQuery.sizeOf(context).shortestSide >= 600;
+    final bool isIpad =
+        MediaQuery.sizeOf(context).shortestSide >= 600;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -56,136 +142,49 @@ class _CommunityPageState extends State<CommunityPage> {
               return BlocBuilder<FoodBloc, FoodState>(
                 builder: (context, foodState) {
                   final foods = foodState is FoodLoaded
-                      ? foodState.foods.toList()
+                      ? _sortFoods(foodState.foods)
                       : <Food>[];
-                  foods.sort((left, right) {
-                    final leftPublishedAt = left.publishedAt;
-                    final rightPublishedAt = right.publishedAt;
-                    if (leftPublishedAt == null) {
-                      return rightPublishedAt == null ? 0 : 1;
-                    }
-                    if (rightPublishedAt == null) return -1;
-                    return rightPublishedAt.compareTo(leftPublishedAt);
-                  });
 
                   return ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                    ),
                     children: [
                       SizedBox(height: isIpad ? 14 : 9),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Community',
-                              style: TextStyle(
-                                fontSize: isIpad ? 30 : 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () async {
-                                final foodBloc = context.read<FoodBloc>();
-                                final categoryBloc = context
-                                    .read<CategoryBloc>();
-                                final created = await Navigator.of(context)
-                                    .push<bool>(
-                                      MaterialPageRoute<bool>(
-                                        builder: (_) => CreateFoodcardPage(
-                                          categories: categoryState.categories,
-                                        ),
-                                      ),
-                                    );
-                                if (!mounted || created != true) return;
-                                _resetVisiblePosts();
-                                foodBloc.add(
-                                  FetchCommunityFoodsByCategoryEvent(
-                                    categoryBloc.state.selectedId,
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.add),
-                              iconSize: isIpad ? 30 : 24,
-                              padding: EdgeInsets.zero,
-                            ),
-                          ],
-                        ),
+
+                      CommunityHeader(
+                        isIpad: isIpad,
+                        onAddPressed: () {
+                          _createFood(categoryState);
+                        },
                       ),
 
                       const SizedBox(height: 9),
 
-                      SearchBarWidget(
-                        onSearch: (query) {
-                          final foodBloc = context.read<FoodBloc>();
-                          final selectedId = context
-                              .read<CategoryBloc>()
-                              .state
-                              .selectedId;
-                          _resetVisiblePosts();
-                          if (query.isEmpty) {
-                            foodBloc.add(
-                              FetchCommunityFoodsByCategoryEvent(selectedId),
-                            );
-                          } else {
-                            foodBloc.add(
-                              SearchFoodEvent(
-                                query,
-                                categoryId: selectedId,
-                                type: 'community',
-                              ),
-                            );
-                          }
-                        },
+                      CommunitySearch(
+                        onSearch: _searchFood,
                       ),
 
                       const SizedBox(height: 9),
 
                       CategorySelector(
                         categories: categoryState.categories,
-                        onCategorySelected: (uuid) {
-                          _resetVisiblePosts();
-                          context.read<FoodBloc>().add(
-                            FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
-                          );
-                        },
+                        onCategorySelected: _selectCategory,
                       ),
 
                       const SizedBox(height: 9),
 
-                      // แสดง PostCard ตามจำนวน foods ที่ได้จาก FetchCommunityFoodsByCategoryEvent
-                      if (foodState is FoodLoading)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 32),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else if (foodState is FoodLoaded)
-                        ...foods
-                            .take(_visiblePostCount)
-                            .map((food) => PostCard(food: food)),
-                      if (foodState is FoodLoaded &&
-                          foods.length > _visiblePostCount)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 16),
-                          child: Center(
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _visiblePostCount += _postsPerPage;
-                                });
-                              },
-                              child: const Text('แสดงเพิ่ม'),
-                            ),
-                          ),
-                        )
-                      else if (foodState is FoodError)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 32),
-                          child: Center(
-                            child: Text('Error: ${foodState.message}'),
-                          ),
-                        ),
+                      CommunityPostList(
+                        foodState: foodState,
+                        foods: foods,
+                        visiblePostCount: _visiblePostCount,
+                        postsPerPage: _postsPerPage,
+                        onShowMore: () {
+                          setState(() {
+                            _visiblePostCount += _postsPerPage;
+                          });
+                        },
+                      ),
                     ],
                   );
                 },
@@ -193,14 +192,22 @@ class _CommunityPageState extends State<CommunityPage> {
             }
 
             if (categoryState is CategoryLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
             }
 
             if (categoryState is CategoryError) {
-              return Center(child: Text('Error: ${categoryState.message}'));
+              return Center(
+                child: Text(
+                  'Error: ${categoryState.message}',
+                ),
+              );
             }
 
-            return const Center(child: Text('No data available.'));
+            return const Center(
+              child: Text('No data available.'),
+            );
           },
         ),
       ),
