@@ -1,9 +1,6 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
+import 'package:flutter_application_1/views/pages/create_section_steps_page.dart';
 
 class CreateCookingStepsPage extends StatefulWidget {
   const CreateCookingStepsPage({super.key, this.initialDraft});
@@ -17,22 +14,12 @@ class CreateCookingStepsPage extends StatefulWidget {
 class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
   final _formKey = GlobalKey<FormState>();
   late final List<_SectionEditor> _sections;
-  bool _isPickingFile = false;
 
   @override
   void initState() {
     super.initState();
     final draft = widget.initialDraft;
-    _sections = draft == null || draft.sections.isEmpty
-        ? [_SectionEditor()]
-        : draft.sections.map(_SectionEditor.fromDraft).toList();
-    for (final section in _sections) {
-      final hasSectionTitle = section.title.text.trim().isNotEmpty;
-      for (final step in section.steps) {
-        step.hasRevealedFields = hasSectionTitle;
-        step.isExpanded = hasSectionTitle;
-      }
-    }
+    _sections = draft?.sections.map(_SectionEditor.fromDraft).toList() ?? [];
   }
 
   @override
@@ -44,75 +31,20 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
   }
 
   void _saveDraft() {
+    if (_sections.isEmpty) {
+      _showMessage('เพิ่มหัวข้อขั้นตอนอย่างน้อย 1 ชุด');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
+    if (_sections.any((section) => section.contents.isEmpty)) {
+      _showMessage('เพิ่มอย่างน้อย 1 ขั้นตอนในทุกชุด');
+      return;
+    }
     Navigator.of(context).pop(
       RecipeSectionDraft(
         sections: _sections.map((section) => section.toDraft()).toList(),
       ),
     );
-  }
-
-  Future<void> _pickMedia(_StepEditor step) async {
-    if (_isPickingFile) return;
-    setState(() => _isPickingFile = true);
-    try {
-      const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-      const videoExtensions = ['mp4', 'webm', 'mov'];
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: [...imageExtensions, ...videoExtensions],
-      );
-      if (result == null || result.files.isEmpty) return;
-
-      final file = result.files.single;
-      final path = file.path;
-      if (path == null) throw Exception('ไม่สามารถเปิดไฟล์ที่เลือกได้');
-      final extension = file.extension?.toLowerCase();
-      final isVideo = videoExtensions.contains(extension);
-      if (!isVideo && !imageExtensions.contains(extension)) {
-        throw Exception('รองรับไฟล์รูปภาพหรือวิดีโอเท่านั้น');
-      }
-      final maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (file.size < 1 || file.size > maxSize) {
-        throw Exception('ไฟล์ต้องมีขนาดไม่เกิน ${maxSize ~/ (1024 * 1024)} MB');
-      }
-
-      final kind = isVideo ? RecipeMediaKind.video : RecipeMediaKind.image;
-      setState(() {
-        step.media = PendingRecipeUpload(
-          file: File(path),
-          name: file.name,
-          kind: kind,
-          mimeType: _mimeType(kind, file.extension),
-        );
-        step.contentType = isVideo ? 'video' : 'image';
-      });
-      _showMessage('เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร');
-    } catch (error) {
-      if (mounted) {
-        _showMessage(error.toString().replaceFirst('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _isPickingFile = false);
-    }
-  }
-
-  String _mimeType(RecipeMediaKind kind, String? extension) {
-    if (kind == RecipeMediaKind.image) {
-      return switch (extension?.toLowerCase()) {
-        'jpg' || 'jpeg' => 'image/jpeg',
-        'png' => 'image/png',
-        'webp' => 'image/webp',
-        'gif' => 'image/gif',
-        _ => throw Exception('รองรับไฟล์ JPG, PNG, WEBP หรือ GIF เท่านั้น'),
-      };
-    }
-    return switch (extension?.toLowerCase()) {
-      'mp4' => 'video/mp4',
-      'webm' => 'video/webm',
-      'mov' => 'video/quicktime',
-      _ => throw Exception('รองรับไฟล์ MP4, WEBM หรือ MOV เท่านั้น'),
-    };
   }
 
   void _showMessage(String message) {
@@ -126,16 +58,37 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
     return null;
   }
 
-  String? _minutes(String? value) {
-    if (value == null || value.trim().isEmpty) return null;
-    final parsed = int.tryParse(value.trim());
-    if (parsed == null || parsed < 0) return 'ใส่เวลาเป็นจำนวนนาทีตั้งแต่ 0';
-    return null;
+  Future<void> _openSection(_SectionEditor section) async {
+    final sectionTitle = section.title.text.trim();
+    if (sectionTitle.isEmpty) {
+      _showMessage('กรอกหัวข้อขั้นตอนก่อนเพิ่มขั้นตอน');
+      return;
+    }
+
+    final sectionIndex = _sections.indexOf(section);
+    final firstStepNumber =
+        _sections
+            .take(sectionIndex)
+            .fold<int>(0, (total, item) => total + item.contents.length) +
+        1;
+    final contents = await Navigator.of(context).push<List<RecipeContentDraft>>(
+      MaterialPageRoute<List<RecipeContentDraft>>(
+        builder: (_) => CreateSectionStepsPage(
+          sectionTitle: sectionTitle,
+          firstStepNumber: firstStepNumber,
+          initialContents: section.contents,
+        ),
+      ),
+    );
+    if (!mounted || contents == null) return;
+    setState(() {
+      section.contents = contents;
+      section.isExpanded = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    var stepNumber = 1;
     return Scaffold(
       backgroundColor: const Color(0xFFF6F5F0),
       appBar: AppBar(
@@ -147,39 +100,20 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
-            for (
-              var sectionIndex = 0;
-              sectionIndex < _sections.length;
-              sectionIndex++
-            ) ...[
-              _buildSectionTitle(sectionIndex),
-              for (
-                var stepIndex = 0;
-                stepIndex < _sections[sectionIndex].steps.length;
-                stepIndex++
-              )
-                _buildStepCard(
-                  section: _sections[sectionIndex],
-                  step: _sections[sectionIndex].steps[stepIndex],
-                  stepNumber: stepNumber++,
-                  isLastStep:
-                      sectionIndex == _sections.length - 1 &&
-                      stepIndex == _sections[sectionIndex].steps.length - 1,
-                ),
-            ],
+            for (var index = 0; index < _sections.length; index++)
+              _buildSectionCard(index),
             Align(
               alignment: Alignment.centerLeft,
               child: OutlinedButton.icon(
-                onPressed: _isPickingFile
-                    ? null
-                    : () => setState(() => _sections.add(_SectionEditor())),
+                onPressed: () =>
+                    setState(() => _sections.add(_SectionEditor())),
                 icon: const Icon(Icons.add),
-                label: const Text('เพิ่มหัวข้อชุดขั้นตอน'),
+                label: const Text('เพิ่มหัวข้อขั้นตอน'),
               ),
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: _isPickingFile ? null : _saveDraft,
+              onPressed: _saveDraft,
               icon: const Icon(Icons.check_rounded),
               label: const Text('บันทึกขั้นตอน'),
               style: FilledButton.styleFrom(
@@ -193,330 +127,132 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
     );
   }
 
-  Widget _buildSectionTitle(int index) {
+  Widget _buildSectionCard(int index) {
     final section = _sections[index];
-    return Padding(
-      key: ObjectKey(section),
-      padding: const EdgeInsets.only(bottom: 10),
-      child: TextFormField(
-        controller: section.title,
-        decoration: const InputDecoration(
-          labelText: 'หัวข้อชุดขั้นตอน',
-          hintText: 'เช่น วิธีทำ',
-          border: OutlineInputBorder(),
-        ),
-        validator: (value) => _required(value, 'หัวข้อชุดขั้นตอน'),
-        onChanged: (value) {
-          final hasSectionTitle = value.trim().isNotEmpty;
-          setState(() {
-            for (final step in section.steps) {
-              if (!hasSectionTitle) {
-                step.hasRevealedFields = false;
-                step.isExpanded = false;
-              } else if (!step.hasRevealedFields) {
-                step.hasRevealedFields = true;
-                step.isExpanded = true;
-              }
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildStepCard({
-    required _SectionEditor section,
-    required _StepEditor step,
-    required int stepNumber,
-    required bool isLastStep,
-  }) {
+    final firstStepNumber =
+        _sections
+            .take(index)
+            .fold<int>(0, (total, item) => total + item.contents.length) +
+        1;
     return Container(
-      key: ObjectKey(step),
+      key: ObjectKey(section),
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFE5E2DA)),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'ขั้นตอนที่ $stepNumber',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              if (_sections.fold<int>(
-                    0,
-                    (count, section) => count + section.steps.length,
-                  ) >
-                  1)
-                IconButton(
-                  onPressed: _isPickingFile
-                      ? null
-                      : () => setState(() {
-                          step.dispose();
-                          section.steps.remove(step);
-                          if (section.steps.isEmpty && _sections.length > 1) {
-                            section.dispose();
-                            _sections.remove(section);
-                          }
-                        }),
-                  tooltip: 'ลบขั้นตอน',
-                  icon: const Icon(Icons.delete_outline),
-                ),
-              if (step.hasRevealedFields)
-                IconButton(
-                  onPressed: () =>
-                      setState(() => step.isExpanded = !step.isExpanded),
-                  tooltip: step.isExpanded ? 'พับรายละเอียด' : 'ขยายรายละเอียด',
-                  icon: Icon(
-                    step.isExpanded ? Icons.expand_less : Icons.expand_more,
-                  ),
-                ),
-            ],
-          ),
-          if (step.hasRevealedFields && step.isExpanded) ...[
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: step.title,
-              decoration: const InputDecoration(
-                labelText: 'ชื่อหัวข้อขั้นตอน',
-                hintText: 'เช่น เตรียมหมูและเครื่องปรุง',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) => _required(value, 'ชื่อหัวข้อขั้นตอน'),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: step.description,
-              decoration: const InputDecoration(
-                labelText: 'วิธีทำ',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-              maxLines: 3,
-              validator: (value) => _required(value, 'วิธีทำ'),
-            ),
-            const SizedBox(height: 10),
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openSection(section),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: step.contentType,
-                    decoration: const InputDecoration(
-                      labelText: 'ชนิดขั้นตอน',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'text', child: Text('วิธีทำ')),
-                      DropdownMenuItem(value: 'tip', child: Text('เคล็ดลับ')),
-                      DropdownMenuItem(
-                        value: 'warning',
-                        child: Text('ข้อควรระวัง'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: section.title,
+                        decoration: const InputDecoration(
+                          hintText: 'หัวข้อขั้นตอน',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        validator: (value) =>
+                            _required(value, 'หัวข้อขั้นตอน'),
+                        onChanged: (_) => setState(() {}),
                       ),
-                      DropdownMenuItem(value: 'image', child: Text('รูปภาพ')),
-                      DropdownMenuItem(
-                        value: 'video',
-                        child: Text('คลิปวิดีโอ'),
-                      ),
-                    ],
-                    validator: (value) {
-                      if ((value == 'image' || value == 'video') &&
-                          step.media == null) {
-                        return 'เลือกไฟล์รูปภาพหรือวิดีโอ';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          step.contentType = value;
-                          if (value != 'image' && value != 'video') {
-                            step.media = null;
-                          } else if (step.media != null &&
-                              value !=
-                                  (step.media!.kind == RecipeMediaKind.video
-                                      ? 'video'
-                                      : 'image')) {
-                            step.media = null;
-                          }
-                        });
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextFormField(
-                    controller: step.durationMinutes,
-                    decoration: const InputDecoration(
-                      labelText: 'เวลา (นาที)',
-                      border: OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: _minutes,
-                  ),
+                    IconButton(
+                      onPressed: () => setState(
+                        () => section.isExpanded = !section.isExpanded,
+                      ),
+                      tooltip: section.isExpanded
+                          ? 'พับขั้นตอน'
+                          : 'แสดงขั้นตอน',
+                      icon: Icon(
+                        section.isExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() {
+                        section.dispose();
+                        _sections.removeAt(index);
+                      }),
+                      tooltip: 'ลบหัวข้อขั้นตอน',
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
                 ),
+                if (section.isExpanded && section.contents.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text('ยังไม่มีขั้นตอน แตะการ์ดเพื่อเพิ่ม'),
+                  ),
+                if (section.isExpanded)
+                  for (
+                    var stepIndex = 0;
+                    stepIndex < section.contents.length;
+                    stepIndex++
+                  ) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          'ขั้นตอนที่ ${firstStepNumber + stepIndex}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            section.contents[stepIndex].title.isEmpty
+                                ? 'ยังไม่มีชื่อหัวข้อขั้นตอน'
+                                : section.contents[stepIndex].title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
+                  ],
               ],
             ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: _isPickingFile ? null : () => _pickMedia(step),
-              icon: _isPickingFile
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.upload_file_rounded),
-              label: Text(
-                step.media == null ? 'เลือกรูปภาพหรือวิดีโอ' : 'เปลี่ยนไฟล์',
-              ),
-            ),
-            if (step.media != null) ...[
-              const SizedBox(height: 8),
-              if (step.media!.kind == RecipeMediaKind.image)
-                _ImagePreview(file: step.media!.file),
-              Text(
-                step.media!.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ],
-          if (isLastStep) ...[
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _isPickingFile
-                    ? null
-                    : () => setState(() {
-                        final hasSectionTitle = section.title.text
-                            .trim()
-                            .isNotEmpty;
-                        section.steps.add(
-                          _StepEditor(detailsRevealed: hasSectionTitle),
-                        );
-                      }),
-                icon: const Icon(Icons.add),
-                label: const Text('เพิ่มขั้นตอน'),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _StepEditor {
-  _StepEditor({
-    String title = '',
-    String description = '',
-    this.contentType = 'text',
-    int? durationMinutes,
-    this.media,
-    bool detailsRevealed = false,
-  }) : title = TextEditingController(text: title),
-       description = TextEditingController(text: description),
-       durationMinutes = TextEditingController(
-         text: durationMinutes?.toString() ?? '',
-       ),
-       hasRevealedFields = detailsRevealed,
-       isExpanded = detailsRevealed;
-
-  factory _StepEditor.fromDraft(RecipeContentDraft draft) {
-    return _StepEditor(
-      title: draft.title,
-      description: draft.textContent,
-      contentType: draft.contentType,
-      durationMinutes: draft.durationMinutes,
-      media: draft.media,
-    );
-  }
-
-  final TextEditingController title;
-  final TextEditingController description;
-  final TextEditingController durationMinutes;
-  String contentType;
-  PendingRecipeUpload? media;
-  bool hasRevealedFields;
-  bool isExpanded;
-
-  RecipeContentDraft toDraft() {
-    return RecipeContentDraft(
-      title: title.text.trim(),
-      textContent: description.text.trim(),
-      contentType: contentType,
-      durationMinutes: int.tryParse(durationMinutes.text.trim()),
-      media: media,
-    );
-  }
-
-  void dispose() {
-    title.dispose();
-    description.dispose();
-    durationMinutes.dispose();
-  }
-}
-
-class _SectionEditor {
-  _SectionEditor({String title = '', List<_StepEditor>? steps})
-    : title = TextEditingController(text: title),
-      steps = steps ?? [_StepEditor()];
-
-  factory _SectionEditor.fromDraft(RecipeSectionGroupDraft draft) {
-    return _SectionEditor(
-      title: draft.title,
-      steps: draft.contents.map(_StepEditor.fromDraft).toList(),
-    );
-  }
-
-  final TextEditingController title;
-  final List<_StepEditor> steps;
-
-  RecipeSectionGroupDraft toDraft() {
-    return RecipeSectionGroupDraft(
-      title: title.text.trim(),
-      contents: steps.map((step) => step.toDraft()).toList(),
-    );
-  }
-
-  void dispose() {
-    title.dispose();
-    for (final step in steps) {
-      step.dispose();
-    }
-  }
-}
-
-class _ImagePreview extends StatelessWidget {
-  const _ImagePreview({required this.file});
-
-  final File file;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Image.file(
-          file,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: const Color(0xFFE9E6DE),
-            alignment: Alignment.center,
-            child: const Icon(Icons.broken_image_outlined, size: 36),
           ),
         ),
       ),
     );
+  }
+}
+
+class _SectionEditor {
+  _SectionEditor({String title = '', List<RecipeContentDraft>? contents})
+    : title = TextEditingController(text: title),
+      contents = contents ?? [],
+      isExpanded = true;
+
+  factory _SectionEditor.fromDraft(RecipeSectionGroupDraft draft) {
+    return _SectionEditor(title: draft.title, contents: draft.contents);
+  }
+
+  final TextEditingController title;
+  List<RecipeContentDraft> contents;
+  bool isExpanded;
+
+  RecipeSectionGroupDraft toDraft() {
+    return RecipeSectionGroupDraft(
+      title: title.text.trim(),
+      contents: contents,
+    );
+  }
+
+  void dispose() {
+    title.dispose();
   }
 }

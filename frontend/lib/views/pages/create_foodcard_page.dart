@@ -614,7 +614,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
             const SizedBox(height: 12),
             Text(
               _sectionDraft == null
-                  ? 'ยังไม่ได้เพิ่มขั้นตอน'
+                  ? 'ยังไม่ได้เพิ่มหัวข้อขั้นตอน'
                   : '${_sectionDraft!.sections.length} ชุด · ${_sectionDraft!.sections.fold<int>(0, (count, section) => count + section.contents.length)} ขั้นตอน',
               style: TextStyle(color: Colors.grey.shade700),
             ),
@@ -627,7 +627,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                   _sectionDraft == null ? Icons.add : Icons.edit_outlined,
                 ),
                 label: Text(
-                  _sectionDraft == null ? 'เพิ่มขั้นตอน' : 'แก้ไขขั้นตอน',
+                  _sectionDraft == null ? 'เพิ่มหัวข้อขั้นตอน' : 'แก้ไขหัวข้อขั้นตอน',
                 ),
               ),
             ),
