@@ -21,6 +21,8 @@ const INSTRUCTIONS = `
 ตอบได้เฉพาะเรื่องที่เกี่ยวกับสูตรนี้เท่านั้น เช่น วิธีทำ วัตถุดิบ วัตถุดิบทดแทน เทคนิค โภชนาการ การเก็บรักษา และกินคู่กับอะไร
 ถ้าผู้ใช้ถามถึงเมนูอื่น (เช่น ถามวิธีทำเมนูอื่น) หรือเรื่องที่ไม่เกี่ยวกับสูตรนี้ ห้ามตอบเนื้อหานั้น
 ให้ปฏิเสธอย่างสุภาพ บอกว่าตอบได้เฉพาะสูตรนี้ และแนะนำให้ไปเปิดสูตรเมนูนั้นในแอปแทน
+ถ้าผู้ใช้แนบรูปมา ให้ดูรูปในบริบทของสูตรนี้ เช่น อาหารที่ทำออกมาเป็นอย่างไร หรือวัตถุดิบในรูปใช้กับสูตรนี้ได้ไหม
+ถ้าผู้ใช้ส่งรูปที่ไม่เกี่ยวกับอาหารหรือสูตรนี้ ให้บอกสั้นๆ ว่าเป็นรูปอะไร แล้วแจ้งว่าช่วยได้เฉพาะเรื่องสูตรนี้
 ถ้าข้อมูลในสูตรไม่พอแต่คำถามยังเกี่ยวกับสูตรนี้ ให้ตอบได้ โดยบอกว่าเป็นคำแนะนำทั่วไป ไม่ใช่ข้อมูลจากสูตร
 ตอบเป็นภาษาเดียวกับที่ผู้ใช้ถาม กระชับ และอ่านง่าย
 `.trim();
@@ -29,8 +31,18 @@ const INSTRUCTIONS = `
 const SESSION_TTL_SECONDS = 20 * 60;
 // เก็บข้อความล่าสุดไม่เกินเท่านี้ กันไม่ให้ส่งไป AI ยาวเกินไป
 const MAX_HISTORY = 20;
+// รูปไม่เก็บใน Redis (ใหญ่เกิน) เก็บแค่ข้อความนี้ไว้ในประวัติแทน
+const IMAGE_PLACEHOLDER = '[แนบรูปภาพ]';
+
+export const CHAT_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
+type ChatImage = { mimetype: string; buffer: Buffer };
 type ChatSession = {
   recipeId: string;
   // instructions + ข้อมูลสูตร ดึงจาก DB ครั้งเดียวตอนเริ่ม session
@@ -66,28 +78,50 @@ export class ChatService implements OnModuleDestroy {
     await this.redis.quit();
   }
 
-  async chat(userId: string, recipeId: string, message: string) {
+  async chat(
+    userId: string,
+    recipeId: string,
+    message = '',
+    image?: ChatImage,
+  ) {
     const session = await this.getSession(userId, recipeId);
-    const input: ChatMessage[] = [
-      ...session.history,
-      { role: 'user', content: message },
-    ];
 
-    let reply: string;
+    // ใช้ chat.completions แบบ stream เพราะ PSU AI ตัดรูปทิ้งถ้าส่งผ่าน responses API
+    const content: OpenAI.Chat.ChatCompletionContentPart[] = [];
+    if (message) content.push({ type: 'text', text: message });
+    if (image) {
+      const url = `data:${image.mimetype};base64,${image.buffer.toString('base64')}`;
+      content.push({ type: 'image_url', image_url: { url } });
+    }
+
+    let reply = '';
     try {
-      const response = await this.client.responses.create({
+      const stream = await this.client.chat.completions.create({
         model: this.model,
-        instructions: session.instructions,
-        input,
+        stream: true,
+        messages: [
+          { role: 'system', content: session.instructions },
+          ...session.history,
+          { role: 'user', content },
+        ],
       });
-      reply = response.output_text;
+      for await (const chunk of stream) {
+        reply += chunk.choices[0]?.delta?.content ?? '';
+      }
     } catch {
       throw new ServiceUnavailableException('Chat is temporarily unavailable');
     }
 
     // บันทึกเฉพาะตอนที่ AI ตอบสำเร็จ
-    input.push({ role: 'assistant', content: reply });
-    session.history = input.slice(-MAX_HISTORY);
+    const userText = image
+      ? [message, IMAGE_PLACEHOLDER].filter(Boolean).join(' ')
+      : message;
+    const history: ChatMessage[] = [
+      ...session.history,
+      { role: 'user', content: userText },
+      { role: 'assistant', content: reply },
+    ];
+    session.history = history.slice(-MAX_HISTORY);
     await this.saveSession(userId, session);
 
     return { message: reply };
