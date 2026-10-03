@@ -93,6 +93,10 @@ export class CreateRecipeDto {
   coverImageUrl?: string | null;
 
   @IsOptional()
+  @IsBoolean()
+  showImgCommu?: boolean;
+
+  @IsOptional()
   @IsNumberString()
   price?: string;
 

@@ -6,6 +6,7 @@ class Food {
   final String category;
   final String description;
   final String filePathImage;
+  final bool showImgCommu;
   final double price;
   final int favoriteCount;
   final int reviewCount;
@@ -31,6 +32,7 @@ class Food {
     required this.category,
     required this.description,
     required this.filePathImage,
+    this.showImgCommu = false,
     this.price = 0,
     this.favoriteCount = 0,
     this.reviewCount = 0,
@@ -83,6 +85,7 @@ class Food {
       category: firstCategory?['name'] as String? ?? '',
       description: json['shortDescription'] as String? ?? '',
       filePathImage: json['coverImageUrl'] as String? ?? '',
+      showImgCommu: json['showImgCommu'] as bool? ?? false,
       // backend ส่ง numeric ของ postgres มาเป็น string เช่น "129.00"
       price: _toDouble(json['price']),
       favoriteCount: _toInt(json['favoriteCount']) ?? 0,

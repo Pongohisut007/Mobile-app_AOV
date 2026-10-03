@@ -35,6 +35,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   String? _difficulty;
   RecipeSectionDraft? _sectionDraft;
   _PendingUpload? _coverSelection;
+  bool _showImgCommu = false;
   bool _isPickingFile = false;
   bool _isUploading = false;
   bool _isSaving = false;
@@ -110,6 +111,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         'slug': _slugController.text.trim(),
         'shortDescription': _optionalText(_descriptionController.text),
         'coverImageUrl': coverUpload?.url,
+        'showImgCommu': _showImgCommu,
         'price': double.parse(_priceController.text.trim()).toStringAsFixed(2),
         'preparationMinutes': _optionalInt(_preparationController.text),
         'cookingMinutes': _optionalInt(_cookingController.text),
@@ -375,6 +377,15 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
               label: Text(
                 _coverSelection == null ? 'เลือกรูปภาพ' : 'เปลี่ยนรูปภาพ',
               ),
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('แสดงรูปในชุมชน'),
+              value: _showImgCommu,
+              onChanged: _isSaving || _isBusy
+                  ? null
+                  : (value) => setState(() => _showImgCommu = value ?? false),
             ),
             if (_coverSelection != null) ...[
               const SizedBox(height: 12),
