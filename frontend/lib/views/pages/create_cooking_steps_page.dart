@@ -30,21 +30,18 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
     super.dispose();
   }
 
-  void _saveDraft() {
-    if (_sections.isEmpty) {
-      _showMessage('เพิ่มหัวข้อขั้นตอนอย่างน้อย 1 ชุด');
-      return;
-    }
-    if (!_formKey.currentState!.validate()) return;
-    if (_sections.any((section) => section.contents.isEmpty)) {
-      _showMessage('เพิ่มอย่างน้อย 1 ขั้นตอนในทุกชุด');
-      return;
-    }
-    Navigator.of(context).pop(
-      RecipeSectionDraft(
-        sections: _sections.map((section) => section.toDraft()).toList(),
-      ),
+  /// Collect current data as a draft without validation.
+  /// Returns null only when there are no sections at all.
+  RecipeSectionDraft? _collectDraft() {
+    if (_sections.isEmpty) return null;
+    return RecipeSectionDraft(
+      sections: _sections.map((section) => section.toDraft()).toList(),
     );
+  }
+
+  /// Auto-save: pop the current draft back to the parent page.
+  void _autoSaveAndPop() {
+    Navigator.of(context).pop(_collectDraft());
   }
 
   void _showMessage(String message) {
@@ -89,39 +86,41 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F5F0),
-      appBar: AppBar(
-        title: const Text('ขั้นตอนการทำอาหาร'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _autoSaveAndPop();
+      },
+      child: Scaffold(
         backgroundColor: const Color(0xFFF6F5F0),
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            for (var index = 0; index < _sections.length; index++)
-              _buildSectionCard(index),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () =>
-                    setState(() => _sections.add(_SectionEditor())),
-                icon: const Icon(Icons.add),
-                label: const Text('เพิ่มหัวข้อขั้นตอน'),
+        appBar: AppBar(
+          title: const Text('ขั้นตอนการทำอาหาร'),
+          backgroundColor: const Color(0xFFF6F5F0),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'กลับ (บันทึกอัตโนมัติ)',
+            onPressed: _autoSaveAndPop,
+          ),
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            children: [
+              for (var index = 0; index < _sections.length; index++)
+                _buildSectionCard(index),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      setState(() => _sections.add(_SectionEditor())),
+                  icon: const Icon(Icons.add),
+                  label: const Text('เพิ่มหัวข้อขั้นตอน'),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _saveDraft,
-              icon: const Icon(Icons.check_rounded),
-              label: const Text('บันทึกขั้นตอน'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFCE4D35),
-                minimumSize: const Size.fromHeight(54),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

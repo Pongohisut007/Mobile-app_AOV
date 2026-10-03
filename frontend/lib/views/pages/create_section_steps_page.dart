@@ -42,9 +42,14 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
     super.dispose();
   }
 
-  void _saveSteps() {
-    if (!_formKey.currentState!.validate()) return;
-    Navigator.of(context).pop(_steps.map((step) => step.toDraft()).toList());
+  /// Collect current step data as drafts without validation.
+  List<RecipeContentDraft> _collectDrafts() {
+    return _steps.map((step) => step.toDraft()).toList();
+  }
+
+  /// Auto-save: pop the current drafts back to the parent page.
+  void _autoSaveAndPop() {
+    Navigator.of(context).pop(_collectDrafts());
   }
 
   Future<void> _pickMedia(_StepEditor step) async {
@@ -130,30 +135,32 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F5F0),
-      appBar: AppBar(
-        title: Text(widget.sectionTitle),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _autoSaveAndPop();
+      },
+      child: Scaffold(
         backgroundColor: const Color(0xFFF6F5F0),
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            for (var index = 0; index < _steps.length; index++)
-              _buildStepCard(index),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _isPickingFile ? null : _saveSteps,
-              icon: const Icon(Icons.check_rounded),
-              label: const Text('บันทึกขั้นตอน'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFCE4D35),
-                minimumSize: const Size.fromHeight(54),
-              ),
-            ),
-          ],
+        appBar: AppBar(
+          title: Text(widget.sectionTitle),
+          backgroundColor: const Color(0xFFF6F5F0),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'กลับ (บันทึกอัตโนมัติ)',
+            onPressed: _autoSaveAndPop,
+          ),
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            children: [
+              for (var index = 0; index < _steps.length; index++)
+                _buildStepCard(index),
+            ],
+          ),
         ),
       ),
     );

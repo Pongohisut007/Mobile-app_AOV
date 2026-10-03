@@ -411,15 +411,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 _coverSelection == null ? 'เลือกรูปภาพ' : 'เปลี่ยนรูปภาพ',
               ),
             ),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('แสดงรูปในชุมชน'),
-              value: _showImgCommu,
-              onChanged: _isSaving || _isBusy
-                  ? null
-                  : (value) => setState(() => _showImgCommu = value ?? false),
-            ),
             if (_coverSelection != null) ...[
               const SizedBox(height: 12),
               _ImagePreview(file: _coverSelection!.file),
@@ -441,7 +432,15 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 ],
               ),
             ],
-            const SizedBox(height: 22),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('แสดงรูปในชุมชน'),
+              value: _showImgCommu,
+              onChanged: _isSaving || _isBusy
+                  ? null
+                  : (value) => setState(() => _showImgCommu = value ?? false),
+            ),
             _sectionHeading('รายละเอียดสูตร', Icons.tune_rounded),
             const SizedBox(height: 12),
             if (!widget.isFromCommunity) ...[
