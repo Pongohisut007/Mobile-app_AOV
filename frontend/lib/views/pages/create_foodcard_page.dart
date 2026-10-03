@@ -44,8 +44,36 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   bool _isPickingFile = false;
   bool _isUploading = false;
   bool _isSaving = false;
+  bool _canPop = false;
+  bool _handlingExit = false;
 
   bool get _isBusy => _isPickingFile || _isUploading;
+
+  bool get _hasDraftContent {
+    final sectionDraft = _sectionDraft;
+    return _titleController.text.trim().isNotEmpty ||
+        _slugController.text.trim().isNotEmpty ||
+        _descriptionController.text.trim().isNotEmpty ||
+        _coverSelection != null ||
+        _preparationController.text.trim().isNotEmpty ||
+        _cookingController.text.trim().isNotEmpty ||
+        _servingsController.text.trim().isNotEmpty ||
+        _difficulty != null ||
+        _selectedCategoryIds.isNotEmpty ||
+        _showImgCommu ||
+        (sectionDraft?.sections.any(
+              (section) =>
+                  section.title.trim().isNotEmpty ||
+                  section.contents.any(
+                    (step) =>
+                        step.title.trim().isNotEmpty ||
+                        step.textContent.trim().isNotEmpty ||
+                        step.durationMinutes != null ||
+                        step.media != null,
+                  ),
+            ) ??
+            false);
+  }
 
   @override
   void dispose() {
@@ -60,12 +88,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   }
 
   Future<void> _saveRecipe() async {
+    if (_isBusy || _isSaving) return;
     if (!_formKey.currentState!.validate()) return;
     if (_coverSelection == null) {
       _showMessage('เลือกรูปตัวอย่างอาหารก่อนเผยแพร่สูตร');
-      return;
-    }
-    if (_isBusy || _isSaving) {
       return;
     }
     if (_selectedCategoryIds.isEmpty) {
@@ -79,9 +105,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       _showMessage('เพิ่มขั้นตอนการทำอาหารก่อนเผยแพร่สูตร');
       return;
     }
-    final steps = sectionDraft.sections
-        .expand((section) => section.contents)
-        .toList();
     if (sectionDraft.sections.any(
       (section) =>
           section.title.trim().isEmpty ||
@@ -93,14 +116,24 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       _showMessage('กรอกชื่อและรายละเอียดให้ครบทุกขั้นตอน');
       return;
     }
+    if (!await _persistRecipe(asDraft: false) || !mounted) return;
+    _popPage(true);
+  }
+
+  Future<bool> _persistRecipe({required bool asDraft}) async {
+    if (_isBusy || _isSaving) return false;
     setState(() => _isSaving = true);
     try {
       final creatorId = await TokenStorage().readUserId();
-      if (!mounted) return;
+      if (!mounted) return false;
       if (creatorId == null || creatorId.trim().isEmpty) {
         throw Exception('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
       }
 
+      final sectionDraft = _sectionDraft;
+      final sections =
+          sectionDraft?.sections ?? const <RecipeSectionGroupDraft>[];
+      final steps = sections.expand((section) => section.contents).toList();
       final hasFilesToUpload =
           _coverSelection != null || steps.any((step) => step.media != null);
       UploadedFile? coverUpload;
@@ -122,13 +155,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       }
 
       var uploadIndex = 0;
+      var sectionIndex = 0;
       final recipeSections = <Map<String, dynamic>>[];
-      for (
-        var sectionIndex = 0;
-        sectionIndex < sectionDraft.sections.length;
-        sectionIndex++
-      ) {
-        final section = sectionDraft.sections[sectionIndex];
+      for (final section in sections) {
+        if (section.title.trim().isEmpty && section.contents.isEmpty) continue;
         final contents = <Map<String, dynamic>>[];
         for (
           var stepIndex = 0;
@@ -150,39 +180,53 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
           });
         }
         recipeSections.add({
-          'title': section.title,
+          'title': section.title.trim().isEmpty
+              ? 'หัวข้อชุดขั้นตอน ${sectionIndex + 1}'
+              : section.title.trim(),
           'description': null,
-          'sortOrder': sectionIndex,
+          'sortOrder': sectionIndex++,
           'isPreview': false,
           'contents': contents,
         });
       }
 
+      final title = _titleController.text.trim();
+      final slug = _slugController.text.trim();
+      final now = DateTime.now().microsecondsSinceEpoch;
+      final draftSlugBase = slug.isEmpty ? 'recipe' : slug;
+      final draftSlugSuffix = '-draft-$now';
+      final draftSlugMaxLength = 255 - draftSlugSuffix.length;
+      final generatedDraftSlug =
+          '${draftSlugBase.substring(0, draftSlugBase.length < draftSlugMaxLength ? draftSlugBase.length : draftSlugMaxLength)}$draftSlugSuffix';
+      final price = double.tryParse(_priceController.text.trim()) ?? 0;
+
       final recipe = <String, dynamic>{
         'creatorId': creatorId,
-        'title': _titleController.text.trim(),
-        'slug': _slugController.text.trim(),
+        'title': title.isEmpty && asDraft ? 'สูตรอาหารฉบับร่าง' : title,
+        'slug': slug.isEmpty && asDraft ? generatedDraftSlug : slug,
         'shortDescription': _optionalText(_descriptionController.text),
         'coverImageUrl': coverUpload?.url,
         'showImgCommu': _showImgCommu,
-        'price': double.parse(_priceController.text.trim()).toStringAsFixed(2),
-        'preparationMinutes': _optionalInt(_preparationController.text),
-        'cookingMinutes': _optionalInt(_cookingController.text),
-        'servingCount': _optionalInt(_servingsController.text),
+        'price': price.toStringAsFixed(2),
+        'preparationMinutes': int.tryParse(_preparationController.text.trim()),
+        'cookingMinutes': int.tryParse(_cookingController.text.trim()),
+        'servingCount': int.tryParse(_servingsController.text.trim()),
         'difficulty': _difficulty,
         'type': 'community',
-        'status': 'published',
+        'status': asDraft ? 'draft' : 'published',
         'categoryIds': _selectedCategoryIds.toList(),
         'sections': recipeSections,
       };
 
       await FoodRepository().createCommunityFood(recipe);
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
+      if (!mounted) return false;
+      if (asDraft) _showMessage('บันทึกฉบับร่างแล้ว');
+      return true;
     } catch (error) {
       if (mounted) {
         _showMessage(error.toString().replaceFirst('Exception: ', ''));
       }
+      return false;
     } finally {
       if (mounted) {
         setState(() {
@@ -191,6 +235,65 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         });
       }
     }
+  }
+
+  Future<void> _handleBack() async {
+    if (_handlingExit || _isBusy || _isSaving) return;
+    _handlingExit = true;
+    try {
+      if (!_hasDraftContent) {
+        _popPage(false);
+        return;
+      }
+
+      final decision = await showDialog<_ExitDecision>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('บันทึกฉบับร่างก่อนออกไหม?'),
+          content: const Text(
+            'ข้อมูลที่กรอกไว้จะถูกเก็บใน Drafts บนหน้า Profile',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(null),
+              child: const Text('อยู่ต่อ'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ExitDecision.discard),
+              child: const Text('ออกโดยไม่บันทึก'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ExitDecision.saveDraft),
+              child: const Text('บันทึกฉบับร่าง'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || decision == null) {
+        return;
+      }
+      if (decision == _ExitDecision.saveDraft &&
+          !await _persistRecipe(asDraft: true)) {
+        return;
+      }
+      _popPage(false);
+    } finally {
+      _handlingExit = false;
+    }
+  }
+
+  void _popPage(bool result) {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _canPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).pop(result);
+      }
+    });
   }
 
   void _showMessage(String message) {
@@ -304,11 +407,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     return text.isEmpty ? null : text;
   }
 
-  int? _optionalInt(String value, {int multiplier = 1}) {
-    final text = value.trim();
-    return text.isEmpty ? null : int.parse(text) * multiplier;
-  }
-
   String? _requiredText(String? value, String label) {
     if (value == null || value.trim().isEmpty) return 'กรอก$label';
     return null;
@@ -339,314 +437,332 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F5F0),
-      appBar: AppBar(
-        title: const Text('สร้างสูตรอาหาร'),
+    return PopScope<bool>(
+      canPop: _canPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleBack();
+        }
+      },
+      child: Scaffold(
         backgroundColor: const Color(0xFFF6F5F0),
-        actions: [
-          IconButton(
-            onPressed: _isSaving || _isBusy ? null : _saveRecipe,
-            tooltip: 'เผยแพร่สูตร',
-            icon: _isSaving
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.publish_rounded),
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            _sectionHeading('สูตรของคุณ', Icons.menu_book_outlined),
-            const SizedBox(height: 14),
-            _textField(
-              controller: _titleController,
-              label: 'ชื่อภาษาไทย',
-              validator: (value) => _requiredText(value, 'ชื่อสูตรอาหาร'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 12),
-            _textField(
-              controller: _slugController,
-              label: 'ชื่อภาษาอังกฤษ',
-              hint: 'spicy-basil-chicken',
-              validator: (value) {
-                final required = _requiredText(value, 'slug');
-                if (required != null) return required;
-                if (!RegExp(
-                  r'^[a-z0-9]+(?:-[a-z0-9]+)*$',
-                ).hasMatch(value!.trim())) {
-                  return 'ใช้ a-z, 0-9 และเครื่องหมาย - เท่านั้น';
-                }
-                return null;
-              },
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _textField(
-              controller: _descriptionController,
-              label: 'คำอธิบาย',
-              hint: 'เล่าจุดเด่นหรือรสชาติของเมนูนี้',
-              maxLines: 3,
-            ),
-            const SizedBox(height: 22),
-            _sectionHeading('รูปตัวอย่างอาหาร', Icons.image_outlined),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _isSaving || _isBusy ? null : _pickCoverImage,
-              icon: _isPickingFile || _isUploading
+        appBar: AppBar(
+          title: const Text('สร้างสูตรอาหาร'),
+          backgroundColor: const Color(0xFFF6F5F0),
+          actions: [
+            IconButton(
+              onPressed: _isSaving || _isBusy ? null : _saveRecipe,
+              tooltip: 'เผยแพร่สูตร',
+              icon: _isSaving
                   ? const SizedBox.square(
-                      dimension: 18,
+                      dimension: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.upload_file_rounded),
-              label: Text(
-                _coverSelection == null ? 'เลือกรูปภาพ' : 'เปลี่ยนรูปภาพ',
-              ),
+                  : const Icon(Icons.publish_rounded),
             ),
-            if (_coverSelection != null) ...[
+          ],
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            children: [
+              _sectionHeading('สูตรของคุณ', Icons.menu_book_outlined),
+              const SizedBox(height: 14),
+              _textField(
+                controller: _titleController,
+                label: 'ชื่อภาษาไทย',
+                validator: (value) => _requiredText(value, 'ชื่อสูตรอาหาร'),
+                textCapitalization: TextCapitalization.words,
+              ),
               const SizedBox(height: 12),
-              _ImagePreview(file: _coverSelection!.file),
-              const SizedBox(height: 6),
+              _textField(
+                controller: _slugController,
+                label: 'ชื่อภาษาอังกฤษ',
+                hint: 'spicy-basil-chicken',
+                validator: (value) {
+                  final required = _requiredText(value, 'slug');
+                  if (required != null) return required;
+                  if (!RegExp(
+                    r'^[a-z0-9]+(?:-[a-z0-9]+)*$',
+                  ).hasMatch(value!.trim())) {
+                    return 'ใช้ a-z, 0-9 และเครื่องหมาย - เท่านั้น';
+                  }
+                  return null;
+                },
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _textField(
+                controller: _descriptionController,
+                label: 'คำอธิบาย',
+                hint: 'เล่าจุดเด่นหรือรสชาติของเมนูนี้',
+                maxLines: 3,
+              ),
+              const SizedBox(height: 22),
+              _sectionHeading('รูปตัวอย่างอาหาร', Icons.image_outlined),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _isSaving || _isBusy ? null : _pickCoverImage,
+                icon: _isPickingFile || _isUploading
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.upload_file_rounded),
+                label: Text(
+                  _coverSelection == null ? 'เลือกรูปภาพ' : 'เปลี่ยนรูปภาพ',
+                ),
+              ),
+              if (_coverSelection != null) ...[
+                const SizedBox(height: 12),
+                _ImagePreview(file: _coverSelection!.file),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _coverSelection!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() => _coverSelection = null),
+                      tooltip: 'ลบรูปภาพ',
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
+              ],
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('แสดงรูปในชุมชน'),
+                value: _showImgCommu,
+                onChanged: _isSaving || _isBusy
+                    ? null
+                    : (value) => setState(() => _showImgCommu = value ?? false),
+              ),
+              _sectionHeading('รายละเอียดสูตร', Icons.tune_rounded),
+              const SizedBox(height: 12),
+              if (!widget.isFromCommunity) ...[
+                _textField(
+                  controller: _priceController,
+                  label: 'ราคา (บาท)',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'กรอกราคา';
+                    }
+                    return _nonNegativeNumber(value, 'ราคา');
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      _coverSelection!.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: _textField(
+                      controller: _preparationController,
+                      label: 'เตรียม (นาที)',
+                      keyboardType: TextInputType.number,
+                      validator: (value) =>
+                          _requiredWholeNumber(value, 'เวลาเตรียม'),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => setState(() => _coverSelection = null),
-                    tooltip: 'ลบรูปภาพ',
-                    icon: const Icon(Icons.delete_outline),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _textField(
+                      controller: _cookingController,
+                      label: 'ปรุง (นาที)',
+                      keyboardType: TextInputType.number,
+                      validator: (value) =>
+                          _requiredWholeNumber(value, 'เวลาปรุง'),
+                    ),
                   ),
                 ],
               ),
-            ],
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('แสดงรูปในชุมชน'),
-              value: _showImgCommu,
-              onChanged: _isSaving || _isBusy
-                  ? null
-                  : (value) => setState(() => _showImgCommu = value ?? false),
-            ),
-            _sectionHeading('รายละเอียดสูตร', Icons.tune_rounded),
-            const SizedBox(height: 12),
-            if (!widget.isFromCommunity) ...[
-              _textField(
-                controller: _priceController,
-                label: 'ราคา (บาท)',
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'กรอกราคา';
-                  return _nonNegativeNumber(value, 'ราคา');
-                },
-              ),
               const SizedBox(height: 12),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: _textField(
-                    controller: _preparationController,
-                    label: 'เตรียม (นาที)',
-                    keyboardType: TextInputType.number,
-                    validator: (value) =>
-                        _requiredWholeNumber(value, 'เวลาเตรียม'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _textField(
-                    controller: _cookingController,
-                    label: 'ปรุง (นาที)',
-                    keyboardType: TextInputType.number,
-                    validator: (value) =>
-                        _requiredWholeNumber(value, 'เวลาปรุง'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _textField(
-                    controller: _servingsController,
-                    label: 'จำนวนที่รับประทาน',
-                    keyboardType: TextInputType.number,
-                    validator: (value) => _requiredWholeNumber(
-                      value,
-                      'จำนวนที่รับประทาน',
-                      mustBePositive: true,
+              Row(
+                children: [
+                  Expanded(
+                    child: _textField(
+                      controller: _servingsController,
+                      label: 'จำนวนที่รับประทาน',
+                      keyboardType: TextInputType.number,
+                      validator: (value) => _requiredWholeNumber(
+                        value,
+                        'จำนวนที่รับประทาน',
+                        mustBePositive: true,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _difficulty,
-                    decoration: const InputDecoration(
-                      labelText: 'ระดับความยาก',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) =>
-                        value == null ? 'เลือกระดับความยาก' : null,
-                    items: const [
-                      DropdownMenuItem(value: 'easy', child: Text('ง่าย')),
-                      DropdownMenuItem(value: 'medium', child: Text('ปานกลาง')),
-                      DropdownMenuItem(value: 'hard', child: Text('ยาก')),
-                    ],
-                    onChanged: (value) => setState(() => _difficulty = value),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            _sectionHeading('หมวดหมู่', Icons.category_outlined),
-            const SizedBox(height: 8),
-            if (widget.categories.isEmpty)
-              const Text('ไม่มีหมวดหมู่ให้เลือก')
-            else
-              Autocomplete<Category>(
-                optionsBuilder: (TextEditingValue textEditingValue) {
-                  final query = textEditingValue.text.trim().toLowerCase();
-
-                  // ถ้าไม่ได้กรอก → แสดงทุก category
-                  if (query.isEmpty) {
-                    return widget.categories;
-                  }
-
-                  // ถ้ากรอก → filter ตามชื่อ
-                  return widget.categories.where(
-                    (category) => category.name.toLowerCase().contains(query),
-                  );
-                },
-
-                displayStringForOption: (Category category) => category.name,
-
-                onSelected: (Category category) {
-                  setState(() {
-                    if (!_selectedCategoryIds.contains(category.id)) {
-                      _selectedCategoryIds.add(category.id);
-                    }
-                  });
-                },
-
-                fieldViewBuilder:
-                    (
-                      BuildContext context,
-                      TextEditingController controller,
-                      FocusNode focusNode,
-                      VoidCallback onFieldSubmitted,
-                    ) {
-                      return TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        decoration: const InputDecoration(
-                          hintText: 'ค้นหาหมวดหมู่...',
-                          prefixIcon: Icon(Icons.search),
-                          border: OutlineInputBorder(),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _difficulty,
+                      decoration: const InputDecoration(
+                        labelText: 'ระดับความยาก',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value == null ? 'เลือกระดับความยาก' : null,
+                      items: const [
+                        DropdownMenuItem(value: 'easy', child: Text('ง่าย')),
+                        DropdownMenuItem(
+                          value: 'medium',
+                          child: Text('ปานกลาง'),
                         ),
-                      );
-                    },
+                        DropdownMenuItem(value: 'hard', child: Text('ยาก')),
+                      ],
+                      onChanged: (value) => setState(() => _difficulty = value),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              _sectionHeading('หมวดหมู่', Icons.category_outlined),
+              const SizedBox(height: 8),
+              if (widget.categories.isEmpty)
+                const Text('ไม่มีหมวดหมู่ให้เลือก')
+              else
+                Autocomplete<Category>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    final query = textEditingValue.text.trim().toLowerCase();
 
-                optionsViewBuilder:
-                    (
-                      BuildContext context,
-                      AutocompleteOnSelected<Category> onSelected,
-                      Iterable<Category> options,
-                    ) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4,
-                          borderRadius: BorderRadius.circular(8),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxHeight: 180, // ประมาณ 3 รายการ
-                            ),
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              itemCount: options.length,
-                              itemBuilder: (context, index) {
-                                final category = options.elementAt(index);
-                                final isSelected = _selectedCategoryIds
-                                    .contains(category.id);
+                    // ถ้าไม่ได้กรอก → แสดงทุก category
+                    if (query.isEmpty) {
+                      return widget.categories;
+                    }
 
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(category.name),
-                                  trailing: isSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: Colors.green,
-                                        )
-                                      : null,
-                                  onTap: () {
-                                    onSelected(category);
-                                  },
-                                );
-                              },
+                    // ถ้ากรอก → filter ตามชื่อ
+                    return widget.categories.where(
+                      (category) => category.name.toLowerCase().contains(query),
+                    );
+                  },
+
+                  displayStringForOption: (Category category) => category.name,
+
+                  onSelected: (Category category) {
+                    setState(() {
+                      if (!_selectedCategoryIds.contains(category.id)) {
+                        _selectedCategoryIds.add(category.id);
+                      }
+                    });
+                  },
+
+                  fieldViewBuilder:
+                      (
+                        BuildContext context,
+                        TextEditingController controller,
+                        FocusNode focusNode,
+                        VoidCallback onFieldSubmitted,
+                      ) {
+                        return TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            hintText: 'ค้นหาหมวดหมู่...',
+                            prefixIcon: Icon(Icons.search),
+                            border: OutlineInputBorder(),
+                          ),
+                        );
+                      },
+
+                  optionsViewBuilder:
+                      (
+                        BuildContext context,
+                        AutocompleteOnSelected<Category> onSelected,
+                        Iterable<Category> options,
+                      ) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxHeight: 180, // ประมาณ 3 รายการ
+                              ),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final category = options.elementAt(index);
+                                  final isSelected = _selectedCategoryIds
+                                      .contains(category.id);
+
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(category.name),
+                                    trailing: isSelected
+                                        ? const Icon(
+                                            Icons.check,
+                                            color: Colors.green,
+                                          )
+                                        : null,
+                                    onTap: () {
+                                      onSelected(category);
+                                    },
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-              ),
-            const SizedBox(height: 22),
-            _sectionHeading('ขั้นตอนการทำอาหาร', Icons.restaurant_menu_rounded),
-            const SizedBox(height: 12),
-            Text(
-              _sectionDraft == null
-                  ? 'ยังไม่ได้เพิ่มหัวข้อขั้นตอน'
-                  : '${_sectionDraft!.sections.length} ชุด · ${_sectionDraft!.sections.fold<int>(0, (count, section) => count + section.contents.length)} ขั้นตอน',
-              style: TextStyle(color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _isSaving || _isBusy ? null : _openCookingSteps,
-                icon: Icon(
-                  _sectionDraft == null ? Icons.add : Icons.edit_outlined,
+                        );
+                      },
                 ),
+              const SizedBox(height: 22),
+              _sectionHeading(
+                'ขั้นตอนการทำอาหาร',
+                Icons.restaurant_menu_rounded,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _sectionDraft == null
+                    ? 'ยังไม่ได้เพิ่มหัวข้อขั้นตอน'
+                    : '${_sectionDraft!.sections.length} ชุด · ${_sectionDraft!.sections.fold<int>(0, (count, section) => count + section.contents.length)} ขั้นตอน',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: _isSaving || _isBusy ? null : _openCookingSteps,
+                  icon: Icon(
+                    _sectionDraft == null ? Icons.add : Icons.edit_outlined,
+                  ),
+                  label: Text(
+                    _sectionDraft == null
+                        ? 'เพิ่มหัวข้อขั้นตอน'
+                        : 'แก้ไขหัวข้อขั้นตอน',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _isSaving || _isBusy ? null : _saveRecipe,
+                icon: const Icon(Icons.publish_rounded),
                 label: Text(
-                  _sectionDraft == null ? 'เพิ่มหัวข้อขั้นตอน' : 'แก้ไขหัวข้อขั้นตอน',
+                  _isUploading
+                      ? 'กำลังอัปโหลดไฟล์...'
+                      : _isSaving
+                      ? 'กำลังเผยแพร่...'
+                      : 'เผยแพร่สูตรอาหาร',
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFCE4D35),
+                  minimumSize: const Size.fromHeight(54),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _isSaving || _isBusy ? null : _saveRecipe,
-              icon: const Icon(Icons.publish_rounded),
-              label: Text(
-                _isUploading
-                    ? 'กำลังอัปโหลดไฟล์...'
-                    : _isSaving
-                    ? 'กำลังเผยแพร่...'
-                    : 'เผยแพร่สูตรอาหาร',
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFCE4D35),
-                minimumSize: const Size.fromHeight(54),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -709,6 +825,8 @@ class _PendingUpload {
   final UploadKind kind;
   final String mimeType;
 }
+
+enum _ExitDecision { saveDraft, discard }
 
 class _ImagePreview extends StatelessWidget {
   const _ImagePreview({required this.file});
