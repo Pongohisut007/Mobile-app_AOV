@@ -9,6 +9,8 @@ import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
+import { RecipeContent } from './entities/recipe-content.entity';
+import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
 
 export interface FindRecipesOptions {
@@ -128,9 +130,15 @@ export class RecipesService {
     options: FindRecipesOptions,
   ): void {
     if (options.search) {
-      query.andWhere("recipe.title ILIKE :search ESCAPE '\\'", {
-        search: `%${escapeLikeTerm(options.search)}%`,
-      });
+      const search = `%${escapeLikeTerm(options.search)}%`;
+      if (options.type === RecipeType.COMMUNITY) {
+        query.andWhere(
+          "(recipe.title ILIKE :search ESCAPE '\\' OR recipe.shortDescription ILIKE :search ESCAPE '\\')",
+          { search },
+        );
+      } else {
+        query.andWhere("recipe.title ILIKE :search ESCAPE '\\'", { search });
+      }
     }
 
     if (options.category) {
@@ -274,10 +282,49 @@ export class RecipesService {
   }
 
   async create(dto: CreateRecipeDto): Promise<Recipe> {
-    const { categoryIds, ...recipeData } = dto;
-    const recipe = this.recipeRepository.create(recipeData);
-    recipe.categories = await this.resolveCategories(categoryIds);
-    return this.recipeRepository.save(recipe);
+    const { categoryIds, sections = [], ...recipeData } = dto;
+    const categories = await this.resolveCategories(categoryIds);
+
+    return this.recipeRepository.manager.transaction(async (manager) => {
+      const recipeRepository = manager.getRepository(Recipe);
+      const sectionRepository = manager.getRepository(RecipeSection);
+      const contentRepository = manager.getRepository(RecipeContent);
+      const recipe = recipeRepository.create(recipeData);
+      recipe.categories = categories;
+      if (recipe.status === RecipeStatus.PUBLISHED && !recipe.publishedAt) {
+        recipe.publishedAt = new Date();
+      }
+
+      await recipeRepository.save(recipe);
+
+      for (const [sectionIndex, sectionData] of sections.entries()) {
+        const { contents = [], ...sectionFields } = sectionData;
+        const section = await sectionRepository.save(
+          sectionRepository.create({
+            ...sectionFields,
+            recipeId: recipe.id,
+            sortOrder: sectionData.sortOrder ?? sectionIndex,
+          }),
+        );
+
+        if (contents.length > 0) {
+          await contentRepository.save(
+            contents.map((content, contentIndex) =>
+              contentRepository.create({
+                ...content,
+                sectionId: section.id,
+                sortOrder: content.sortOrder ?? contentIndex,
+              }),
+            ),
+          );
+        }
+      }
+
+      return recipeRepository.findOneOrFail({
+        where: { id: recipe.id },
+        relations: { creator: true, categories: true, sections: { contents: true } },
+      });
+    });
   }
 
   async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
