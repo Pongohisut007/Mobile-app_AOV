@@ -39,8 +39,8 @@ describe('RecipeCommentsService comment ownership', () => {
       ...comment,
       user: comment.user,
     });
-    commentsRepository.save.mockImplementation(
-      async (value: RecipeComment) => value,
+    commentsRepository.save.mockImplementation((value: RecipeComment) =>
+      Promise.resolve(value),
     );
     commentsRepository.remove.mockResolvedValue(comment);
   });
