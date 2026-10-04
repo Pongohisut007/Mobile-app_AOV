@@ -15,7 +15,7 @@ pipeline {
         APP_NAME = 'taskflow-api'
         NODE_ENV = 'test'
 
-        GITOPS_REPO   = 'https://github.com/Alivefordie/test-ci-cd-gitops.git'
+        GITOPS_REPO   = 'https://github.com/Alivefordie/Mobile-app_AOV-Gitops.git'
         GITOPS_BRANCH = 'main'
         GITOPS_DIR    = 'gitops'
 
