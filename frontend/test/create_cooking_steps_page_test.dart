@@ -14,11 +14,11 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: CreateCookingStepsPage()));
     expect(find.text('ขั้นตอนที่ 1'), findsNothing);
 
-    await tester.tap(find.text('เพิ่มหัวข้อชุดขั้นตอน'));
+    await tester.tap(find.text('เพิ่มหัวข้อขั้นตอน'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'วิธีทำ');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ยังไม่มีขั้นตอน แตะการ์ดเพื่อเพิ่ม'));
+    await tester.tap(find.text('ยังไม่มีขั้นตอนย่อย แตะการ์ดเพื่อเพิ่ม'));
     await tester.pumpAndSettle();
 
     expect(
@@ -26,7 +26,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('ขั้นตอนที่ 1'), findsOneWidget);
-    expect(find.text('เพิ่มหัวข้อชุดขั้นตอน'), findsNothing);
+    expect(find.text('เพิ่มหัวข้อขั้นตอน'), findsNothing);
     expect(find.byType(TextFormField), findsNWidgets(3));
 
     await tester.enterText(find.byType(TextFormField).at(0), 'เตรียมวัตถุดิบ');
@@ -36,7 +36,7 @@ void main() {
     expect(find.text('ขั้นตอนที่ 2'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(3), 'ผัดเครื่องปรุง');
     await tester.enterText(find.byType(TextFormField).at(4), 'ตั้งกระทะและผัด');
-    await tester.tap(find.text('บันทึกขั้นตอน'));
+    await tester.tap(find.byTooltip('กลับ (บันทึกอัตโนมัติ)'));
     await tester.pumpAndSettle();
 
     expect(find.text('ขั้นตอนที่ 1'), findsOneWidget);
@@ -44,11 +44,11 @@ void main() {
     expect(find.text('เตรียมวัตถุดิบ'), findsOneWidget);
     expect(find.text('ผัดเครื่องปรุง'), findsOneWidget);
 
-    await tester.tap(find.text('เพิ่มหัวข้อชุดขั้นตอน'));
+    await tester.tap(find.text('เพิ่มหัวข้อขั้นตอน'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).last, 'เคล็ดลับ');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ยังไม่มีขั้นตอน แตะการ์ดเพื่อเพิ่ม'));
+    await tester.tap(find.text('ยังไม่มีขั้นตอนย่อย แตะการ์ดเพื่อเพิ่ม'));
     await tester.pumpAndSettle();
 
     expect(
@@ -56,10 +56,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('ขั้นตอนที่ 3'), findsOneWidget);
-    expect(find.text('เพิ่มหัวข้อชุดขั้นตอน'), findsNothing);
+    expect(find.text('เพิ่มหัวข้อขั้นตอน'), findsNothing);
     await tester.enterText(find.byType(TextFormField).at(0), 'โรยต้นหอม');
     await tester.enterText(find.byType(TextFormField).at(1), 'จัดเสิร์ฟ');
-    await tester.tap(find.text('บันทึกขั้นตอน'));
+    await tester.tap(find.byTooltip('กลับ (บันทึกอัตโนมัติ)'));
     await tester.pumpAndSettle();
 
     expect(find.text('ขั้นตอนที่ 3'), findsOneWidget);
