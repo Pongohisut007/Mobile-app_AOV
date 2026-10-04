@@ -615,23 +615,55 @@ pipeline {
 
                     steps {
                         dir('backend') {
-                            sh '''
-                                docker buildx build \
-                                    --push \
-                                    -t "$IMAGE_NAME" \
-                                    --cache-from type=registry,ref=registry:5000/taskflow-api:buildcache \
-                                    --cache-to type=registry,ref=registry:5000/taskflow-api:buildcache,mode=max \
-                                    .
-                            '''
                             retry(2) {
                                 sh '''
-                                docker buildx build \
-                                    --push \
-                                    -t "$IMAGE_NAME" \
-                                    --cache-from type=registry,ref=registry:5000/taskflow-api:buildcache \
-                                    --cache-to type=registry,ref=registry:5000/taskflow-api:buildcache,mode=max \
-                                    .
-                            '''
+                                    set -e
+
+                                    echo "========================================"
+                                    echo "Buildx Setup"
+                                    echo "========================================"
+
+                                    docker buildx version
+                                    docker buildx ls
+
+                                    if ! docker buildx inspect jenkins-builder >/dev/null 2>&1; then
+                                        echo "Creating BuildKit builder..."
+
+                                        docker buildx create \
+                                            --name jenkins-builder \
+                                            --driver docker-container \
+                                            --buildkitd-config ../ci/buildkit/buildkitd.toml \
+                                            --use
+                                    else
+                                        echo "Using existing BuildKit builder..."
+
+                                        docker buildx use jenkins-builder
+                                    fi
+
+                                    echo "Bootstrapping builder..."
+
+                                    docker buildx inspect \
+                                        --builder jenkins-builder \
+                                        --bootstrap
+
+                                    echo "========================================"
+                                    echo "Build Image"
+                                    echo "========================================"
+
+                                    docker buildx build \
+                                        --builder jenkins-builder \
+                                        --push \
+                                        -t "$IMAGE_NAME" \
+                                        --cache-from type=registry,ref=registry:5000/taskflow-api:buildcache \
+                                        --cache-to type=registry,ref=registry:5000/taskflow-api:buildcache,mode=max \
+                                        .
+
+                                    echo "========================================"
+                                    echo "Image build completed"
+                                    echo "========================================"
+
+                                    echo "Image: $IMAGE_NAME"
+                                '''
                             }
                         }
                     }
