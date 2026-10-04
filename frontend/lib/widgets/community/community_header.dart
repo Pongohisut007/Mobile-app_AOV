@@ -25,7 +25,8 @@ class CommunityHeader extends StatefulWidget implements PreferredSizeWidget {
   /// null = ยังกดไม่ได้ (เช่น หมวดหมู่ยังโหลดไม่เสร็จ)
   final VoidCallback? onAddPressed;
 
-  /// ข้อความเดียวกับช่องค้นหาในหน้า
+  /// ของช่องบน app bar เอง (ไม่ใช่ที่เก็บคำค้นหา)
+  /// พิมพ์ตัวแรกแล้วหน้า community จะย้ายข้อความไปช่องหลักและล้างช่องนี้
   final TextEditingController searchController;
   final bool showSearchButton;
   final bool isSearchExpanded;
@@ -167,7 +168,7 @@ class _CommunityHeaderState extends State<CommunityHeader> {
             ),
           ),
         ),
-        // ปิดช่องค้นหา (คำที่ค้นหายังคงอยู่)
+        // ปิดช่องค้นหา (คำที่ค้นหาอยู่ในช่องหลักยังคงอยู่)
         IconButton(
           onPressed: widget.onSearchClosed,
           color: ProfileColors.muted,

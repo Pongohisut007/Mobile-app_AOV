@@ -7,6 +7,7 @@ class SearchBarWidget extends StatefulWidget {
     super.key,
     required this.onSearch,
     this.controller,
+    this.focusNode,
     this.showNotificationButton = true,
   });
 
@@ -14,8 +15,12 @@ class SearchBarWidget extends StatefulWidget {
   final ValueChanged<String> onSearch;
 
   /// ใช้ข้อความร่วมกับช่องค้นหาอื่น (เช่น ช่องค้นหาบน app bar หน้า community)
-  /// ถ้าส่งมา ผู้ส่งต้องกันการยิงคำซ้ำเอง เพราะอีกช่องอาจเพิ่งส่งคำเดียวกันไปแล้ว
+  /// ถ้าส่งมา ผู้ส่งเป็นคนฟังข้อความที่เปลี่ยน หน่วงเวลา และกันยิงคำซ้ำเอง
+  /// ช่องนี้จะเรียก onSearch เฉพาะตอนกด enter และตอนกดล้าง
   final TextEditingController? controller;
+
+  /// ให้ข้างนอกสั่งย้ายเคอร์เซอร์มาที่ช่องนี้ได้
+  final FocusNode? focusNode;
 
   final bool showNotificationButton;
 
@@ -41,6 +46,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   }
 
   void _onChanged(String value) {
+    // controller จากข้างนอก: เจ้าของ controller หน่วงเวลาเอง จะได้มีตัวหน่วงตัวเดียว
+    if (widget.controller != null) return;
     _debounce?.cancel();
     _debounce = Timer(_debounceDuration, () => _submit(value));
   }
@@ -53,7 +60,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   void _submit(String value) {
     final query = value.trim();
     // กันยิงซ้ำคำเดิม เช่น พิมพ์เว้นวรรคท้ายคำ หรือกด enter ซ้ำ
-    // (ใช้ controller ร่วมกับช่องอื่น ให้ผู้ส่ง controller กันซ้ำเอง)
+    // (controller จากข้างนอก ให้เจ้าของกันซ้ำเอง)
     if (widget.controller == null) {
       if (query == _lastSent) return;
       _lastSent = query;
@@ -86,6 +93,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    focusNode: widget.focusNode,
                     textInputAction: TextInputAction.search,
                     onChanged: _onChanged,
                     onSubmitted: _onSubmitted,

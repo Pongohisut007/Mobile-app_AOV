@@ -31,8 +31,11 @@ class _CommunityPageState extends State<CommunityPage> {
   // กันกด + รัวจนเปิดหน้าสร้างสูตรซ้อนกัน
   bool _isOpeningCreate = false;
 
-  // ช่องค้นหาในหน้ากับช่องค้นหาบน app bar ใช้ข้อความเดียวกัน
+  // ที่เก็บคำค้นหามีที่เดียวคือช่องหลักในหน้า หน่วงเวลาด้วยตัวหน่วงตัวเดียวที่นี่
   final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+  // ช่องบน app bar มีไว้แค่รับตัวอักษรแรก แล้วส่งต่อให้ช่องหลัก (ตัวมันเองว่างเสมอ)
+  final _appBarSearchController = TextEditingController();
   final _scrollController = ScrollController();
   final _listKey = GlobalKey();
   final _searchKey = GlobalKey();
@@ -43,8 +46,8 @@ class _CommunityPageState extends State<CommunityPage> {
   // เลื่อนผ่านแถบหมวดหมู่ไปแล้ว = โชว์ปุ่มค้นหาบน app bar
   bool _isPastFilter = false;
   bool _isSearchExpanded = false;
-  // กำลังเลื่อนกลับขึ้นบนหลังค้นหาจาก app bar ไม่ให้ปุ่มค้นหาโผล่วูบระหว่างทาง
-  bool _isScrollingToTop = false;
+  // กำลังย้ายจากช่อง app bar ไปช่องหลัก ไม่ให้ตัวฟังการเลื่อนมาหดแถบก่อนเคอร์เซอร์ย้ายเสร็จ
+  bool _isHandingOff = false;
 
   void _resetVisiblePosts() {
     setState(() {
@@ -69,6 +72,7 @@ class _CommunityPageState extends State<CommunityPage> {
         .add(FetchCommunityFoodsByCategoryEvent(''));
 
     _scrollController.addListener(_onScroll);
+    _searchController.addListener(_onSearchTextChanged);
   }
 
   @override
@@ -76,6 +80,8 @@ class _CommunityPageState extends State<CommunityPage> {
     _searchDebounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
+    _searchFocus.dispose();
+    _appBarSearchController.dispose();
     super.dispose();
   }
 
@@ -89,7 +95,7 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void _onScroll() {
-    if (_isScrollingToTop) return;
+    if (_isHandingOff) return;
     final filterBottom = _bottomBelowListTop(_categoryKey);
     final searchBottom = _bottomBelowListTop(_searchKey);
 
@@ -112,44 +118,61 @@ class _CommunityPageState extends State<CommunityPage> {
 
   void _openSearch() => setState(() => _isSearchExpanded = true);
 
-  // หดกลับอย่างเดียว คำที่ค้นหาและผลค้นหายังอยู่
+  // หดกลับอย่างเดียว คำที่ค้นหาในช่องหลักและผลค้นหายังอยู่
   void _closeSearch() {
     FocusScope.of(context).unfocus();
+    _appBarSearchController.clear();
     setState(() => _isSearchExpanded = false);
   }
 
+  // พิมพ์ตัวแรกในช่อง app bar: ย้ายข้อความไปช่องหลัก ล้างช่อง app bar
+  // กระโดดขึ้นบนสุด ย้ายเคอร์เซอร์ไปช่องหลัก แล้ว app bar กลับเป็นแบบตอนแรก
   void _onAppBarSearchChanged(String value) {
+    if (value.isEmpty || _isHandingOff) return;
+
+    _appBarSearchController.clear();
+    // ช่อง app bar เปิดมาว่างเสมอ = เริ่มคำค้นหาใหม่ แทนที่คำเดิมในช่องหลัก
+    _searchController.value = TextEditingValue(
+      text: value,
+      selection: TextSelection.collapsed(offset: value.length),
+    );
+
+    _isHandingOff = true;
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+
+    // รอเฟรมถัดไปให้ช่องหลักถูกสร้างบนจอก่อน (ListView อาจทิ้งไปแล้วตอนเลื่อนลงลึก)
+    // ย้ายเคอร์เซอร์ก่อนค่อยหดแถบ คีย์บอร์ดจะได้ไม่ปิดแล้วเปิดใหม่
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _searchFocus.requestFocus();
+      setState(() {
+        _isSearchExpanded = false;
+        _isPastFilter = false;
+      });
+      _isHandingOff = false;
+    });
+  }
+
+  // ช่องหลักเปลี่ยน: หยุดพิมพ์ 400ms แล้วค้นหาด้วยข้อความล่าสุดในช่อง
+  void _onSearchTextChanged() {
+    if (_searchController.text.trim() == _lastQuery) {
+      _searchDebounce?.cancel();
+      return;
+    }
     _searchDebounce?.cancel();
     _searchDebounce = Timer(
       const Duration(milliseconds: 400),
-      () => _searchFood(value),
+      () => _searchFood(_searchController.text),
     );
   }
 
-  // กดค้นหาจาก app bar แล้ว ให้เหมือนค้นหาจากช่องหลัก:
-  // หดช่องบน app bar (คำว่า Community กลับมา) แล้วเลื่อนกลับขึ้นไปที่ช่องค้นหาหลัก
-  Future<void> _onAppBarSearchSubmitted(String value) async {
-    _searchDebounce?.cancel();
-    _searchFood(value);
-
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _isSearchExpanded = false;
-      _isPastFilter = false;
-    });
-
-    if (!_scrollController.hasClients) return;
-    _isScrollingToTop = true;
-    try {
-      await _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      );
-    } finally {
-      _isScrollingToTop = false;
+  // ช่อง app bar ว่างเสมอ (พิมพ์ตัวแรกก็ย้ายไปช่องหลักแล้ว) กด enter ตอนว่าง = ปิดช่อง
+  void _onAppBarSearchSubmitted(String value) {
+    if (value.isNotEmpty) {
+      _onAppBarSearchChanged(value);
+      return;
     }
-    if (mounted) _onScroll();
+    _closeSearch();
   }
 
   Future<void> _createFood(CategoryLoaded categoryState) async {
@@ -191,6 +214,8 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void _searchFood(String rawQuery) {
+    // ค้นหาทันที (enter / กดล้าง) แล้ว ตัวหน่วงที่ค้างอยู่ต้องไม่ยิงซ้ำตามมา
+    _searchDebounce?.cancel();
     final query = rawQuery.trim();
     // สองช่องค้นหาส่งเข้ามาที่นี่ทั้งคู่ กันยิงคำเดิมซ้ำ
     if (query == _lastQuery) return;
@@ -278,7 +303,7 @@ class _CommunityPageState extends State<CommunityPage> {
           final categoryState = context.read<CategoryBloc>().state;
           if (categoryState is CategoryLoaded) _createFood(categoryState);
         },
-        searchController: _searchController,
+        searchController: _appBarSearchController,
         showSearchButton: _isPastFilter,
         isSearchExpanded: _isSearchExpanded,
         onSearchPressed: _openSearch,
@@ -308,6 +333,7 @@ class _CommunityPageState extends State<CommunityPage> {
                         CommunitySearch(
                           key: _searchKey,
                           controller: _searchController,
+                          focusNode: _searchFocus,
                           onSearch: _searchFood,
                         ),
 

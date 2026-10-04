@@ -6,18 +6,23 @@ class CommunitySearch extends StatelessWidget {
     super.key,
     required this.onSearch,
     this.controller,
+    this.focusNode,
   });
 
   final ValueChanged<String> onSearch;
 
-  /// ใช้ข้อความร่วมกับช่องค้นหาบน app bar
+  /// ที่เก็บคำค้นหาของหน้า community (ช่องนี้คือช่องค้นหาหลัก)
   final TextEditingController? controller;
+
+  /// พิมพ์จากช่องบน app bar แล้ว หน้า community จะย้ายเคอร์เซอร์มาที่ช่องนี้
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
     return SearchBarWidget(
       onSearch: onSearch,
       controller: controller,
+      focusNode: focusNode,
     );
   }
 }
