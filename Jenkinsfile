@@ -757,7 +757,12 @@ pipeline {
                                 "API_IMAGE=${env.IMAGE_NAME}"
                             ]) {
                                 sh '''
-                                    docker compose up -d
+                                    docker compose up \
+                                        -d \
+                                        --wait \
+                                        --wait-timeout 60 \
+                                        --no-build
+
                                     docker compose ps
                                 '''
                             }

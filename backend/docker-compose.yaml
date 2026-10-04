@@ -30,31 +30,54 @@ services:
       retries: 10
 
   api:
+    image: ${API_IMAGE:-taskflow-api:local}
+
     build:
       context: .
       dockerfile: Dockerfile
+
     restart: unless-stopped
+
     environment:
       PORT: 3000
+
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_NAME: ${POSTGRES_DB:-dev}
       DATABASE_USER: ${POSTGRES_USER:-root}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-root}
+
       DATABASE_URL: postgresql://${POSTGRES_USER:-root}:${POSTGRES_PASSWORD:-root}@postgres:5432/${POSTGRES_DB:-dev}
+
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+
     ports:
       - "${API_PORT:-3000}:3000"
+
     depends_on:
       postgres:
         condition: service_healthy
+
       redis:
         condition: service_healthy
 
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
 volumes:
   postgres_data:
   redis_data:
