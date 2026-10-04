@@ -28,7 +28,7 @@ import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/views/pages/draft_recipes_page.dart';
 import 'package:flutter_application_1/views/pages/favorite_recipes_page.dart';
 import 'package:flutter_application_1/views/pages/my_recipes_page.dart';
-import 'package:flutter_application_1/views/pages/purchased_recipes_page.dart';
+import 'package:flutter_application_1/views/pages/recipe_collection_page.dart';
 import 'package:flutter_application_1/views/pages/login_page.dart';
 import 'package:flutter_application_1/views/pages/register_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -111,8 +111,13 @@ class RoutesGenerator {
           const MyRecipesPage(),
         );
       case AppRoutes.purchasedRecipes:
-        // อ่านจาก PurchasedRecipesBloc ที่อยู่เหนือ MaterialApp ไม่ต้องสร้าง bloc ใหม่
-        return MaterialPageRoute(builder: (_) => const PurchasedRecipesPage());
+        // โหลดรายละเอียดเองทีละหน้า (PurchasedRecipesBloc เก็บแค่ id ไว้เช็กสิทธิ์)
+        return _recipeCollectionRoute(
+          RecipeCollectionType.purchased,
+          const RecipeCollectionPage(
+            collectionType: RecipeCollectionType.purchased,
+          ),
+        );
       case AppRoutes.favoriteRecipes:
         return _recipeCollectionRoute(
           RecipeCollectionType.favorites,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_step.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/recipe_video_player.dart';
@@ -109,10 +110,9 @@ class CookingStepCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                           child: AspectRatio(
                             aspectRatio: 16 / 9,
-                            child: Image.network(
+                            child: AppNetworkImage(
                               mediaUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const _ImageFallback(),
+                              errorBuilder: (_) => const _ImageFallback(),
                             ),
                           ),
                         ),

@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
+import 'package:flutter_application_1/repositories/image_compressor.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 
 class CreateSectionStepsPage extends StatefulWidget {
@@ -81,19 +83,38 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
       if (!isVideo && !imageExtensions.contains(extension)) {
         throw Exception('รองรับไฟล์รูปภาพหรือวิดีโอเท่านั้น');
       }
+
+      final kind = isVideo ? RecipeMediaKind.video : RecipeMediaKind.image;
+      var upload = File(path);
+      var name = file.name;
+      var mimeType = _mimeType(kind, file.extension);
+      var size = file.size;
+      // ย่อรูปก่อน แล้วค่อยเช็กขนาด (วิดีโออัปโหลดตามเดิม)
+      if (!isVideo) {
+        final prepared = await prepareImageForUpload(
+          file: upload,
+          name: name,
+          mimeType: mimeType,
+        );
+        upload = prepared.file;
+        name = prepared.name;
+        mimeType = prepared.mimeType;
+        size = prepared.size;
+      }
+
       final maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (file.size < 1 || file.size > maxSize) {
+      if (size < 1 || size > maxSize) {
         throw Exception('ไฟล์ต้องมีขนาดไม่เกิน ${maxSize ~/ (1024 * 1024)} MB');
       }
 
-      final kind = isVideo ? RecipeMediaKind.video : RecipeMediaKind.image;
+      if (!mounted) return;
       setState(() {
         step.existingMediaUrl = null;
         step.media = PendingRecipeUpload(
-          file: File(path),
-          name: file.name,
+          file: upload,
+          name: name,
           kind: kind,
-          mimeType: _mimeType(kind, file.extension),
+          mimeType: mimeType,
         );
       });
       _showMessage('เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร');
@@ -554,7 +575,10 @@ class _ImagePreview extends StatelessWidget {
         aspectRatio: 16 / 9,
         child: file != null
             ? Image.file(file!, fit: BoxFit.cover, errorBuilder: _broken)
-            : Image.network(url!, fit: BoxFit.cover, errorBuilder: _broken),
+            : AppNetworkImage(
+                url!,
+                errorBuilder: (context) => _broken(context, Object(), null),
+              ),
       ),
     );
   }

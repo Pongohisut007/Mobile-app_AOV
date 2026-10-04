@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_comment.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/comment_text.dart';
 
@@ -45,7 +46,9 @@ class RecipeCommentTile extends StatelessWidget {
           CircleAvatar(
             radius: 20,
             backgroundColor: FoodDetailColors.softOrange,
-            foregroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+            foregroundImage: hasAvatar
+                ? appNetworkImageProvider(context, avatarUrl, logicalSize: 40)
+                : null,
             child: Text(
               initial,
               style: const TextStyle(

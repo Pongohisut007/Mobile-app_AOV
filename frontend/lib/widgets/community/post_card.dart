@@ -6,6 +6,7 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -62,7 +63,11 @@ class PostCard extends StatelessWidget {
                       backgroundImage:
                           (food.creatorAvatar != null &&
                               food.creatorAvatar!.isNotEmpty)
-                          ? NetworkImage(food.creatorAvatar!)
+                          ? appNetworkImageProvider(
+                              context,
+                              food.creatorAvatar!,
+                              logicalSize: 40,
+                            )
                           : null,
                       child:
                           (food.creatorAvatar == null ||
@@ -130,21 +135,10 @@ class PostCard extends StatelessWidget {
                       const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
+                        child: AppNetworkImage(
                           food.filePathImage,
                           width: 120,
                           height: 90,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            width: 120,
-                            height: 90,
-                            color: Colors.grey.shade200,
-                            alignment: Alignment.center,
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
                         ),
                       ),
                     ],

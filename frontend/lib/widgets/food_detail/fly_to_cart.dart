@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 
 /// ปุ่มตะกร้าที่เด้งได้ ใช้ key ตัวเดียวทั้งหาตำแหน่งปลายทางและสั่งเด้ง
@@ -165,10 +166,9 @@ class _FlyingImageState extends State<_FlyingImage>
           child: ClipOval(
             child: widget.imageUrl.isEmpty
                 ? const _PlaceholderIcon()
-                : Image.network(
+                : AppNetworkImage(
                     widget.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const _PlaceholderIcon(),
+                    errorBuilder: (_) => const _PlaceholderIcon(),
                   ),
           ),
         ),

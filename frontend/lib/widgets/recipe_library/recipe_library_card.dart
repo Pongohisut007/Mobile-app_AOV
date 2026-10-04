@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/recipe_summary.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
@@ -114,11 +115,10 @@ class _RecipeImage extends StatelessWidget {
     final imageUrl = url;
     if (imageUrl == null) return const _ImagePlaceholder();
 
-    return Image.network(
+    return AppNetworkImage(
       imageUrl,
-      webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => const _ImagePlaceholder(),
+      placeholder: const ColoredBox(color: Color(0xFFE8E9E2)),
+      errorBuilder: (context) => const _ImagePlaceholder(),
     );
   }
 }

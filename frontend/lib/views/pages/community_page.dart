@@ -25,9 +25,6 @@ class CommunityPage extends StatefulWidget {
 }
 
 class _CommunityPageState extends State<CommunityPage> {
-  static const int _postsPerPage = 3;
-
-  int _visiblePostCount = _postsPerPage;
   // กันกด + รัวจนเปิดหน้าสร้างสูตรซ้อนกัน
   bool _isOpeningCreate = false;
 
@@ -43,17 +40,15 @@ class _CommunityPageState extends State<CommunityPage> {
   Timer? _searchDebounce;
   String _lastQuery = '';
 
+  // หมวดที่เลือกในหน้านี้ เก็บเอง ไม่ใช้ของ CategoryBloc เพราะแชร์กับหน้า Home
+  // (ค่าว่าง = ทุกหมวด)
+  String _selectedCategoryId = '';
+
   // เลื่อนผ่านแถบหมวดหมู่ไปแล้ว = โชว์ปุ่มค้นหาบน app bar
   bool _isPastFilter = false;
   bool _isSearchExpanded = false;
   // กำลังย้ายจากช่อง app bar ไปช่องหลัก ไม่ให้ตัวฟังการเลื่อนมาหดแถบก่อนเคอร์เซอร์ย้ายเสร็จ
   bool _isHandingOff = false;
-
-  void _resetVisiblePosts() {
-    setState(() {
-      _visiblePostCount = _postsPerPage;
-    });
-  }
 
   @override
   void initState() {
@@ -204,12 +199,8 @@ class _CommunityPageState extends State<CommunityPage> {
 
     if (!mounted || created != true) return;
 
-    _resetVisiblePosts();
-
     context.read<FoodBloc>().add(
-      FetchCommunityFoodsByCategoryEvent(
-        context.read<CategoryBloc>().state.selectedId,
-      ),
+      FetchCommunityFoodsByCategoryEvent(_selectedCategoryId),
     );
   }
 
@@ -222,9 +213,7 @@ class _CommunityPageState extends State<CommunityPage> {
     _lastQuery = query;
 
     final foodBloc = context.read<FoodBloc>();
-    final selectedId = context.read<CategoryBloc>().state.selectedId;
-
-    _resetVisiblePosts();
+    final selectedId = _selectedCategoryId;
 
     if (query.isEmpty) {
       foodBloc.add(
@@ -244,11 +233,10 @@ class _CommunityPageState extends State<CommunityPage> {
   // ดึงลงเพื่อโหลดโพสต์ใหม่ ถ้ากำลังค้นหาอยู่ก็ค้นหาคำเดิมซ้ำ
   Future<void> _refresh() async {
     final foodBloc = context.read<FoodBloc>();
-    final selectedId = context.read<CategoryBloc>().state.selectedId;
+    final selectedId = _selectedCategoryId;
     final currentState = foodBloc.state;
     final query = currentState is FoodLoaded ? currentState.query : null;
 
-    _resetVisiblePosts();
     final done = foodBloc.stream.firstWhere(
       (state) => state is FoodLoaded || state is FoodError,
     );
@@ -261,32 +249,21 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void _selectCategory(String? uuid) {
-    _resetVisiblePosts();
-    // เปลี่ยนหมวดจะโหลดโพสต์ทั้งหมดของหมวดนั้น พิมพ์คำเดิมค้นหาใหม่ได้
-    _lastQuery = '';
+    _selectedCategoryId = uuid ?? '';
+    // มีคำค้นหาอยู่ = ค้นหาคำเดิมในหมวดใหม่ ไม่มี = โหลดโพสต์ทั้งหมดของหมวด
+    _searchDebounce?.cancel();
+    final query = _searchController.text.trim();
+    _lastQuery = query;
 
     context.read<FoodBloc>().add(
-      FetchCommunityFoodsByCategoryEvent(uuid ?? ''),
+      query.isEmpty
+          ? FetchCommunityFoodsByCategoryEvent(_selectedCategoryId)
+          : SearchFoodEvent(
+              query,
+              categoryId: _selectedCategoryId,
+              type: 'community',
+            ),
     );
-  }
-
-  List<Food> _sortFoods(List<Food> foods) {
-    final sortedFoods = foods.toList();
-
-    sortedFoods.sort((left, right) {
-      final leftPublishedAt = left.publishedAt;
-      final rightPublishedAt = right.publishedAt;
-
-      if (leftPublishedAt == null) {
-        return rightPublishedAt == null ? 0 : 1;
-      }
-
-      if (rightPublishedAt == null) return -1;
-
-      return rightPublishedAt.compareTo(leftPublishedAt);
-    });
-
-    return sortedFoods;
   }
 
   @override
@@ -317,8 +294,9 @@ class _CommunityPageState extends State<CommunityPage> {
             if (categoryState is CategoryLoaded) {
               return BlocBuilder<FoodBloc, FoodState>(
                 builder: (context, foodState) {
+                  // backend เรียงจากเผยแพร่ล่าสุดมาให้แล้ว
                   final foods = foodState is FoodLoaded
-                      ? _sortFoods(foodState.foods)
+                      ? foodState.foods
                       : <Food>[];
 
                   return RefreshIndicator(
@@ -350,13 +328,10 @@ class _CommunityPageState extends State<CommunityPage> {
                         CommunityPostList(
                           foodState: foodState,
                           foods: foods,
-                          visiblePostCount: _visiblePostCount,
-                          postsPerPage: _postsPerPage,
-                          onShowMore: () {
-                            setState(() {
-                              _visiblePostCount += _postsPerPage;
-                            });
-                          },
+                          // ขอหน้าถัดไปจาก backend
+                          onShowMore: () => context.read<FoodBloc>().add(
+                            FoodLoadMoreRequested(),
+                          ),
                         ),
                       ],
                     ),

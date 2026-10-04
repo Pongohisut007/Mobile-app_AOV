@@ -9,15 +9,13 @@ class CommunityPostList extends StatelessWidget {
     super.key,
     required this.foodState,
     required this.foods,
-    required this.visiblePostCount,
-    required this.postsPerPage,
     required this.onShowMore,
   });
 
   final FoodState foodState;
   final List<Food> foods;
-  final int visiblePostCount;
-  final int postsPerPage;
+
+  /// โหลดหน้าถัดไปจาก backend
   final VoidCallback onShowMore;
 
   @override
@@ -46,8 +44,10 @@ class CommunityPostList extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final loaded = foodState as FoodLoaded;
+
     if (foods.isEmpty) {
-      final query = (foodState as FoodLoaded).query;
+      final query = loaded.query;
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Center(
@@ -63,18 +63,16 @@ class CommunityPostList extends StatelessWidget {
 
     return Column(
       children: [
-        ...foods
-            .take(visiblePostCount)
-            .map(
-              (food) => PostCard(food: food),
-            ),
+        ...foods.map(
+          (food) => PostCard(food: food),
+        ),
 
-        if (foods.length > visiblePostCount)
+        if (loaded.hasMore || loaded.loadMoreError != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Center(
               child: OutlinedButton(
-                onPressed: onShowMore,
+                onPressed: loaded.isLoadingMore ? null : onShowMore,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: ProfileColors.ink,
                   backgroundColor: Colors.white,
@@ -86,7 +84,19 @@ class CommunityPostList extends StatelessWidget {
                   ),
                   textStyle: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                child: const Text('แสดงเพิ่ม'),
+                child: loaded.isLoadingMore
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: ProfileColors.ink,
+                        ),
+                      )
+                    : Text(
+                        loaded.loadMoreError != null
+                            ? 'โหลดไม่สำเร็จ ลองอีกครั้ง'
+                            : 'แสดงเพิ่ม',
+                      ),
               ),
             ),
           ),

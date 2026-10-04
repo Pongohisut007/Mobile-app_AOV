@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
@@ -113,10 +114,9 @@ class _ProfileAvatar extends StatelessWidget {
       return Image.asset(UserProfile.fallbackAvatarAsset, fit: BoxFit.cover);
     }
 
-    return Image.network(
+    return AppNetworkImage(
       avatarUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) =>
+      errorBuilder: (context) =>
           Image.asset(UserProfile.fallbackAvatarAsset, fit: BoxFit.cover),
     );
   }

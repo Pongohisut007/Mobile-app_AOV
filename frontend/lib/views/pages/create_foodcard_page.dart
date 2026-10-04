@@ -7,6 +7,7 @@ import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
+import 'package:flutter_application_1/repositories/image_compressor.dart';
 import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/repositories/upload_repository.dart';
@@ -464,19 +465,37 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       if (path == null) {
         throw Exception('ไม่สามารถเปิดไฟล์ที่เลือกได้');
       }
+
+      var file = File(path);
+      var name = selectedFile.name;
+      var mimeType = _mimeType(kind, selectedFile.extension);
+      var size = selectedFile.size;
+      // ย่อรูปก่อน แล้วค่อยเช็กขนาด รูปต้นฉบับใหญ่เกินแต่ย่อแล้วผ่านก็ใช้ได้
+      if (kind == UploadKind.images) {
+        final prepared = await prepareImageForUpload(
+          file: file,
+          name: name,
+          mimeType: mimeType,
+        );
+        file = prepared.file;
+        name = prepared.name;
+        mimeType = prepared.mimeType;
+        size = prepared.size;
+      }
+
       final maximumSize = kind == UploadKind.images
           ? 10 * 1024 * 1024
           : 100 * 1024 * 1024;
-      if (selectedFile.size < 1 || selectedFile.size > maximumSize) {
+      if (size < 1 || size > maximumSize) {
         final maximumMb = maximumSize ~/ (1024 * 1024);
         throw Exception('ไฟล์ต้องมีขนาดไม่เกิน $maximumMb MB');
       }
 
       return _PendingUpload(
-        file: File(path),
-        name: selectedFile.name,
+        file: file,
+        name: name,
         kind: kind,
-        mimeType: _mimeType(kind, selectedFile.extension),
+        mimeType: mimeType,
       );
     } catch (error) {
       if (mounted) {

@@ -14,33 +14,31 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { UserRole } from '../users/entities/user.entity';
+import { DEFAULT_PAGE_LIMIT } from '../common/pagination';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
+import { ListRecipesQueryDto } from './dto/list-recipes-query.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
-import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
+import { Recipe } from './entities/recipe.entity';
 import { PaginatedResult, RecipesService } from './recipes.service';
 
 @Controller('recipes')
 export class RecipesController {
   constructor(private readonly recipesService: RecipesService) {}
 
+  // ส่ง page มา = แบ่งหน้า ({ data, total, page, limit, totalPages })
+  // ไม่ส่ง = คืนทั้งหมดเป็น array แบบเดิม
   @Get()
   findAll(
-    @Query('search') search?: string,
-    @Query('category') category?: string,
-    @Query('categoryId') categoryId?: string,
-    @Query('creatorId') creatorId?: string,
-    @Query('status') status?: RecipeStatus,
-    @Query('type') type?: RecipeType,
-  ): Promise<Recipe[]> {
-    return this.recipesService.findAll({
-      search,
-      category,
-      categoryId,
-      creatorId,
-      status,
-      type,
-    });
+    @Query() query: ListRecipesQueryDto,
+  ): Promise<Recipe[] | PaginatedResult<Recipe>> {
+    const { page, limit, ...options } = query;
+    if (page === undefined) return this.recipesService.findAll(options);
+    return this.recipesService.findPage(
+      options,
+      page,
+      limit ?? DEFAULT_PAGE_LIMIT,
+    );
   }
 
   // ต้องมาก่อน @Get(':id') ไม่งั้น 'search' จะถูกจับเป็น id

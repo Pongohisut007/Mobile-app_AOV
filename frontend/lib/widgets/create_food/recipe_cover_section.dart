@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 
@@ -238,10 +239,9 @@ class RecipeCoverSection extends StatelessWidget {
     if (file != null) {
       return Image.file(file, fit: BoxFit.cover, errorBuilder: errorBuilder);
     }
-    return Image.network(
+    return AppNetworkImage(
       coverUrl!,
-      fit: BoxFit.cover,
-      errorBuilder: errorBuilder,
+      errorBuilder: (context) => errorBuilder(context, Object(), null),
     );
   }
 }

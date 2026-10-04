@@ -49,6 +49,9 @@ class RecipeCollectionPage extends StatelessWidget {
           onRetry: () => context.read<RecipeLibraryBloc>().add(
             const RecipeLibraryRequested(),
           ),
+          onLoadMore: () => context.read<RecipeLibraryBloc>().add(
+            const RecipeLibraryMoreRequested(),
+          ),
         ),
       ),
     );
@@ -126,12 +129,16 @@ class RecipeCollectionBody extends StatelessWidget {
     required this.emptyMessage,
     required this.onRefresh,
     required this.onRetry,
+    this.onLoadMore,
   });
 
   final RecipeLibraryState state;
   final String emptyMessage;
   final RefreshCallback onRefresh;
   final VoidCallback onRetry;
+
+  /// เลื่อนใกล้ล่างสุดแล้ว ขอหน้าถัดไป (null = ไม่แบ่งหน้า)
+  final VoidCallback? onLoadMore;
 
   @override
   Widget build(BuildContext context) {
@@ -140,33 +147,56 @@ class RecipeCollectionBody extends StatelessWidget {
         message: emptyMessage,
         onRefresh: onRefresh,
       ),
-      RecipeLibraryLoaded(:final recipes) => RefreshIndicator(
+      final RecipeLibraryLoaded loaded => RefreshIndicator(
         color: ProfileColors.ink,
         onRefresh: onRefresh,
-        child: GridView.builder(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.67,
-          ),
-          itemCount: recipes.length,
-          itemBuilder: (context, index) {
-            final recipe = recipes[index];
-            return RecipeLibraryCard(
-              recipe: recipe,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => FoodDetailPage(foodsId: recipe.id),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // โหลดพลาดแล้วให้กดลองใหม่เอง ไม่วนยิงซ้ำตอนเลื่อน
+            if (loaded.hasMore &&
+                loaded.loadMoreError == null &&
+                notification.metrics.extentAfter < 400) {
+              onLoadMore?.call();
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                sliver: SliverGrid.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.67,
+                  ),
+                  itemCount: loaded.recipes.length,
+                  itemBuilder: (context, index) {
+                    final recipe = loaded.recipes[index];
+                    return RecipeLibraryCard(
+                      recipe: recipe,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => FoodDetailPage(foodsId: recipe.id),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            );
-          },
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 28),
+                  child: _LoadMoreFooter(state: loaded, onRetry: onLoadMore),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       RecipeLibraryFailure(:final message) => _ErrorView(
@@ -177,6 +207,37 @@ class RecipeCollectionBody extends StatelessWidget {
         child: CircularProgressIndicator(color: ProfileColors.ink),
       ),
     };
+  }
+}
+
+/// ท้ายรายการ: ตัวหมุนตอนโหลดหน้าถัดไป หรือปุ่มลองใหม่ถ้าโหลดพลาด
+class _LoadMoreFooter extends StatelessWidget {
+  const _LoadMoreFooter({required this.state, required this.onRetry});
+
+  final RecipeLibraryLoaded state;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.loadMoreError != null) {
+      return Center(
+        child: TextButton.icon(
+          onPressed: onRetry,
+          style: TextButton.styleFrom(foregroundColor: ProfileColors.ink),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Could not load more. Try again'),
+        ),
+      );
+    }
+    if (state.hasMore || state.isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Center(
+          child: CircularProgressIndicator(color: ProfileColors.ink),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

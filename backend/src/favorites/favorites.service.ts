@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { CacheNamespace } from '../cache/app-cache.module';
+import { AppCacheService } from '../cache/app-cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
+import { PaginatedResult, toPaginated } from '../common/pagination';
 import { Favorite } from './entities/favorite.entity';
 
 // รหัส error ของ postgres ตอนชน unique constraint
@@ -18,7 +21,14 @@ export class FavoritesService {
   constructor(
     @InjectRepository(Favorite)
     private readonly favoriteRepository: Repository<Favorite>,
+    @Optional()
+    private readonly cache?: AppCacheService,
   ) {}
+
+  // ยอดหัวใจอยู่ในข้อมูลสูตรที่ cache ไว้ กด/เลิกกดหัวใจต้องล้าง
+  private async invalidateRecipeCounts(): Promise<void> {
+    await this.cache?.invalidate(CacheNamespace.recipes);
+  }
 
   findAll(userId: string): Promise<Favorite[]> {
     return this.favoriteRepository.find({
@@ -26,6 +36,23 @@ export class FavoritesService {
       relations: { recipe: { creator: true, categories: true } },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findPage(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResult<Favorite>> {
+    // relation แบบ many-to-many ทำให้ take/skip นับแถวผิด จึงใช้ find แบบมี order + id
+    // (typeorm แยก query หา id ให้เองเมื่อมี relation)
+    const [data, total] = await this.favoriteRepository.findAndCount({
+      where: { userId },
+      relations: { recipe: { creator: true, categories: true } },
+      order: { createdAt: 'DESC', id: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return toPaginated(data, total, page, limit);
   }
 
   // รายการโปรดของคนอื่นให้ถือว่าไม่มีอยู่
@@ -47,9 +74,11 @@ export class FavoritesService {
     if (existing) return existing;
 
     try {
-      return await this.favoriteRepository.save(
+      const saved = await this.favoriteRepository.save(
         this.favoriteRepository.create({ userId, recipeId }),
       );
+      await this.invalidateRecipeCounts();
+      return saved;
     } catch (error) {
       if (!isUniqueViolation(error)) throw error;
       return this.favoriteRepository.findOneOrFail({
@@ -61,6 +90,7 @@ export class FavoritesService {
   async remove(id: string, userId: string): Promise<void> {
     const favorite = await this.findOne(id, userId);
     await this.favoriteRepository.remove(favorite);
+    await this.invalidateRecipeCounts();
   }
 
   // ฝั่งแอปรู้แค่ว่ากดหัวใจสูตรไหน ไม่รู้ favoriteId จึงลบด้วยคู่ user + recipe ได้ตรง ๆ
@@ -74,5 +104,6 @@ export class FavoritesService {
       );
     }
     await this.favoriteRepository.remove(favorite);
+    await this.invalidateRecipeCounts();
   }
 }

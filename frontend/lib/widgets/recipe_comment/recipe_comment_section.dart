@@ -5,6 +5,7 @@ import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_state.d
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_tile.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -344,7 +345,11 @@ class _InlineCommentComposerState extends State<_InlineCommentComposer> {
           backgroundColor: Colors.grey.shade200,
           foregroundImage: resolvedAvatarUrl == null
               ? null
-              : NetworkImage(resolvedAvatarUrl),
+              : appNetworkImageProvider(
+                  context,
+                  resolvedAvatarUrl,
+                  logicalSize: 38,
+                ),
           child: resolvedAvatarUrl == null
               ? Icon(Icons.person_outline, color: Colors.grey.shade700)
               : null,

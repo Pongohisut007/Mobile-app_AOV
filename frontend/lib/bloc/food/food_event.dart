@@ -16,6 +16,17 @@ class FetchCommunityFoodsByCategoryEvent extends FoodEvent {
   FetchCommunityFoodsByCategoryEvent(this.categoryId);
 }
 
+/// โหลดหน้าถัดไปของรายการล่าสุด (ไม่ว่าจะมาจากหมวดหรือการค้นหา)
+class FoodLoadMoreRequested extends FoodEvent {
+  FoodLoadMoreRequested();
+}
+
+/// อัปเดตรายการล่าสุดเบื้องหลัง (หมวด/คำค้นหาเดิม) ไม่ขึ้นตัวหมุน
+/// พลาดก็เก็บรายการเดิมไว้ เช่น ตอนสลับกลับมาแท็บนี้
+class FoodSilentRefreshRequested extends FoodEvent {
+  FoodSilentRefreshRequested();
+}
+
 class SearchFoodEvent extends FoodEvent {
   final String query;
   // หมวดที่เลือกอยู่ ค่าว่าง = ค้นหาทุกหมวด

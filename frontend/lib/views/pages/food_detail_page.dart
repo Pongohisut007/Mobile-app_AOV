@@ -56,6 +56,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
   late Future<Food> _foodFuture;
 
+  // ข้อมูลจาก RAM ตอนเปิดหน้า (เคยเปิดสูตรนี้แล้ว) โชว์ทันทีโดยไม่ต้องรอ API
+  Food? _cachedFood;
+
   bool _commentScrollScheduled = false;
   bool _isOpeningEditor = false;
   bool _isDeleting = false;
@@ -73,7 +76,15 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   void initState() {
     super.initState();
 
-    _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+    final cached = FoodRepository.cachedFood(widget.foodsId);
+    if (cached != null) {
+      // โชว์ของเดิมทันที แล้วโหลดของใหม่มาแทนเงียบ ๆ
+      _cachedFood = cached;
+      _foodFuture = Future.value(cached);
+      _refresh(silent: true);
+    } else {
+      _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+    }
     _loadLoginState();
   }
 
@@ -93,16 +104,18 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   }
 
   // ดึงลงเพื่อโหลดใหม่: โชว์ข้อมูลเดิมไว้ระหว่างรอ โหลดพลาดก็ไม่ทับของเดิม
-  Future<void> _refresh() async {
+  // silent = อัปเดตเบื้องหลังตอนเปิดหน้าจาก RAM: ไม่โหลดรีวิว/คอมเมนต์ซ้ำ และไม่เด้ง error
+  Future<void> _refresh({bool silent = false}) async {
     try {
       final food = await FoodRepository().fetchFoodById(widget.foodsId);
       if (!mounted) return;
       setState(() {
         _foodFuture = Future.value(food);
-        _refreshCount++;
+        _cachedFood = food;
+        if (!silent) _refreshCount++;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || silent) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -147,6 +160,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                 ? null
                 : FutureBuilder<Food>(
                     future: _foodFuture,
+                    initialData: _cachedFood,
                     builder: (context, snapshot) {
                       final food = snapshot.data;
                       // สูตร community ฟรี ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
@@ -183,6 +197,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                   ),
         body: FutureBuilder<Food>(
           future: _foodFuture,
+          initialData: _cachedFood,
           builder: (context, state) {
             // มีข้อมูลเดิมอยู่แล้ว (เช่นหลังแก้ไขสูตร) ให้โชว์ของเดิมไว้ระหว่างโหลด
             if (state.connectionState == ConnectionState.waiting &&
