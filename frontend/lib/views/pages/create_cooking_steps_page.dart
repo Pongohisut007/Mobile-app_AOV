@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/views/pages/create_section_steps_page.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/section_editor_card.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 
@@ -58,10 +59,9 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
     Navigator.of(context).pop(_collectDraft());
   }
 
+  // ใช้เตือนว่ายังกรอกไม่ครบ
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message, type: AppSnackType.error);
   }
 
   String? _required(String? value, String label) {

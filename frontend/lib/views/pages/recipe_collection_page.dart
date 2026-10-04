@@ -6,6 +6,7 @@ import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/repositories/category_repository.dart';
 import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_library/recipe_library_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -101,11 +102,11 @@ class _AddRecipeButtonState extends State<_AddRecipeButton> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isOpening = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('Could not open recipe editor: $error')),
-        );
+      showAppSnackBar(
+        context,
+        'Could not open recipe editor: $error',
+        type: AppSnackType.error,
+      );
     }
   }
 

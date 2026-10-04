@@ -17,6 +17,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/cooking_steps_page.dart';
 import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
 import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
@@ -116,13 +117,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       });
     } catch (error) {
       if (!mounted || silent) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
-          ),
-        );
+      _showError(error);
     }
   }
 
@@ -157,44 +152,39 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
         backgroundColor: Colors.white,
         bottomNavigationBar:
             widget.showComments || widget.scrollToComments || !canBuy
-                ? null
-                : FutureBuilder<Food>(
-                    future: _foodFuture,
-                    initialData: _cachedFood,
-                    builder: (context, snapshot) {
-                      final food = snapshot.data;
-                      // สูตร community ฟรี ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
-                      if (food != null && _isCommunity(food)) {
-                        return const SizedBox.shrink();
-                      }
+            ? null
+            : FutureBuilder<Food>(
+                future: _foodFuture,
+                initialData: _cachedFood,
+                builder: (context, snapshot) {
+                  final food = snapshot.data;
+                  // สูตร community ฟรี ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
+                  if (food != null && _isCommunity(food)) {
+                    return const SizedBox.shrink();
+                  }
 
-                      final isPending = context.select(
-                        (CartBloc bloc) =>
-                            bloc.state.isPending(widget.foodsId),
-                      );
+                  final isPending = context.select(
+                    (CartBloc bloc) => bloc.state.isPending(widget.foodsId),
+                  );
 
-                      final inCart = context.select(
-                        (CartBloc bloc) =>
-                            bloc.state.contains(widget.foodsId),
-                      );
+                  final inCart = context.select(
+                    (CartBloc bloc) => bloc.state.contains(widget.foodsId),
+                  );
 
-                      return BottomBuyBar(
-                        cartKey: _cartKey,
-                        isLoading: isPending,
-                        onCartPressed: () =>
-                            Navigator.pushNamed(context, AppRoutes.cart),
-                        buyLabel: inCart ? 'Checkout now' : 'Buy Now',
-                        onBuyPressed: inCart
-                            ? () => Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.cart,
-                                )
-                            : food == null || isPending
-                                ? null
-                                : () => _addToCart(food),
-                      );
-                    },
-                  ),
+                  return BottomBuyBar(
+                    cartKey: _cartKey,
+                    isLoading: isPending,
+                    onCartPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.cart),
+                    buyLabel: inCart ? 'Checkout now' : 'Buy Now',
+                    onBuyPressed: inCart
+                        ? () => Navigator.pushNamed(context, AppRoutes.cart)
+                        : food == null || isPending
+                        ? null
+                        : () => _addToCart(food),
+                  );
+                },
+              ),
         body: FutureBuilder<Food>(
           future: _foodFuture,
           initialData: _cachedFood,
@@ -295,9 +285,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Icon(
-                                  Icons.restaurant_menu_rounded,
-                                ),
+                              : const Icon(Icons.restaurant_menu_rounded),
                           label: const Text(
                             'เริ่มทำอาหาร',
                             style: TextStyle(
@@ -317,10 +305,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                     const SizedBox(height: 32),
 
-                    Divider(
-                      color: Colors.grey.shade200,
-                      height: 1,
-                    ),
+                    Divider(color: Colors.grey.shade200, height: 1),
 
                     const SizedBox(height: 28),
 
@@ -333,14 +318,11 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                             baseUrl: ApiConfig.apiBaseUrl,
                           ),
                           recipeId: food.idfoods,
-                        )..add(
-                            const RecipeCommentsRequested(),
-                          ),
+                        )..add(const RecipeCommentsRequested()),
                         child: RecipeCommentSection(
                           headingKey: _commentsTitleKey,
                           onReady: _scheduleScrollToComments,
-                          onCommentCountChanged:
-                              widget.onCommentCountChanged,
+                          onCommentCountChanged: widget.onCommentCountChanged,
                         ),
                       )
                     else
@@ -350,9 +332,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                             baseUrl: ApiConfig.apiBaseUrl,
                           ),
                           recipeId: food.idfoods,
-                        )..add(
-                            const RecipeReviewRequested(),
-                          ),
+                        )..add(const RecipeReviewRequested()),
                         child: const RecipeReviewSection(),
                       ),
 
@@ -381,9 +361,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
         if (!mounted) return;
       }
       await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => CookingStepsPage(food: target),
-        ),
+        MaterialPageRoute<void>(builder: (_) => CookingStepsPage(food: target)),
       );
     } finally {
       if (mounted) setState(() => _isStartingCooking = false);
@@ -409,10 +387,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
-                'ลบ',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('ลบ', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -429,13 +404,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isDeleting = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
-          ),
-        );
+      _showError(error);
     }
   }
 
@@ -447,8 +416,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     try {
       // หน้าแก้ไขต้องมีรายการหมวดหมู่ทั้งหมด
       // เพื่อให้เลือก/แสดงหมวดเดิมได้
-      final categories =
-          await CategoryRepository().fetchCategories();
+      final categories = await CategoryRepository().fetchCategories();
 
       if (!mounted) return;
 
@@ -464,33 +432,27 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
       if (!mounted || updated != true) return;
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('บันทึกการแก้ไขแล้ว'),
-          ),
-        );
+      showAppSnackBar(
+        context,
+        'บันทึกการแก้ไขแล้ว',
+        type: AppSnackType.success,
+      );
 
       _reload();
     } catch (error) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              error.toString().replaceFirst(
-                    'Exception: ',
-                    '',
-                  ),
-            ),
-          ),
-        );
+      _showError(error);
     } finally {
       if (mounted) setState(() => _isOpeningEditor = false);
     }
+  }
+
+  void _showError(Object error) {
+    showAppSnackBar(
+      context,
+      error.toString().replaceFirst('Exception: ', ''),
+      type: AppSnackType.error,
+    );
   }
 
   Future<void> _addToCart(Food food) async {
@@ -500,12 +462,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
     _addingFood = food;
 
-    cartBloc.add(
-      CartItemAdded(
-        food,
-        showFeedback: false,
-      ),
-    );
+    cartBloc.add(CartItemAdded(food, showFeedback: false));
   }
 
   void _playFlyToCart(Food food) {
@@ -518,34 +475,22 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     final headerBox =
         _headerKey.currentContext?.findRenderObject() as RenderBox?;
 
-    final headerCenter =
-        headerBox != null && headerBox.attached
-            ? headerBox.localToGlobal(
-                headerBox.size.center(Offset.zero),
-              )
-            : null;
+    final headerCenter = headerBox != null && headerBox.attached
+        ? headerBox.localToGlobal(headerBox.size.center(Offset.zero))
+        : null;
 
     // ถ้าเลื่อนจนรูปพ้นจอไปแล้ว
     // ให้เริ่ม animation จากกลางจอแทน
     final screen = MediaQuery.sizeOf(context);
 
-    final start =
-        headerCenter != null &&
-                headerCenter.dy > imageSize / 2
-            ? headerCenter
-            : Offset(
-                screen.width / 2,
-                screen.height / 2,
-              );
+    final start = headerCenter != null && headerCenter.dy > imageSize / 2
+        ? headerCenter
+        : Offset(screen.width / 2, screen.height / 2);
 
     flyToCart(
       context: context,
       imageUrl: food.filePathImage,
-      from: Rect.fromCenter(
-        center: start,
-        width: imageSize,
-        height: imageSize,
-      ),
+      from: Rect.fromCenter(center: start, width: imageSize, height: imageSize),
       to: cartRect,
       onArrived: () => _cartKey.currentState?.bounce(),
     );
@@ -561,8 +506,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      final targetContext =
-          _commentsTitleKey.currentContext;
+      final targetContext = _commentsTitleKey.currentContext;
 
       if (targetContext == null) {
         _commentScrollScheduled = false;
@@ -587,11 +531,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 Future<bool> _requireSignIn(BuildContext context) async {
   final navigator = Navigator.of(context);
 
-  final accessToken =
-      await TokenStorage().readAccessToken();
+  final accessToken = await TokenStorage().readAccessToken();
 
-  if (accessToken != null &&
-      accessToken.trim().isNotEmpty) {
+  if (accessToken != null && accessToken.trim().isNotEmpty) {
     return false;
   }
 

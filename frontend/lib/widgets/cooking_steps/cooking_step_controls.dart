@@ -19,12 +19,7 @@ class CookingStepControls extends StatelessWidget {
     final isLast = currentIndex == totalSteps - 1;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        4,
-        20,
-        18,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
       child: Row(
         children: [
           SizedBox(
@@ -32,12 +27,8 @@ class CookingStepControls extends StatelessWidget {
             height: 58,
             child: IconButton.filledTonal(
               tooltip: 'ขั้นตอนก่อนหน้า',
-              onPressed: currentIndex == 0
-                  ? null
-                  : onPrevious,
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-              ),
+              onPressed: currentIndex == 0 ? null : onPrevious,
+              icon: const Icon(Icons.arrow_back_rounded),
             ),
           ),
           const SizedBox(width: 14),
@@ -45,9 +36,7 @@ class CookingStepControls extends StatelessWidget {
             child: SizedBox(
               height: 58,
               child: FilledButton.icon(
-                key: const Key(
-                  'complete-step-button',
-                ),
+                key: const Key('complete-step-button'),
                 onPressed: onContinue,
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF24BDB8),
@@ -57,14 +46,10 @@ class CookingStepControls extends StatelessWidget {
                   ),
                 ),
                 icon: Icon(
-                  isLast
-                      ? Icons.done_all_rounded
-                      : Icons.check_rounded,
+                  isLast ? Icons.done_all_rounded : Icons.check_rounded,
                 ),
                 label: Text(
-                  isLast
-                      ? 'ทำอาหารเสร็จแล้ว'
-                      : 'เสร็จขั้นตอนนี้',
+                  isLast ? 'ทำอาหารเสร็จแล้ว' : 'เสร็จขั้นตอนนี้',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,

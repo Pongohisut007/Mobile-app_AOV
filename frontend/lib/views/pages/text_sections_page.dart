@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/content/app_texts.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
@@ -165,9 +166,11 @@ class _ContactCard extends StatelessWidget {
         onTap: () async {
           await Clipboard.setData(ClipboardData(text: email));
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(const SnackBar(content: Text('คัดลอกอีเมลแล้ว')));
+          showAppSnackBar(
+            context,
+            'คัดลอกอีเมลแล้ว',
+            type: AppSnackType.success,
+          );
         },
       ),
     );

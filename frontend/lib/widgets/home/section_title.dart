@@ -10,17 +10,9 @@ class SectionTitle extends StatelessWidget {
       children: [
         Text(
           "Recommended",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
-        Text(
-          "See More",
-          style: TextStyle(
-            color: Colors.grey,
-          ),
-        ),
+        Text("See More", style: TextStyle(color: Colors.grey)),
       ],
     );
   }

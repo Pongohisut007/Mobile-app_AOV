@@ -22,7 +22,9 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
   FoodBloc(this.repository) : super(FoodInitial()) {
     on<FetchFoodEvent>(_onFetchFoodEvent);
     on<FetchFoodByCategoryEvent>(_onFetchFoodByCategoryEvent);
-    on<FetchCommunityFoodsByCategoryEvent>(_onFetchCommunityFoodsByCategoryEvent);
+    on<FetchCommunityFoodsByCategoryEvent>(
+      _onFetchCommunityFoodsByCategoryEvent,
+    );
     on<SearchFoodEvent>(_onSearchFoodEvent);
     on<FoodLoadMoreRequested>(_onLoadMore);
     on<FoodSilentRefreshRequested>(_onSilentRefresh);

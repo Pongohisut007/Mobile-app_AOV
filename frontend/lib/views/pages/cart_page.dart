@@ -15,6 +15,7 @@ import 'package:flutter_application_1/views/pages/checkout_success_page.dart';
 import 'package:flutter_application_1/widgets/cart/cart_empty_view.dart';
 import 'package:flutter_application_1/widgets/cart/cart_item_tile.dart';
 import 'package:flutter_application_1/widgets/cart/cart_summary_bar.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -56,18 +57,11 @@ class _CartPageState extends State<CartPage> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: isError ? Colors.redAccent : ProfileColors.ink,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      );
+    showAppSnackBar(
+      context,
+      message,
+      type: isError ? AppSnackType.error : AppSnackType.info,
+    );
   }
 
   Future<void> _checkout(List<CartItem> items) async {

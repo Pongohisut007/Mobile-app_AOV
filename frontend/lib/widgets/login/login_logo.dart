@@ -27,10 +27,7 @@ class LoginLogo extends StatelessWidget {
               onPressed: () {
                 Navigator.pop(context);
               },
-              icon: const Icon(
-                Icons.arrow_back,
-                size: 35,
-              ),
+              icon: const Icon(Icons.arrow_back, size: 35),
               color: Colors.white,
               padding: EdgeInsets.zero,
             ),

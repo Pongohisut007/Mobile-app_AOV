@@ -8,6 +8,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/views/pages/change_password_page.dart';
 import 'package:flutter_application_1/views/pages/delete_account_page.dart';
 import 'package:flutter_application_1/views/pages/text_sections_page.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
@@ -35,13 +36,10 @@ class _SettingsPageState extends State<SettingsPage> {
       MaterialPageRoute<bool>(builder: (_) => const ChangePasswordPage()),
     );
     if (changed != true) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ'),
-        ),
-      );
+    messenger.showAppSnackBar(
+      'เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ',
+      type: AppSnackType.success,
+    );
   }
 
   Future<bool> _confirm({
@@ -107,9 +105,7 @@ class _SettingsPageState extends State<SettingsPage> {
     } on AuthRepositoryException catch (error) {
       if (!mounted) return;
       setState(() => _isLoggingOutAll = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(error.message)));
+      showAppSnackBar(context, error.message, type: AppSnackType.error);
     }
   }
 

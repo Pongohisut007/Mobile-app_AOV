@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/data/user_cache.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
@@ -37,9 +38,7 @@ class RegisterPage extends StatelessWidget {
           );
         }
         if (state is AuthFailure) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          showAppSnackBar(context, state.message, type: AppSnackType.error);
         }
       },
       // ย้อนกลับ (ทั้งปุ่มบนจอและปุ่ม back ของระบบ) ให้กลับไปหน้า login

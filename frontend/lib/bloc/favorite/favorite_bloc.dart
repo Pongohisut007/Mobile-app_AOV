@@ -43,15 +43,10 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
 
     try {
       final recipeIds = await _repository.fetchFavoriteRecipeIds(accessToken);
-      emit(
-        FavoriteState(status: FavoriteStatus.ready, recipeIds: recipeIds),
-      );
+      emit(FavoriteState(status: FavoriteStatus.ready, recipeIds: recipeIds));
     } on Exception catch (error) {
       emit(
-        FavoriteState(
-          status: FavoriteStatus.failure,
-          error: error.toString(),
-        ),
+        FavoriteState(status: FavoriteStatus.failure, error: error.toString()),
       );
     }
   }

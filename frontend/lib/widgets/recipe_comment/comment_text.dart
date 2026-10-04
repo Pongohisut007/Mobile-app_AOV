@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CommentText extends StatefulWidget {
-  const CommentText({
-    super.key,
-    required this.comment,
-  });
+  const CommentText({super.key, required this.comment});
 
   final String comment;
 
@@ -34,10 +31,7 @@ class _CommentTextState extends State<CommentText> {
         child: Text.rich(
           TextSpan(
             children: [
-              TextSpan(
-                text: widget.comment,
-                style: _textStyle,
-              ),
+              TextSpan(text: widget.comment, style: _textStyle),
               TextSpan(
                 text: '  ย่อ',
                 style: TextStyle(
@@ -53,17 +47,11 @@ class _CommentTextState extends State<CommentText> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final result = _createPreview(
-          widget.comment,
-          constraints.maxWidth,
-        );
+        final result = _createPreview(widget.comment, constraints.maxWidth);
 
         // ไม่เกิน 3 บรรทัด
         if (!result.hasMore) {
-          return Text(
-            widget.comment,
-            style: _textStyle,
-          );
+          return Text(widget.comment, style: _textStyle);
         }
 
         return GestureDetector(
@@ -93,14 +81,8 @@ class _CommentTextState extends State<CommentText> {
               Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(
-                      text: result.line3,
-                      style: _textStyle,
-                    ),
-                    TextSpan(
-                      text: _moreText,
-                      style: _textStyle,
-                    ),
+                    TextSpan(text: result.line3, style: _textStyle),
+                    TextSpan(text: _moreText, style: _textStyle),
                   ],
                 ),
                 softWrap: false,
@@ -112,34 +94,18 @@ class _CommentTextState extends State<CommentText> {
     );
   }
 
-  _PreviewResult _createPreview(
-    String text,
-    double maxWidth,
-  ) {
+  _PreviewResult _createPreview(String text, double maxWidth) {
     // หา line 1
-    final line1 = _fitLine(
-      text,
-      _textStyle,
-      maxWidth,
-    );
+    final line1 = _fitLine(text, _textStyle, maxWidth);
 
     final remaining1 = text.substring(line1.length).trimLeft();
 
     if (remaining1.isEmpty) {
-      return _PreviewResult(
-        line1: line1,
-        line2: '',
-        line3: '',
-        hasMore: false,
-      );
+      return _PreviewResult(line1: line1, line2: '', line3: '', hasMore: false);
     }
 
     // หา line 2
-    final line2 = _fitLine(
-      remaining1,
-      _textStyle,
-      maxWidth,
-    );
+    final line2 = _fitLine(remaining1, _textStyle, maxWidth);
 
     final remaining2 = remaining1.substring(line2.length).trimLeft();
 
@@ -154,11 +120,7 @@ class _CommentTextState extends State<CommentText> {
 
     // สำคัญที่สุด:
     // หา line 3 โดย "จองพื้นที่ ...เพิ่มเติม" ก่อน
-    final line3 = _fitLineForMore(
-      remaining2,
-      _textStyle,
-      maxWidth,
-    );
+    final line3 = _fitLineForMore(remaining2, _textStyle, maxWidth);
 
     return _PreviewResult(
       line1: line1,
@@ -168,11 +130,7 @@ class _CommentTextState extends State<CommentText> {
     );
   }
 
-  String _fitLine(
-    String text,
-    TextStyle style,
-    double maxWidth,
-  ) {
+  String _fitLine(String text, TextStyle style, double maxWidth) {
     int low = 0;
     int high = text.length;
 
@@ -182,10 +140,7 @@ class _CommentTextState extends State<CommentText> {
       final value = text.substring(0, mid);
 
       final painter = TextPainter(
-        text: TextSpan(
-          text: value,
-          style: style,
-        ),
+        text: TextSpan(text: value, style: style),
         textDirection: TextDirection.ltr,
       )..layout();
 
@@ -199,11 +154,7 @@ class _CommentTextState extends State<CommentText> {
     return text.substring(0, low).trimRight();
   }
 
-  String _fitLineForMore(
-    String text,
-    TextStyle style,
-    double maxWidth,
-  ) {
+  String _fitLineForMore(String text, TextStyle style, double maxWidth) {
     int low = 0;
     int high = text.length;
 
@@ -216,14 +167,8 @@ class _CommentTextState extends State<CommentText> {
       final painter = TextPainter(
         text: TextSpan(
           children: [
-            TextSpan(
-              text: value,
-              style: style,
-            ),
-            TextSpan(
-              text: _moreText,
-              style: style,
-            ),
+            TextSpan(text: value, style: style),
+            TextSpan(text: _moreText, style: style),
           ],
         ),
         textDirection: TextDirection.ltr,

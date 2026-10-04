@@ -9,6 +9,7 @@ import 'package:flutter_application_1/views/pages/edit_profile_page.dart';
 import 'package:flutter_application_1/views/pages/settings_page.dart';
 import 'package:flutter_application_1/views/pages/text_sections_page.dart';
 import 'package:flutter_application_1/config/app_info.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,18 +17,7 @@ class UserPage extends StatelessWidget {
   const UserPage({super.key});
 
   void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('$feature is coming soon'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ProfileColors.ink,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      );
+    showAppSnackBar(context, '$feature is coming soon');
   }
 
   Future<void> _refresh(BuildContext context) async {
@@ -40,9 +30,9 @@ class UserPage extends StatelessWidget {
   }
 
   void _openSettings(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
   }
 
   void _openCart(BuildContext context) {

@@ -37,8 +37,7 @@ class CartState {
   int get itemCount => items.length;
 
   // สูตรเป็นสินค้า digital ชิ้นละหนึ่ง ยอดรวมจึงเป็นผลบวกราคาตรง ๆ
-  double get subtotal =>
-      items.fold(0, (total, item) => total + item.price);
+  double get subtotal => items.fold(0, (total, item) => total + item.price);
 
   bool contains(String recipeId) =>
       items.any((item) => item.recipeId == recipeId);

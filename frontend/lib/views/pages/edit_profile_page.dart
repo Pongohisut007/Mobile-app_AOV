@@ -10,6 +10,7 @@ import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/repositories/upload_repository.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:image_picker/image_picker.dart';
@@ -135,11 +136,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  // ใช้แสดงข้อผิดพลาดอย่างเดียว (บันทึกสำเร็จจะปิดหน้านี้ไปเลย)
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message, type: AppSnackType.error);
   }
 
   @override

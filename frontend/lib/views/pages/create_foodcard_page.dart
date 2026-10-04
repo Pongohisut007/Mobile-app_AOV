@@ -13,6 +13,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/repositories/upload_repository.dart';
 import 'package:flutter_application_1/views/pages/create_cooking_steps_page.dart';
 
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_basic_info_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_cover_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_detail_section.dart';
@@ -95,9 +96,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     _existingCoverUrl = coverUrl.isEmpty ? null : coverUrl;
     // เก็บเฉพาะหมวดที่ยังมีอยู่ในรายการ ไม่งั้นจะเลือก/ลบไม่ได้จากหน้าจอ
     final availableIds = widget.categories.map((category) => category.id);
-    _selectedCategoryIds.addAll(
-      food.categoryIds.where(availableIds.contains),
-    );
+    _selectedCategoryIds.addAll(food.categoryIds.where(availableIds.contains));
     if (food.steps.isNotEmpty) {
       _sectionDraft = RecipeSectionDraft.fromSteps(food.steps);
     }
@@ -315,7 +314,9 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         await FoodRepository().createCommunityFood(recipe);
       }
       if (!mounted) return false;
-      if (asDraft) _showMessage('บันทึกฉบับร่างแล้ว');
+      if (asDraft) {
+        _showMessage('บันทึกฉบับร่างแล้ว', type: AppSnackType.success);
+      }
       return true;
     } catch (error) {
       if (mounted) {
@@ -419,10 +420,9 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     });
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  // ส่วนใหญ่เป็นข้อความเตือน/ผิดพลาด ข้อความสำเร็จต้องระบุ type เอง
+  void _showMessage(String message, {AppSnackType type = AppSnackType.error}) {
+    showAppSnackBar(context, message, type: type);
   }
 
   Future<void> _openCookingSteps() async {
@@ -444,7 +444,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     );
     if (!mounted || selection == null) return;
     setState(() => _coverSelection = selection);
-    _showMessage('เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร');
+    _showMessage(
+      'เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร',
+      type: AppSnackType.success,
+    );
   }
 
   Future<_PendingUpload?> _pickPendingFile({
@@ -666,10 +669,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
 
               RecipeStepsSection(
                 sectionCount: _sectionDraft?.sections.length ?? 0,
-                stepCount: _sectionDraft?.sections.fold<int>(
+                stepCount:
+                    _sectionDraft?.sections.fold<int>(
                       0,
-                      (count, section) =>
-                          count + section.contents.length,
+                      (count, section) => count + section.contents.length,
                     ) ??
                     0,
                 hasDraft: _sectionDraft != null,
@@ -780,7 +783,6 @@ class _ButtonSpinner extends StatelessWidget {
     );
   }
 }
-
 
 class _PendingUpload {
   const _PendingUpload({

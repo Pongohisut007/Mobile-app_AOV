@@ -53,9 +53,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       final items = await _repository.fetchItems(accessToken, cartId);
       emit(CartState(status: CartStatus.ready, cartId: cartId, items: items));
     } on Exception catch (error) {
-      emit(
-        CartState(status: CartStatus.failure, error: error.toString()),
-      );
+      emit(CartState(status: CartStatus.failure, error: error.toString()));
     }
   }
 
@@ -92,8 +90,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     try {
       // ตะกร้าเกิดตอนนี้ถ้ายังไม่มี แล้วค่อยเพิ่มของลงไป
-      final cartId =
-          state.cartId ?? await _repository.createCart(accessToken);
+      final cartId = state.cartId ?? await _repository.createCart(accessToken);
       await _repository.addItem(accessToken, cartId, recipeId);
       // ดึงใหม่ทั้งชุดเพื่อให้ชื่อ รูป ราคา ตรงกับที่ join มาจาก recipe
       final items = await _repository.fetchItems(accessToken, cartId);
@@ -139,9 +136,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     if (recipeId != null) {
       if (state.isPending(recipeId)) return;
       emit(
-        state.copyWith(
-          pendingRecipeIds: {...state.pendingRecipeIds, recipeId},
-        ),
+        state.copyWith(pendingRecipeIds: {...state.pendingRecipeIds, recipeId}),
       );
     }
 
