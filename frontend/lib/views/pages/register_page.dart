@@ -52,11 +52,13 @@ class RegisterPage extends StatelessWidget {
           backgroundColor: const Color(0xFFD96868),
           body: SafeArea(
             bottom: false,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const RegisterLogo(),
-                  RegisterForm(
+            // โลโก้ย่อตามการเลื่อน ส่วนฟอร์มสีขาวยืดถึงล่างสุดเสมอ
+            child: CustomScrollView(
+              slivers: [
+                const RegisterLogoHeader(),
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: RegisterForm(
                     onSubmit:
                         ({
                           required email,
@@ -75,8 +77,8 @@ class RegisterPage extends StatelessWidget {
                       Navigator.pushReplacementNamed(context, AppRoutes.login);
                     },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
