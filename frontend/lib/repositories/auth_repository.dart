@@ -12,6 +12,13 @@ abstract interface class AuthRepository {
     required String password,
     required String displayName,
   });
+
+  /// เปลี่ยนรหัสผ่านของคนที่ login อยู่ (ต้องยืนยันรหัสเดิม)
+  Future<void> changePassword({
+    required String accessToken,
+    required String currentPassword,
+    required String newPassword,
+  });
 }
 
 class HttpAuthRepository implements AuthRepository {
@@ -80,6 +87,53 @@ class HttpAuthRepository implements AuthRepository {
         'displayName': displayName.trim(),
       },
     );
+  }
+
+  @override
+  Future<void> changePassword({
+    required String accessToken,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$_baseUrl/auth/change-password'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${accessToken.trim()}',
+            },
+            body: jsonEncode({
+              'currentPassword': currentPassword,
+              'newPassword': newPassword,
+            }),
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 401) {
+        throw const AuthRepositoryException(
+          'Your session has expired. Please sign in again.',
+        );
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        // backend ส่งข้อความภาษาไทยมา เช่น "รหัสผ่านปัจจุบันไม่ถูกต้อง"
+        throw AuthRepositoryException(
+          _errorMessage(jsonDecode(utf8.decode(response.bodyBytes))),
+        );
+      }
+    } on AuthRepositoryException {
+      rethrow;
+    } on TimeoutException {
+      throw const AuthRepositoryException(
+        'Request timed out. Check the backend connection.',
+      );
+    } on FormatException {
+      throw const AuthRepositoryException('Backend returned malformed JSON.');
+    } on http.ClientException catch (error) {
+      throw AuthRepositoryException(
+        'Could not connect to the backend: ${error.message}',
+      );
+    }
   }
 
   Future<AuthResponse> _sendAuthRequest({

@@ -8,6 +8,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserRole } from '../users/entities/user.entity';
 import type { UserProfileResponse } from '../users/dto/user-profile-response.dto';
@@ -55,6 +56,16 @@ export class AuthController {
   @Get('profile')
   profile(@CurrentUser() user: AuthUser): Promise<UserProfileResponse> {
     return this.usersService.findProfile(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('change-password')
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<void> {
+    return this.authService.changePassword(user.id, dto);
   }
 
   // แก้ได้เฉพาะโปรไฟล์ของคนที่ login อยู่ (id มาจาก token ไม่ใช่จาก URL)

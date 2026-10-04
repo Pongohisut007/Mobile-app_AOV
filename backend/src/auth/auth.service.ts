@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { ChangePasswordDto } from './dto/change-password.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -55,6 +57,31 @@ export class AuthService {
       throw new UnauthorizedException('บัญชีนี้ถูกระงับการใช้งาน');
     }
     return user;
+  }
+
+  /** เปลี่ยนรหัสผ่านของตัวเอง ต้องยืนยันรหัสเดิมก่อน */
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user) throw new UnauthorizedException('ไม่พบผู้ใช้งาน');
+
+    // ใช้ 400 ไม่ใช่ 401 แอปจะได้ไม่เข้าใจผิดว่า session หมดอายุแล้วพาไปหน้า login
+    const matched = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!matched) throw new BadRequestException('รหัสผ่านปัจจุบันไม่ถูกต้อง');
+    if (dto.newPassword === dto.currentPassword) {
+      throw new BadRequestException('รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม');
+    }
+
+    const saltRounds = this.configService.get<number>(
+      'jwt.bcryptSaltRounds',
+      10,
+    );
+    await this.usersService.updatePasswordHash(
+      userId,
+      await bcrypt.hash(dto.newPassword, saltRounds),
+    );
   }
 
   async login(dto: LoginDto): Promise<AuthResponse> {

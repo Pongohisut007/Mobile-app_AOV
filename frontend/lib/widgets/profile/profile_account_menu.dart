@@ -2,18 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
 class ProfileAccountMenu extends StatelessWidget {
-  const ProfileAccountMenu({
-    super.key,
-    required this.onPressed,
-    required this.onSignOut,
-    this.signOutLabel = 'Sign out',
-    this.signOutIcon = Icons.logout_rounded,
-  });
+  const ProfileAccountMenu({super.key, required this.onPressed});
 
   final ValueChanged<String> onPressed;
-  final VoidCallback onSignOut;
-  final String signOutLabel;
-  final IconData signOutIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -34,13 +25,6 @@ class ProfileAccountMenu extends StatelessWidget {
             label: 'Help & support',
             onTap: () => onPressed('Help & support'),
           ),
-          const _MenuDivider(),
-          _MenuTile(
-            icon: signOutIcon,
-            label: signOutLabel,
-            foregroundColor: const Color(0xFFD54444),
-            onTap: onSignOut,
-          ),
         ],
       ),
     );
@@ -52,13 +36,13 @@ class _MenuTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.foregroundColor = ProfileColors.ink,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color foregroundColor;
+
+  static const foregroundColor = ProfileColors.ink;
 
   @override
   Widget build(BuildContext context) {

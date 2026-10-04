@@ -82,6 +82,18 @@ export class UsersService {
     });
   }
 
+  /** ใช้ตอนเปลี่ยนรหัสผ่านเท่านั้น (ต้องเทียบรหัสเดิม) */
+  findByIdWithPassword(id: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id },
+      select: { id: true, passwordHash: true },
+    });
+  }
+
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    await this.userRepository.update({ id }, { passwordHash });
+  }
+
   async findProfile(id: string): Promise<UserProfileResponse> {
     const user = await this.findOne(id);
 
