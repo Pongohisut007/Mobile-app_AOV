@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/widgets/community/post_card.dart';
+import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
 class CommunityPostList extends StatelessWidget {
   const CommunityPostList({
@@ -45,6 +46,21 @@ class CommunityPostList extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    if (foods.isEmpty) {
+      final query = (foodState as FoodLoaded).query;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: Text(
+            query == null
+                ? 'ยังไม่มีโพสต์ในหมวดนี้'
+                : 'ไม่พบโพสต์ที่ชื่อ "$query"',
+            style: const TextStyle(color: ProfileColors.muted),
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         ...foods
@@ -55,13 +71,21 @@ class CommunityPostList extends StatelessWidget {
 
         if (foods.length > visiblePostCount)
           Padding(
-            padding: const EdgeInsets.only(
-              top: 8,
-              bottom: 16,
-            ),
+            padding: const EdgeInsets.only(bottom: 16),
             child: Center(
-              child: TextButton(
+              child: OutlinedButton(
                 onPressed: onShowMore,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ProfileColors.ink,
+                  backgroundColor: Colors.white,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: const StadiumBorder(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 child: const Text('แสดงเพิ่ม'),
               ),
             ),

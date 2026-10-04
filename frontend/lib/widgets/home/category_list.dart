@@ -22,7 +22,8 @@ class CategoryList extends StatelessWidget {
     'thai-food': Icons.rice_bowl,
   };
 
-  static IconData _iconFor(String slug) =>
+  // หน้า community ใช้ไอคอนชุดเดียวกัน
+  static IconData iconFor(String slug) =>
       _icons[slug.trim().toLowerCase()] ?? Icons.restaurant_menu;
 
   @override
@@ -92,7 +93,7 @@ class CategoryList extends StatelessWidget {
                 itemBuilder: (_, index) {
                   final category = state.categories[index];
                   return CategoryItem(
-                    icon: _iconFor(category.slug),
+                    icon: iconFor(category.slug),
                     title: category.name,
                     categoryId: category.id,
                     isSelected: state.selectedId == category.id,

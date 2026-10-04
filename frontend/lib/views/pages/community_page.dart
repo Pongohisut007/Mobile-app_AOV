@@ -178,12 +178,9 @@ class _CommunityPageState extends State<CommunityPage> {
                     onRefresh: _refresh,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
+                      // ระยะห่างเดียวกับหน้า Home/Profile
+                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
                       children: [
-                        SizedBox(height: isIpad ? 14 : 9),
-
                         CommunityHeader(
                           isIpad: isIpad,
                           onAddPressed: () {
@@ -191,20 +188,20 @@ class _CommunityPageState extends State<CommunityPage> {
                           },
                         ),
 
-                        const SizedBox(height: 9),
+                        const SizedBox(height: 20),
 
                         CommunitySearch(
                           onSearch: _searchFood,
                         ),
 
-                        const SizedBox(height: 9),
+                        const SizedBox(height: 20),
 
                         CategorySelector(
                           categories: categoryState.categories,
                           onCategorySelected: _selectCategory,
                         ),
 
-                        const SizedBox(height: 9),
+                        const SizedBox(height: 20),
 
                         CommunityPostList(
                           foodState: foodState,

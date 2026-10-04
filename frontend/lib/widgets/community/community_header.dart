@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
+/// หัวหน้า community หน้าตาเดียวกับหัวหน้า Profile
 class CommunityHeader extends StatelessWidget {
   const CommunityHeader({
     super.key,
@@ -12,27 +14,45 @@ class CommunityHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Community',
-            style: TextStyle(
-              fontSize: isIpad ? 30 : 24,
-              fontWeight: FontWeight.bold,
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Community',
+                style: TextStyle(
+                  color: ProfileColors.ink,
+                  fontSize: isIpad ? 34 : 30,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
+                ),
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'Recipes shared by home cooks',
+                style: TextStyle(
+                  color: ProfileColors.muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: onAddPressed,
-            icon: const Icon(Icons.add),
-            iconSize: isIpad ? 30 : 24,
-            padding: EdgeInsets.zero,
+        ),
+        IconButton.filled(
+          onPressed: onAddPressed,
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: ProfileColors.ink,
+            fixedSize: const Size(46, 46),
           ),
-        ],
-      ),
+          icon: const Icon(Icons.add_rounded),
+          tooltip: 'Create recipe',
+        ),
+      ],
     );
   }
 }
