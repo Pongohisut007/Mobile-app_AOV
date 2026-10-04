@@ -7,18 +7,12 @@ import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/edit_profile_page.dart';
 import 'package:flutter_application_1/views/pages/settings_page.dart';
-import 'package:flutter_application_1/views/pages/text_sections_page.dart';
 import 'package:flutter_application_1/config/app_info.dart';
-import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class UserPage extends StatelessWidget {
   const UserPage({super.key});
-
-  void _showComingSoon(BuildContext context, String feature) {
-    showAppSnackBar(context, '$feature is coming soon');
-  }
 
   Future<void> _refresh(BuildContext context) async {
     final bloc = context.read<ProfileBloc>();
@@ -88,14 +82,6 @@ class UserPage extends StatelessWidget {
                 onRefresh: () => _refresh(context),
                 onEditProfile: () => _openEditProfile(context, profile),
                 onSettingsPressed: () => _openSettings(context),
-                onActionPressed: (label) => label == 'Help & support'
-                    ? Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const HelpSupportPage(),
-                        ),
-                      )
-                    // Notifications ยังไม่มีระบบรองรับ
-                    : _showComingSoon(context, label),
                 onRecipeCollectionPressed: (collectionType) =>
                     _openRecipeCollection(context, collectionType),
                 onCartPressed: () => _openCart(context),
@@ -106,8 +92,6 @@ class UserPage extends StatelessWidget {
                 onEditProfile: () =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onSettingsPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.login),
-                onActionPressed: (_) =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onRecipeCollectionPressed: (_) =>
                     Navigator.pushNamed(context, AppRoutes.login),
@@ -135,7 +119,6 @@ class _ProfileContent extends StatelessWidget {
     required this.onRefresh,
     required this.onEditProfile,
     required this.onSettingsPressed,
-    required this.onActionPressed,
     required this.onRecipeCollectionPressed,
     required this.onCartPressed,
     this.isGuest = false,
@@ -145,7 +128,6 @@ class _ProfileContent extends StatelessWidget {
   final RefreshCallback onRefresh;
   final VoidCallback onEditProfile;
   final VoidCallback onSettingsPressed;
-  final ValueChanged<String> onActionPressed;
   final ValueChanged<RecipeCollectionType> onRecipeCollectionPressed;
   final VoidCallback onCartPressed;
   final bool isGuest;
@@ -189,14 +171,7 @@ class _ProfileContent extends StatelessWidget {
                   profile: profile,
                   onPressed: onRecipeCollectionPressed,
                 ),
-                const SizedBox(height: 30),
-                const ProfileSectionTitle(
-                  title: 'Account',
-                  subtitle: 'Manage your preferences',
-                ),
-                const SizedBox(height: 14),
-                // Sign out อยู่ในหน้า Settings ที่เดียว
-                ProfileAccountMenu(onPressed: onActionPressed),
+                // บัญชี/ความช่วยเหลือ/Sign out อยู่ในหน้า Settings (ไอคอนมุมขวาบน)
                 const SizedBox(height: 24),
                 const Center(
                   child: Text(
