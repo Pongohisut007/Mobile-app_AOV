@@ -59,15 +59,15 @@ services:
     environment:
       PORT: 3000
 
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: ${POSTGRES_DB:-dev}
-      DATABASE_USER: ${POSTGRES_USER:-root}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-root}
-
-      DATABASE_URL: postgresql://${POSTGRES_USER:-root}:${POSTGRES_PASSWORD:-root}@postgres:5432/${POSTGRES_DB:-dev}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-dev}
+      DB_USER: ${POSTGRES_USER:-root}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-root}
 
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      PSU_AI_API_KEY: ${PSU_AI_API_KEY:-}
+      PSU_AI_BASE_URL: ${PSU_AI_BASE_URL:-https://ai.psu.blue/v1}
 
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}

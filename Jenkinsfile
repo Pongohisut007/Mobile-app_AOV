@@ -54,6 +54,39 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
+                    // Include all changes since the last successful build. A
+                    // first build or a missing baseline must run both suites.
+                    def baseCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: ''
+                    def changedPaths = []
+                    def runAll = !(baseCommit ==~ /[0-9a-fA-F]{40,64}/)
+                    if (!runAll) {
+                        withEnv(["CI_BASE_COMMIT=${baseCommit}"]) {
+                            runAll = sh(
+                                script: 'git cat-file -e "$CI_BASE_COMMIT^{commit}"',
+                                returnStatus: true
+                            ) != 0
+                            if (!runAll) {
+                                changedPaths = sh(
+                                    script: 'git diff --no-renames --name-only "$CI_BASE_COMMIT" HEAD',
+                                    returnStdout: true
+                                ).readLines()
+                            }
+                        }
+                    }
+                    def pipelineChanged = changedPaths.any {
+                        it == 'Jenkinsfile' || it == 'Makefile' ||
+                        it == '.gitleaks.toml' || it.startsWith('ci/') ||
+                        it.startsWith('policy/')
+                    }
+                    env.BACKEND_CHANGED = (runAll || pipelineChanged ||
+                        changedPaths.any { it.startsWith('backend/') }).toString()
+                    env.FRONTEND_CHANGED = (runAll || pipelineChanged ||
+                        changedPaths.any { it.startsWith('frontend/') }).toString()
+                    if (pipelineChanged) {
+                        env.CI_MODE = 'FULL'
+                    }
+                    env.COMPOSE_PROJECT_NAME = "taskflow-ci-${env.BUILD_NUMBER}"
+
                     echo """
                     ========================================
                     Pipeline Environment
@@ -65,6 +98,8 @@ pipeline {
                     CHANGE_BRANCH    : ${env.CHANGE_BRANCH ?: '-'}
                     CHANGE_TARGET    : ${env.CHANGE_TARGET ?: '-'}
                     CI_MODE          : ${env.CI_MODE}
+                    BACKEND_CHANGED  : ${env.BACKEND_CHANGED}
+                    FRONTEND_CHANGED : ${env.FRONTEND_CHANGED}
                     COMMIT_SHA       : ${env.COMMIT_SHA}
                     ========================================
                     """.stripIndent()
@@ -116,7 +151,7 @@ pipeline {
             parallel {
                 stage('Backend Install') {
                     when {
-                        changeset 'backend/**'
+                        expression { env.BACKEND_CHANGED == 'true' }
                     }
 
                     steps {
@@ -133,7 +168,7 @@ pipeline {
 
                 stage('Mobile Install') {
                     when {
-                        changeset 'frontend/**'
+                        expression { env.FRONTEND_CHANGED == 'true' }
                     }
 
                     steps {
@@ -158,7 +193,7 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -177,16 +212,30 @@ pipeline {
                     steps {
                         dir('backend') {
                             script {
-                                sh '''
+                                def auditStatus = sh(
+                                    returnStatus: true,
+                                    script: '''
                                     mkdir -p reports
 
                                     npm audit \
                                         --audit-level=high \
                                         --json \
-                                        > reports/npm-audit.json || true
-                                '''
+                                        > reports/npm-audit.json
+                                ''')
 
                                 def audit = readJSON file: 'reports/npm-audit.json'
+
+                                if (auditStatus > 1 || audit.error ||
+                                    !audit.metadata?.vulnerabilities) {
+                                    error 'npm audit failed or returned an invalid report.'
+                                }
+                                for (severity in ['critical', 'high', 'moderate', 'low']) {
+                                    def count = audit.metadata.vulnerabilities[severity]
+                                    if (!(count instanceof Number) || count < 0 ||
+                                        count != count.intValue()) {
+                                        error "Invalid npm audit count for ${severity}."
+                                    }
+                                }
 
                                 def vulnerabilities =
                                     audit.metadata?.vulnerabilities ?: [:]
@@ -251,7 +300,7 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -264,7 +313,8 @@ pipeline {
                             sh '''
                                 npm test -- \
                                 --coverage \
-                                --ci
+                                --ci \
+                                --maxWorkers=2
                             '''
                         }
                     }
@@ -324,12 +374,13 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
             steps {
                 sh '''
+                    opa test policy/ --verbose
                     echo "Policy violations:"
 
                     opa eval \
@@ -345,7 +396,7 @@ pipeline {
                         --data policy/security.rego \
                         --input backend/reports/npm-audit.json \
                         --format pretty \
-                        'data.security.allow'
+                        'data.security.allow = true'
                 '''
             }
         }
@@ -357,7 +408,7 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'frontend/**'
+                    expression { env.FRONTEND_CHANGED == 'true' }
                 }
             }
 
@@ -414,7 +465,7 @@ pipeline {
                         env.CI_MODE == 'FAST'
                     }
 
-                    changeset 'frontend/**'
+                    expression { env.FRONTEND_CHANGED == 'true' }
                 }
             }
 
@@ -437,7 +488,7 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -466,7 +517,7 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -489,7 +540,7 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -524,7 +575,7 @@ pipeline {
                         env.CI_MODE == 'FULL'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -576,7 +627,7 @@ pipeline {
                                 env.CI_MODE == 'FULL'
                             }
 
-                            changeset 'frontend/**'
+                            expression { env.FRONTEND_CHANGED == 'true' }
                         }
                     }
 
@@ -605,7 +656,7 @@ pipeline {
                                 env.CI_MODE == 'FULL'
                             }
 
-                            changeset 'backend/**'
+                            expression { env.BACKEND_CHANGED == 'true' }
 
                             expression {
                                 env.NEED_IMAGE_BUILD == 'true'
@@ -682,7 +733,7 @@ pipeline {
                                 env.CI_MODE == 'FULL'
                             }
 
-                            changeset 'backend/**'
+                            expression { env.BACKEND_CHANGED == 'true' }
                         }
                     }
 
@@ -777,7 +828,7 @@ pipeline {
                                 env.CI_MODE == 'FULL'
                             }
 
-                            changeset 'backend/**'
+                            expression { env.BACKEND_CHANGED == 'true' }
                         }
                     }
 
@@ -785,65 +836,70 @@ pipeline {
                         timeout(time: 10, unit: 'MINUTES') {
                             dir('backend') {
                                 withEnv([
-                                "API_IMAGE=${env.IMAGE_NAME}"
-                            ]) {
+                                    "API_IMAGE=${env.IMAGE_NAME}"
+                                ]) {
                                     sh '''
-                                    docker compose up \
-                                        -d \
-                                        --wait \
-                                        --wait-timeout 60 \
-                                        --no-build \
-                                        --remove-orphans
+                                        docker compose \
+                                            -f docker-compose.yaml \
+                                            -f docker-compose.ci.yaml \
+                                            -p "$COMPOSE_PROJECT_NAME" \
+                                            up -d --wait --wait-timeout 120 \
+                                            --no-build --remove-orphans
 
-                                    docker compose ps
-                                '''
-                            }
-                            }
-
-                            container('playwright') {
-                                dir('backend') {
-                                    sh '''
-                                    BASE_URL=http://localhost:3000 \
-                                        npx --no-install playwright test
-                                '''
+                                        docker compose \
+                                            -f docker-compose.yaml \
+                                            -f docker-compose.ci.yaml \
+                                            -p "$COMPOSE_PROJECT_NAME" ps
+                                    '''
                                 }
+                            }
+
+                            dir('backend') {
+                                sh '''
+                                    BASE_URL=http://localhost:3000 \
+                                        npm run test:e2e -- --ci --runInBand
+                                '''
                             }
                         }
                     }
                     post {
                         always {
                             dir('backend') {
-                                junit(
-                                    allowEmptyResults: true,
-                                    testResults: 'reports/e2e-junit.xml'
-                                )
-
-                                publishHTML(
-                                    target: [
-                                        reportDir: 'playwright-report',
-                                        reportFiles: 'index.html',
-                                        reportName: 'Playwright HTML Report',
-                                        keepAll: true,
-                                        alwaysLinkToLastBuild: true,
-                                        allowMissing: true
-                                    ]
-                                )
-
-                                archiveArtifacts(
-                                    artifacts: 'playwright-report/**',
-                                    allowEmptyArchive: true
-                                )
-
                                 script {
                                     if (env.IMAGE_NAME?.trim()) {
                                         withEnv([
                                             "API_IMAGE=${env.IMAGE_NAME}"
                                         ]) {
-                                            sh '''
-                                                docker compose logs api || true
-                                                docker compose down --remove-orphans || true
-                                            '''
+                                            env.E2E_CLEANUP_EXIT_CODE = sh(
+                                                returnStatus: true,
+                                                script: '''
+                                                mkdir -p reports
+                                                docker compose \
+                                                    -f docker-compose.yaml \
+                                                    -f docker-compose.ci.yaml \
+                                                    -p "$COMPOSE_PROJECT_NAME" \
+                                                    logs --no-color > reports/e2e-compose.log 2>&1 || true
+                                                docker compose \
+                                                    -f docker-compose.yaml \
+                                                    -f docker-compose.ci.yaml \
+                                                    -p "$COMPOSE_PROJECT_NAME" \
+                                                    down --volumes --remove-orphans
+                                            ''').toString()
                                         }
+                                    }
+                                }
+                                junit(
+                                    allowEmptyResults: true,
+                                    testResults: 'reports/e2e-junit.xml'
+                                )
+                                archiveArtifacts(
+                                    artifacts: 'reports/e2e-*',
+                                    allowEmptyArchive: true
+                                )
+                                script {
+                                    if (env.E2E_CLEANUP_EXIT_CODE &&
+                                        env.E2E_CLEANUP_EXIT_CODE != '0') {
+                                        error 'Failed to clean up the disposable E2E Compose stack.'
                                     }
                                 }
                             }
@@ -860,7 +916,7 @@ pipeline {
                                 env.CI_MODE == 'FULL'
                             }
 
-                            changeset 'backend/**'
+                            expression { env.BACKEND_CHANGED == 'true' }
                         }
                     }
 
@@ -952,7 +1008,7 @@ pipeline {
                         env.CI_MODE == 'FAST'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -970,7 +1026,7 @@ pipeline {
             when {
                 allOf {
                     branch 'main'
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -1004,7 +1060,7 @@ pipeline {
                         branch 'main'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -1045,7 +1101,7 @@ pipeline {
                         branch 'main'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -1069,7 +1125,7 @@ pipeline {
                         branch 'main'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -1101,7 +1157,7 @@ pipeline {
                         branch 'main'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
 
@@ -1151,7 +1207,7 @@ pipeline {
                         branch 'main'
                     }
 
-                    changeset 'backend/**'
+                    expression { env.BACKEND_CHANGED == 'true' }
 
                     expression {
                         env.GITOPS_CHANGED == 'true'
@@ -1168,28 +1224,8 @@ pipeline {
                             passwordVariable: 'GIT_TOKEN'
                         )
                     ]) {
-                        sh '''
-                            set -e
-
-                            AUTH_REPO=$(echo "$GITOPS_REPO" | \
-                                sed "s#https://#https://$GIT_USERNAME:$GIT_TOKEN@#")
-
-                            git remote set-url origin "$AUTH_REPO"
-
-                            git fetch origin "$GITOPS_BRANCH"
-
-                            git rebase "origin/$GITOPS_BRANCH"
-
-                            git push origin "HEAD:$GITOPS_BRANCH"
-                        '''
                         retry(2) {
-                            sh '''
-                            set -e
-
-                            git fetch origin "$GITOPS_BRANCH"
-                            git rebase "origin/$GITOPS_BRANCH"
-                            git push origin "HEAD:$GITOPS_BRANCH"
-                        '''
+                            sh 'bash ../ci/scripts/push-gitops.sh'
                         }
                     }
 

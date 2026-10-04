@@ -1,0 +1,27 @@
+# Use only with docker-compose.yaml for the disposable image verification stack.
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: recipy_ci
+      POSTGRES_USER: ci
+      POSTGRES_PASSWORD: ci
+
+  api:
+    environment:
+      # Populate the fresh database using the application's existing test mode.
+      NODE_ENV: test
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: recipy_ci
+      DB_USER: ci
+      DB_PASSWORD: ci
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ci-placeholder
+      BCRYPT_SALT_ROUNDS: 4
+      # E2E exercises local HTTP and database behavior, with no external AI/R2 calls.
+      PSU_AI_API_KEY: ci-placeholder
+      PSU_AI_BASE_URL: http://127.0.0.1:9/v1
+      R2_ACCOUNT_ID: ci-placeholder
+      R2_ACCESS_KEY_ID: ci-placeholder
+      R2_SECRET_ACCESS_KEY: ci-placeholder
+      R2_BUCKET_NAME: ci-placeholder
