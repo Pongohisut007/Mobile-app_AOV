@@ -15,6 +15,7 @@ import 'package:flutter_application_1/views/pages/create_cooking_steps_page.dart
 import 'package:flutter_application_1/widgets/create_food/recipe_basic_info_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_cover_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_detail_section.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_category_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_steps_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_type_section.dart';
@@ -567,15 +568,16 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F5F0),
-        appBar: AppBar(
-          title: Text(_isEditing ? 'แก้ไขสูตรอาหาร' : 'สร้างสูตรอาหาร'),
-          backgroundColor: const Color(0xFFF6F5F0),
+        backgroundColor: RecipeFormStyle.background,
+        appBar: RecipeFormStyle.appBar(
+          title: _isEditing ? 'แก้ไขสูตรอาหาร' : 'สร้างสูตรอาหาร',
         ),
+        // ปุ่มเผยแพร่/บันทึกติดล่างจอเสมอ ไม่ต้องเลื่อนลงไปหา
+        bottomNavigationBar: _buildBottomActions(),
         body: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             children: [
               RecipeBasicInfoSection(
                 titleController: _titleController,
@@ -583,8 +585,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 descriptionController: _descriptionController,
                 validator: _requiredText,
               ),
-
-              const SizedBox(height: 22),
 
               RecipeCoverSection(
                 coverFile: _coverSelection?.file,
@@ -608,8 +608,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 },
               ),
 
-              const SizedBox(height: 22),
-
               RecipeDetailSection(
                 priceController: _priceController,
                 preparationController: _preparationController,
@@ -624,8 +622,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 },
               ),
 
-              const SizedBox(height: 22),
-
               RecipeCategorySection(
                 categories: widget.categories,
                 selectedCategoryIds: _selectedCategoryIds,
@@ -636,17 +632,18 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     }
                   });
                 },
+                onCategoryRemoved: _isSaving || _isBusy
+                    ? null
+                    : (category) => setState(
+                        () => _selectedCategoryIds.remove(category.id),
+                      ),
               ),
 
-              if (_canChangeType) ...[
-                const SizedBox(height: 22),
+              if (_canChangeType)
                 RecipeTypeSection(
                   type: _type,
                   onTypeChanged: (value) => setState(() => _type = value),
                 ),
-              ],
-
-              const SizedBox(height: 22),
 
               RecipeStepsSection(
                 sectionCount: _sectionDraft?.sections.length ?? 0,
@@ -661,30 +658,50 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 isSaving: _isSaving,
                 onEdit: _openCookingSteps,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-              const SizedBox(height: 24),
-
-              if (_isEditingDraft)
-                _buildDraftActions()
-              else
-                FilledButton.icon(
-                  onPressed:
-                      _isSaving || _isBusy ? null : _saveRecipe,
-                  icon: const Icon(Icons.publish_rounded),
+  // แถบปุ่มล่างจอ: ฉบับร่างมี 2 ปุ่ม (บันทึก/เผยแพร่) นอกนั้นปุ่มเดียว
+  Widget _buildBottomActions() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: _isEditingDraft
+              ? _buildDraftActions()
+              : FilledButton.icon(
+                  onPressed: _isSaving || _isBusy ? null : _saveRecipe,
+                  icon: _isSaving
+                      ? const _ButtonSpinner()
+                      : Icon(
+                          _isEditing
+                              ? Icons.check_rounded
+                              : Icons.publish_rounded,
+                        ),
                   label: Text(
                     _isUploading
                         ? 'กำลังอัปโหลดไฟล์...'
                         : _isSaving
-                            ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
-                            : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
+                        ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
+                        : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFCE4D35),
-                    minimumSize: const Size.fromHeight(54),
-                  ),
+                  style: RecipeFormStyle.primaryButton(),
                 ),
-            ],
-          ),
         ),
       ),
     );
@@ -700,36 +717,47 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: disabled ? null : _saveDraftEdit,
-            icon: const Icon(Icons.save_outlined),
+            icon: savingDraft
+                ? const _ButtonSpinner(color: RecipeFormStyle.primary)
+                : const Icon(Icons.save_outlined),
             label: Text(
               savingDraft
                   ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังบันทึก...')
                   : 'บันทึกการแก้ไข',
             ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFCE4D35),
-              side: const BorderSide(color: Color(0xFFCE4D35)),
-              minimumSize: const Size.fromHeight(54),
-            ),
+            style: RecipeFormStyle.secondaryButton(),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: FilledButton.icon(
             onPressed: disabled ? null : _saveRecipe,
-            icon: const Icon(Icons.publish_rounded),
+            icon: publishing
+                ? const _ButtonSpinner()
+                : const Icon(Icons.publish_rounded),
             label: Text(
               publishing
                   ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังเผยแพร่...')
                   : 'เผยแพร่',
             ),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFCE4D35),
-              minimumSize: const Size.fromHeight(54),
-            ),
+            style: RecipeFormStyle.primaryButton(),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ButtonSpinner extends StatelessWidget {
+  const _ButtonSpinner({this.color = Colors.white});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 18,
+      child: CircularProgressIndicator(strokeWidth: 2.2, color: color),
     );
   }
 }
