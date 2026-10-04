@@ -60,6 +60,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   bool _isOpeningEditor = false;
   bool _isDeleting = false;
   bool _isStartingCooking = false;
+  // สูตร community ต้อง login ก่อนถึงจะเห็นปุ่มเริ่มทำอาหาร
+  bool _isLoggedIn = false;
 
   // เพิ่มทุกครั้งที่ดึงลง refresh ใช้เป็น key ให้รีวิว/คอมเมนต์โหลดใหม่ด้วย
   int _refreshCount = 0;
@@ -72,6 +74,15 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     super.initState();
 
     _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+    _loadLoginState();
+  }
+
+  Future<void> _loadLoginState() async {
+    final accessToken = await TokenStorage().readAccessToken();
+    if (!mounted) return;
+    setState(() {
+      _isLoggedIn = accessToken != null && accessToken.trim().isNotEmpty;
+    });
   }
 
   void _reload() {
@@ -200,7 +211,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget _buildBody(Food food, {required bool isPurchased}) {
     // official ที่ยังไม่ได้ซื้อ ไม่ให้เริ่มทำอาหาร
     // เช็กการซื้อด้วย เพราะเพิ่งซื้อในหน้านี้ข้อมูลสูตรยังไม่ได้โหลดใหม่
-    final canStartCooking = food.canViewFullRecipe || isPurchased;
+    // สูตร community ไม่ login ก็ไม่ให้เริ่มทำอาหาร
+    final canStartCooking =
+        (food.canViewFullRecipe || isPurchased) &&
+        (!_isCommunity(food) || _isLoggedIn);
 
     return SafeArea(
       child: RefreshIndicator(

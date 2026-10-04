@@ -65,11 +65,12 @@ class RecipeCommentSection extends StatelessWidget {
                   ),
                 )
               else if (!state.isLoggedIn)
-                TextButton.icon(
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.login),
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('เข้าสู่ระบบเพื่อแสดงความคิดเห็น'),
+                // หน้าตาเหมือนตอน login แล้ว แต่กดส่งจะพาไป login ก่อน
+                _InlineCommentComposer(
+                  isSubmitting: false,
+                  submitStatus: RecipeCommentSubmitStatus.idle,
+                  avatarUrl: null,
+                  onSubmit: (_) => _goToLogin(context),
                 )
               else
                 Padding(
@@ -172,6 +173,12 @@ class RecipeCommentSection extends StatelessWidget {
         );
       },
     );
+  }
+
+  void _goToLogin(BuildContext context) {
+    // กดส่งรัว ๆ ไม่ต้องเปิดหน้า login ซ้อน (เปิดไปแล้วหน้านี้จะไม่ใช่หน้าบนสุด)
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    Navigator.of(context).pushNamed(AppRoutes.login);
   }
 
   Future<void> _editComment(BuildContext context, RecipeComment comment) async {
