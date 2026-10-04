@@ -73,3 +73,5 @@ crash.log
 crash.*.log
 tfplan
 plan.txt
+
+reports

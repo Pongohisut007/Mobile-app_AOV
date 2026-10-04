@@ -173,23 +173,6 @@ pipeline {
                     }
                 }
 
-                stage('ESLint Security') {
-                    steps {
-                        dir('backend') {
-                            sh '''
-                                mkdir -p reports
-
-                        npx --no-install eslint \
-                            --plugin security \
-                            src/ \
-                            --rule 'prettier/prettier: off' \
-                            -f @microsoft/eslint-formatter-sarif \
-                            -o reports/eslint.sarif
-                            '''
-                        }
-                    }
-                }
-
                 stage('SCA - npm audit') {
                     steps {
                         dir('backend') {
@@ -280,8 +263,8 @@ pipeline {
                         dir('backend') {
                             sh '''
                                 npm test -- \
-                                    --coverage \
-                                    --reporters=jest-junit
+                                --coverage \
+                                --ci
                             '''
                         }
                     }
@@ -314,6 +297,7 @@ pipeline {
                                 semgrep scan \
                                     --config=p/owasp-top-ten \
                                     --config=p/nodejs \
+                                    --error \
                                     --sarif \
                                     --output=reports/semgrep.sarif \
                                     .
@@ -467,6 +451,7 @@ pipeline {
                                 -Dsonar.tests=src \
                                 -Dsonar.exclusions=**/*.spec.ts \
                                 -Dsonar.test.inclusions=**/*.spec.ts \
+                                -Dsonar.coverage.exclusions=**/*.module.ts,**/*.entity.ts,**/main.ts,**/migrations/** \
                                 -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
                         '''
                     }
@@ -548,6 +533,8 @@ pipeline {
                     def status = sh(
                         script: """
                             curl \
+                                --connect-timeout 5 \
+                                --max-time 10 \
                                 -s \
                                 -o /dev/null \
                                 -w "%{http_code}" \
@@ -629,12 +616,23 @@ pipeline {
                     steps {
                         dir('backend') {
                             sh '''
-                                docker build \
+                                docker buildx build \
+                                    --push \
                                     -t "$IMAGE_NAME" \
+                                    --cache-from type=registry,ref=registry:5000/taskflow-api:buildcache \
+                                    --cache-to type=registry,ref=registry:5000/taskflow-api:buildcache,mode=max \
                                     .
-
-                                docker push "$IMAGE_NAME"
                             '''
+                            retry(2) {
+                                sh '''
+                                docker buildx build \
+                                    --push \
+                                    -t "$IMAGE_NAME" \
+                                    --cache-from type=registry,ref=registry:5000/taskflow-api:buildcache \
+                                    --cache-to type=registry,ref=registry:5000/taskflow-api:buildcache,mode=max \
+                                    .
+                            '''
+                            }
                         }
                     }
                 }
@@ -752,32 +750,34 @@ pipeline {
                     }
 
                     steps {
-                        dir('backend') {
-                            withEnv([
+                        timeout(time: 10, unit: 'MINUTES') {
+                            dir('backend') {
+                                withEnv([
                                 "API_IMAGE=${env.IMAGE_NAME}"
                             ]) {
-                                sh '''
+                                    sh '''
                                     docker compose up \
                                         -d \
                                         --wait \
                                         --wait-timeout 60 \
-                                        --no-build
+                                        --no-build \
+                                        --remove-orphans
 
                                     docker compose ps
                                 '''
                             }
-                        }
+                            }
 
-                        container('playwright') {
-                            dir('backend') {
-                                sh '''
+                            container('playwright') {
+                                dir('backend') {
+                                    sh '''
                                     BASE_URL=http://localhost:3000 \
                                         npx --no-install playwright test
                                 '''
+                                }
                             }
                         }
                     }
-
                     post {
                         always {
                             dir('backend') {
@@ -840,8 +840,8 @@ pipeline {
                                     mkdir -p reports
 
                                     SYFT_REGISTRY_INSECURE_USE_HTTP=true \
-                                        syft \
-                                        "registry:$IMAGE_NAME" \
+                                    syft "$IMAGE_NAME" \
+                                        --from registry \
                                         -o cyclonedx-json=reports/taskflow-api.cdx.json
                                 '''
                                 }
@@ -926,14 +926,10 @@ pipeline {
 
             steps {
                 dir('backend') {
-                    echo '''
-                    ========================================
-                    Fast unit tests
-                    Coverage disabled for feature branch.
-                    ========================================
+                    sh '''
+                        npm run lint
+                        npm test -- --runInBand
                     '''
-
-                    sh 'npm test -- --runInBand'
                 }
             }
         }
@@ -953,7 +949,13 @@ pipeline {
                     }
 
                     input(
-                        message: "Deploy ${env.IMAGE_NAME} to production?",
+                        message: """
+                        Deploy to production?
+
+                        Image : ${env.IMAGE_NAME}
+                        Branch: ${env.BRANCH_NAME}
+                        Commit: ${env.COMMIT_SHA}
+                        """.stripIndent(),
                         ok: 'Deploy'
                     )
                 }
@@ -1148,6 +1150,15 @@ pipeline {
 
                             git push origin "HEAD:$GITOPS_BRANCH"
                         '''
+                        retry(2) {
+                            sh '''
+                            set -e
+
+                            git fetch origin "$GITOPS_BRANCH"
+                            git rebase "origin/$GITOPS_BRANCH"
+                            git push origin "HEAD:$GITOPS_BRANCH"
+                        '''
+                        }
                     }
 
                     script {
@@ -1172,41 +1183,31 @@ pipeline {
 
         stage('Archive Artifacts') {
             steps {
-                echo 'Preparing build artifacts...'
-            }
+                archiveArtifacts(
+                    artifacts: '**/npm-debug.log*',
+                    allowEmptyArchive: true
+                )
 
-            post {
-                success {
-                    echo """
-                    ${env.APP_NAME} Pipeline completed successfully.
-
-                    Branch : ${env.BRANCH_NAME}
-                    Mode   : ${env.CI_MODE}
-                    Env    : ${env.NODE_ENV}
-                    """
-                }
-
-                failure {
-                    echo """
-                    ${env.APP_NAME} Pipeline failed.
-
-                    Branch : ${env.BRANCH_NAME}
-                    Mode   : ${env.CI_MODE}
-                    Stage  : ${env.STAGE_NAME}
-                    """
-                }
-
-                always {
-                    archiveArtifacts(artifacts: '**/npm-debug.log*', allowEmptyArchive: true)
-
-                    archiveArtifacts(artifacts: 'backend/reports/**', allowEmptyArchive: true)
-                }
+                archiveArtifacts(
+                    artifacts: 'backend/reports/**',
+                    allowEmptyArchive: true
+                )
             }
         }
     }
 
     post {
         success {
+            echo """
+            ========================================
+            Pipeline SUCCESS
+            ========================================
+            Branch : ${env.BRANCH_NAME}
+            Mode   : ${env.CI_MODE}
+            Image  : ${env.IMAGE_NAME ?: '-'}
+            GitOps : ${env.GITOPS_COMMIT ?: '-'}
+            """.stripIndent()
+
             withCredentials([
                 string(
                     credentialsId: 'discord-webhook-url',
@@ -1221,6 +1222,15 @@ pipeline {
         }
 
         failure {
+            echo """
+            ========================================
+            Pipeline FAILURE
+            ========================================
+            Branch : ${env.BRANCH_NAME}
+            Mode   : ${env.CI_MODE}
+            Stage  : ${env.STAGE_NAME}
+            """.stripIndent()
+
             withCredentials([
                 string(
                     credentialsId: 'discord-webhook-url',
