@@ -6,7 +6,6 @@ import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_state.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
-import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/home_page.dart';
 import 'package:flutter_application_1/views/pages/community_page.dart';
 import 'package:flutter_application_1/views/pages/user_page.dart';
@@ -45,26 +44,6 @@ class _MainTreeWidgetState extends State<MainTreeWidget> {
         builder: (context, state) {
           return Scaffold(
             backgroundColor: Colors.white,
-            appBar: AppBar(
-              title: Text(widget.title),
-              actions: [
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.login);
-                  },
-                  icon: const Icon(Icons.login_outlined),
-                  label: const Text('Login'),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.register);
-                  },
-                  icon: const Icon(Icons.person_add_outlined),
-                  label: const Text('Register'),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
             body: pages.elementAt(state.selectedPage),
             bottomNavigationBar: const BottomNavbar(),
           );
