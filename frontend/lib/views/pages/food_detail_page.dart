@@ -138,6 +138,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     future: _foodFuture,
                     builder: (context, snapshot) {
                       final food = snapshot.data;
+                      // สูตร community ฟรี ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
+                      if (food != null && _isCommunity(food)) {
+                        return const SizedBox.shrink();
+                      }
 
                       final isPending = context.select(
                         (CartBloc bloc) =>
@@ -188,6 +192,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       ),
     );
   }
+
+  // สูตร community ใช้คอมเมนต์ ส่วน official ใช้รีวิว
+  // ดูจาก type ของสูตรเอง เพราะเข้าหน้านี้ได้จากหลายที่ (Profile, Home ฯลฯ)
+  bool _isCommunity(Food food) => food.type == 'community';
 
   Widget _buildBody(Food food, {required bool isPurchased}) {
     // official ที่ยังไม่ได้ซื้อ ไม่ให้เริ่มทำอาหาร
@@ -274,8 +282,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       const SizedBox(height: 12),
                     ],
 
-                    // แสดงเฉพาะคนที่ซื้อสูตรแล้ว
-                    RecipeChatButton(recipeId: food.idfoods),
+                    // แสดงเฉพาะคนที่ซื้อสูตรแล้ว และสูตรต้องไม่ใช่ฉบับร่าง
+                    if (food.status != 'draft')
+                      RecipeChatButton(recipeId: food.idfoods),
 
                     const SizedBox(height: 32),
 
@@ -286,7 +295,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                     const SizedBox(height: 28),
 
-                    if (widget.showComments || widget.scrollToComments)
+                    if (widget.showComments ||
+                        widget.scrollToComments ||
+                        _isCommunity(food))
                       BlocProvider(
                         create: (_) => RecipeCommentBloc(
                           HttpRecipeCommentRepository(
