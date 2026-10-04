@@ -4,6 +4,7 @@ import 'package:flutter_application_1/bloc/recipe_review/recipe_review_event.dar
 import 'package:flutter_application_1/bloc/recipe_review/recipe_review_state.dart';
 import 'package:flutter_application_1/models/recipe_review.dart';
 import 'package:flutter_application_1/models/review_tag.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_review/star_rating.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -70,9 +71,7 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
           Navigator.of(context).pop(_stars);
         } else if (state.submitStatus == RecipeReviewSubmitStatus.failure &&
             state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.error!)));
+          showAppSnackBar(context, state.error!, type: AppSnackType.error);
         }
       },
       builder: (context, state) {

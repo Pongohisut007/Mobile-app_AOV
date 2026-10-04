@@ -15,11 +15,7 @@ abstract interface class CartRepository {
 
   Future<List<CartItem>> fetchItems(String accessToken, String cartId);
 
-  Future<CartItem> addItem(
-    String accessToken,
-    String cartId,
-    String recipeId,
-  );
+  Future<CartItem> addItem(String accessToken, String cartId, String recipeId);
 
   Future<void> removeItem(String accessToken, String cartId, String itemId);
 
@@ -90,12 +86,14 @@ class HttpCartRepository implements CartRepository {
       throw const CartException('Backend returned an invalid cart item list.');
     }
 
-    return decoded.map((item) {
-      if (item is! Map<String, dynamic>) {
-        throw const CartException('Backend returned an invalid cart item.');
-      }
-      return CartItem.fromJson(item, apiBaseUrl: _baseUrl);
-    }).toList(growable: false);
+    return decoded
+        .map((item) {
+          if (item is! Map<String, dynamic>) {
+            throw const CartException('Backend returned an invalid cart item.');
+          }
+          return CartItem.fromJson(item, apiBaseUrl: _baseUrl);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -165,9 +163,7 @@ class HttpCartRepository implements CartRepository {
         );
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw CartException(
-          'Could not $action (HTTP ${response.statusCode}).',
-        );
+        throw CartException('Could not $action (HTTP ${response.statusCode}).');
       }
       // DELETE ตอบ 204 ไม่มี body ให้ decode
       if (response.bodyBytes.isEmpty) return null;

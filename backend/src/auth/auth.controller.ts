@@ -4,9 +4,13 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserRole } from '../users/entities/user.entity';
 import type { UserProfileResponse } from '../users/dto/user-profile-response.dto';
 import { UsersService } from '../users/users.service';
@@ -53,6 +57,44 @@ export class AuthController {
   @Get('profile')
   profile(@CurrentUser() user: AuthUser): Promise<UserProfileResponse> {
     return this.usersService.findProfile(user.id);
+  }
+
+  // คืน token ใบใหม่ให้เครื่องนี้ใช้ต่อ (เครื่องอื่นหลุดเพราะ token_version เปลี่ยน)
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<AuthResponse> {
+    return this.authService.changePassword(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('logout-all')
+  logoutAll(@CurrentUser() user: AuthUser): Promise<void> {
+    return this.authService.logoutAll(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('delete-account')
+  deleteAccount(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: DeleteAccountDto,
+  ): Promise<void> {
+    return this.authService.deleteAccount(user.id, dto.password);
+  }
+
+  // แก้ได้เฉพาะโปรไฟล์ของคนที่ login อยู่ (id มาจาก token ไม่ใช่จาก URL)
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  updateProfile(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<UserProfileResponse> {
+    return this.usersService.updateOwnProfile(user.id, dto);
   }
 
   // ตัวอย่างการจำกัดสิทธิ์เฉพาะ creator

@@ -1,5 +1,6 @@
 import 'package:flutter_application_1/bloc/recipe_library/recipe_library_event.dart';
 import 'package:flutter_application_1/bloc/recipe_library/recipe_library_state.dart';
+import 'package:flutter_application_1/data/recipe_library_cache.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
@@ -16,20 +17,36 @@ class RecipeLibraryBloc extends Bloc<RecipeLibraryEvent, RecipeLibraryState> {
     on<RecipeLibraryRequested>(_load);
     on<RecipeLibraryRefreshRequested>(_load);
     on<RecipeLibraryMoreRequested>(_loadMore);
+    on<RecipeLibraryItemRemoved>(_removeItem);
+  }
+
+  Future<void> _removeItem(
+    RecipeLibraryItemRemoved event,
+    Emitter<RecipeLibraryState> emit,
+  ) async {
+    final current = state;
+    if (current is! RecipeLibraryLoaded) return;
+    final userId = await _tokenStorage.readUserId();
+    if (userId == null) return;
+    // อัปเดตทั้งหน้าจอและของใน RAM เปิดหน้านี้ใหม่จะได้ไม่เห็นสูตรที่ลบไปแล้ว
+    _emitLoaded(
+      emit,
+      userId,
+      RecipeLibraryLoaded(
+        current.recipes
+            .where((recipe) => recipe.id != event.recipeId)
+            .toList(growable: false),
+        hasMore: current.hasMore,
+      ),
+    );
   }
 
   final RecipeLibraryRepository _repository;
   final TokenStorage _tokenStorage;
   final RecipeCollectionType collectionType;
 
-  // รายการที่เคยโหลดแล้ว เก็บใน RAM ข้ามการเปิด/ปิดหน้า (key = user + ประเภทคลัง)
+  // รายการที่เคยโหลดแล้วอยู่ใน RecipeLibraryCache (RAM ข้ามการเปิด/ปิดหน้า)
   // เปิดหน้าซ้ำจะโชว์ของเดิมทันที แล้วโหลดของใหม่มาแทนเงียบ ๆ
-  static final Map<String, _CachedCollection> _cache = {};
-
-  /// เปลี่ยนบัญชี (login/logout) ต้องล้าง
-  static void clearCache() => _cache.clear();
-
-  String _cacheKey(String userId) => '$userId:${collectionType.name}';
 
   // หน้าที่โหลดมาแล้ว และรอบการโหลดล่าสุด (กันหน้าถัดไปของรอบเก่ามาต่อท้ายรอบใหม่)
   int _page = 0;
@@ -48,7 +65,7 @@ class RecipeLibraryBloc extends Bloc<RecipeLibraryEvent, RecipeLibraryState> {
       return;
     }
 
-    final cached = _cache[_cacheKey(userId)];
+    final cached = RecipeLibraryCache.read(userId, collectionType);
     if (event is RecipeLibraryRequested && cached != null) {
       // มีของเดิมใน RAM: โชว์เลย ไม่ขึ้นตัวหมุน
       _page = cached.page;
@@ -85,9 +102,13 @@ class RecipeLibraryBloc extends Bloc<RecipeLibraryEvent, RecipeLibraryState> {
     String userId,
     RecipeLibraryLoaded loaded,
   ) {
-    _cache[_cacheKey(userId)] = _CachedCollection(
-      RecipeLibraryLoaded(loaded.recipes, hasMore: loaded.hasMore),
-      _page,
+    RecipeLibraryCache.write(
+      userId,
+      collectionType,
+      CachedCollection(
+        RecipeLibraryLoaded(loaded.recipes, hasMore: loaded.hasMore),
+        _page,
+      ),
     );
     emit(loaded);
   }
@@ -147,11 +168,4 @@ class RecipeLibraryBloc extends Bloc<RecipeLibraryEvent, RecipeLibraryState> {
       );
     }
   }
-}
-
-class _CachedCollection {
-  const _CachedCollection(this.state, this.page);
-
-  final RecipeLibraryLoaded state;
-  final int page;
 }

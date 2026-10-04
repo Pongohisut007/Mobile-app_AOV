@@ -69,8 +69,7 @@ class _CartButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CartBloc, CartState>(
-      buildWhen: (previous, current) =>
-          previous.itemCount != current.itemCount,
+      buildWhen: (previous, current) => previous.itemCount != current.itemCount,
       builder: (context, state) {
         final count = state.itemCount;
 
@@ -90,7 +89,10 @@ class _CartButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: ProfileColors.ink,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: ProfileColors.background, width: 2),
+                    border: Border.all(
+                      color: ProfileColors.background,
+                      width: 2,
+                    ),
                   ),
                   child: Text(
                     count > 99 ? '99+' : '$count',

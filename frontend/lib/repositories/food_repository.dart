@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/data/recipe_library_cache.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/paged_result.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
@@ -87,6 +88,8 @@ class FoodRepository {
       headers: headers,
       body: jsonEncode(recipe),
     );
+    // สูตรใหม่ (เผยแพร่/ร่าง) ต้องโผล่ใน My recipes / Drafts ทันทีที่เปิด
+    RecipeLibraryCache.invalidateAll();
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = json.decode(response.body);
       final message = body is Map<String, dynamic>
@@ -108,8 +111,9 @@ class FoodRepository {
       headers: headers,
       body: jsonEncode(recipe),
     );
-    // แก้แล้ว ของเดิมใน RAM ไม่ตรงแล้ว
+    // แก้แล้ว ของเดิมใน RAM ไม่ตรงแล้ว (เช่น เผยแพร่ร่าง = ย้ายจาก Drafts ไป My recipes)
     _detailCache.remove(id);
+    RecipeLibraryCache.invalidateAll();
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = json.decode(response.body);
       final message = body is Map<String, dynamic>
@@ -182,6 +186,8 @@ class FoodRepository {
   Future<void> deleteFood(String foodId) async {
     final response = await http.delete(Uri.parse('$baseUrl/recipes/$foodId'));
     _detailCache.remove(foodId);
+    // สูตรที่ลบอาจอยู่ในหลายคลัง (My recipes, Favorites ของคนอื่นในเครื่องเดียวกัน ฯลฯ)
+    RecipeLibraryCache.invalidateAll();
     if (response.statusCode != 200) {
       throw Exception('Failed to delete food');
     }

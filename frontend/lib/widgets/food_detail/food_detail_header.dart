@@ -45,7 +45,8 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
     if (!mounted) return;
 
     setState(() {
-      _isOwner = currentUserId != null &&
+      _isOwner =
+          currentUserId != null &&
           currentUserId.trim().isNotEmpty &&
           currentUserId == widget.food.creatorId;
 
@@ -146,16 +147,11 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
                           value: 'delete',
                           child: Row(
                             children: [
-                              Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
+                              Icon(Icons.delete_outline, color: Colors.red),
                               SizedBox(width: 12),
                               Text(
                                 'ลบสูตรอาหาร',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                ),
+                                style: TextStyle(color: Colors.red),
                               ),
                             ],
                           ),

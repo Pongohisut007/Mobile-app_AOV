@@ -23,9 +23,7 @@ class CommunityPostList extends StatelessWidget {
     if (foodState is FoodLoading) {
       return const Padding(
         padding: EdgeInsets.only(top: 32),
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -33,9 +31,7 @@ class CommunityPostList extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(top: 32),
         child: Center(
-          child: Text(
-            'Error: ${(foodState as FoodError).message}',
-          ),
+          child: Text('Error: ${(foodState as FoodError).message}'),
         ),
       );
     }
@@ -63,9 +59,7 @@ class CommunityPostList extends StatelessWidget {
 
     return Column(
       children: [
-        ...foods.map(
-          (food) => PostCard(food: food),
-        ),
+        ...foods.map((food) => PostCard(food: food)),
 
         if (loaded.hasMore || loaded.loadMoreError != null)
           Padding(

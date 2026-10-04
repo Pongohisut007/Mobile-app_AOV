@@ -21,6 +21,12 @@ class FoodLoadMoreRequested extends FoodEvent {
   FoodLoadMoreRequested();
 }
 
+/// สูตรถูกลบแล้ว (จากหน้ารายละเอียด) เอาการ์ดออกจากรายการทันที
+class FoodRemoved extends FoodEvent {
+  final String foodId;
+  FoodRemoved(this.foodId);
+}
+
 /// อัปเดตรายการล่าสุดเบื้องหลัง (หมวด/คำค้นหาเดิม) ไม่ขึ้นตัวหมุน
 /// พลาดก็เก็บรายการเดิมไว้ เช่น ตอนสลับกลับมาแท็บนี้
 class FoodSilentRefreshRequested extends FoodEvent {

@@ -29,7 +29,9 @@ class CategoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        context.read<CategoryBloc>().add(CategorySelectEvent(categoryId)); //ส่ง id ไปหา api
+        context.read<CategoryBloc>().add(
+          CategorySelectEvent(categoryId),
+        ); //ส่ง id ไปหา api
         debugPrint('Selected category: $categoryId');
       },
       borderRadius: BorderRadius.circular(18),

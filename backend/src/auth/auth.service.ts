@@ -1,11 +1,14 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { ChangePasswordDto } from './dto/change-password.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'node:crypto';
 import { User, UserRole, UserStatus } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import type { LoginDto } from './dto/login.dto';
@@ -57,6 +60,55 @@ export class AuthService {
     return user;
   }
 
+  /**
+   * เปลี่ยนรหัสผ่านของตัวเอง ต้องยืนยันรหัสเดิมก่อน
+   * เครื่องอื่นที่ login อยู่จะหลุดทันที เครื่องนี้ได้ token ใบใหม่กลับไปใช้ต่อ
+   */
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<AuthResponse> {
+    await this.verifyPassword(userId, dto.currentPassword);
+    if (dto.newPassword === dto.currentPassword) {
+      throw new BadRequestException('รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม');
+    }
+
+    const user = await this.usersService.updatePasswordHash(
+      userId,
+      await bcrypt.hash(dto.newPassword, this.saltRounds()),
+    );
+    return this.issueToken(user);
+  }
+
+  /** ออกจากระบบทุกอุปกรณ์ (รวมเครื่องนี้) */
+  async logoutAll(userId: string): Promise<void> {
+    await this.usersService.bumpTokenVersion(userId);
+  }
+
+  /**
+   * ลบบัญชีของตัวเอง (ต้องยืนยันรหัสผ่าน)
+   * ปิดบัญชีและลบข้อมูลส่วนตัว ไม่ลบแถวจริง เพราะสูตรที่คนอื่นซื้อไปแล้วต้องเปิดดูได้ต่อ
+   */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    await this.verifyPassword(userId, password);
+    await this.usersService.deleteOwnAccount(
+      userId,
+      await bcrypt.hash(randomUUID(), this.saltRounds()),
+    );
+  }
+
+  // ใช้ 400 ไม่ใช่ 401 แอปจะได้ไม่เข้าใจผิดว่า session หมดอายุแล้วพาไปหน้า login
+  private async verifyPassword(userId: string, password: string) {
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user) throw new UnauthorizedException('ไม่พบผู้ใช้งาน');
+    const matched = await bcrypt.compare(password, user.passwordHash);
+    if (!matched) throw new BadRequestException('รหัสผ่านปัจจุบันไม่ถูกต้อง');
+  }
+
+  private saltRounds(): number {
+    return this.configService.get<number>('jwt.bcryptSaltRounds', 10);
+  }
+
   async login(dto: LoginDto): Promise<AuthResponse> {
     const user = await this.validateUser(dto.email, dto.password);
     return this.issueToken(user);
@@ -67,6 +119,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      ver: user.tokenVersion ?? 0,
     };
 
     return {

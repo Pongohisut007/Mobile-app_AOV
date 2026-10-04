@@ -57,14 +57,11 @@ class _CommunityPageState extends State<CommunityPage> {
     final categoryBloc = context.read<CategoryBloc>();
     final categoryState = categoryBloc.state;
 
-    if (categoryState is! CategoryLoaded &&
-        categoryState is! CategoryLoading) {
+    if (categoryState is! CategoryLoaded && categoryState is! CategoryLoading) {
       categoryBloc.add(FetchCategoriesEvent());
     }
 
-    context
-        .read<FoodBloc>()
-        .add(FetchCommunityFoodsByCategoryEvent(''));
+    context.read<FoodBloc>().add(FetchCommunityFoodsByCategoryEvent(''));
 
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchTextChanged);
@@ -216,16 +213,10 @@ class _CommunityPageState extends State<CommunityPage> {
     final selectedId = _selectedCategoryId;
 
     if (query.isEmpty) {
-      foodBloc.add(
-        FetchCommunityFoodsByCategoryEvent(selectedId),
-      );
+      foodBloc.add(FetchCommunityFoodsByCategoryEvent(selectedId));
     } else {
       foodBloc.add(
-        SearchFoodEvent(
-          query,
-          categoryId: selectedId,
-          type: 'community',
-        ),
+        SearchFoodEvent(query, categoryId: selectedId, type: 'community'),
       );
     }
   }
@@ -268,8 +259,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isIpad =
-        MediaQuery.sizeOf(context).shortestSide >= 600;
+    final bool isIpad = MediaQuery.sizeOf(context).shortestSide >= 600;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -341,22 +331,14 @@ class _CommunityPageState extends State<CommunityPage> {
             }
 
             if (categoryState is CategoryLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
 
             if (categoryState is CategoryError) {
-              return Center(
-                child: Text(
-                  'Error: ${categoryState.message}',
-                ),
-              );
+              return Center(child: Text('Error: ${categoryState.message}'));
             }
 
-            return const Center(
-              child: Text('No data available.'),
-            );
+            return const Center(child: Text('No data available.'));
           },
         ),
       ),

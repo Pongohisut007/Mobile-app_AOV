@@ -53,13 +53,12 @@ class HttpUploadRepository {
     final presignResponse = await _client.post(
       Uri.parse('$_baseUrl/uploads/presign'),
       headers: authHeaders,
-      body: jsonEncode({
-        'kind': kind.name,
-        'mimeType': mimeType,
-        'size': size,
-      }),
+      body: jsonEncode({'kind': kind.name, 'mimeType': mimeType, 'size': size}),
     );
-    final presign = _decodeResponse(presignResponse, 'Could not prepare upload');
+    final presign = _decodeResponse(
+      presignResponse,
+      'Could not prepare upload',
+    );
     final filename = presign['filename'] as String;
     final uploadUrl = presign['uploadUrl'] as String;
 
@@ -71,7 +70,9 @@ class HttpUploadRepository {
     await request.sink.close();
     final putResponse = await http.Response.fromStream(await sending);
     if (putResponse.statusCode < 200 || putResponse.statusCode >= 300) {
-      throw UploadException('R2 upload failed (HTTP ${putResponse.statusCode}).');
+      throw UploadException(
+        'R2 upload failed (HTTP ${putResponse.statusCode}).',
+      );
     }
 
     final completeResponse = await _client.post(
