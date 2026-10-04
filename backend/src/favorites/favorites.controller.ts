@@ -12,6 +12,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import {
+  DEFAULT_PAGE_LIMIT,
+  OptionalPaginationQueryDto,
+  PaginatedResult,
+} from '../common/pagination';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateFavoriteDto } from './dto/create-favorite.dto';
 import { RemoveFavoriteDto } from './dto/remove-favorite.dto';
@@ -24,9 +29,18 @@ import { FavoritesService } from './favorites.service';
 export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
 
+  // ส่ง page มา = แบ่งหน้า ไม่ส่ง = ทั้งหมด (FavoriteBloc ใช้เช็กหัวใจทุกสูตร)
   @Get()
-  findAll(@CurrentUser('id') userId: string): Promise<Favorite[]> {
-    return this.favoritesService.findAll(userId);
+  findAll(
+    @CurrentUser('id') userId: string,
+    @Query() query: OptionalPaginationQueryDto,
+  ): Promise<Favorite[] | PaginatedResult<Favorite>> {
+    if (query.page === undefined) return this.favoritesService.findAll(userId);
+    return this.favoritesService.findPage(
+      userId,
+      query.page,
+      query.limit ?? DEFAULT_PAGE_LIMIT,
+    );
   }
 
   // ลบด้วย recipeId ต้องมาก่อน :id ไม่งั้น route จะชนกัน

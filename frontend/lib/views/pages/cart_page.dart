@@ -27,6 +27,8 @@ class _CartPageState extends State<CartPage> {
   late final PurchaseRepository _purchaseRepository =
       HttpMockPurchaseRepository(baseUrl: ApiConfig.apiBaseUrl);
   bool _isCheckingOut = false;
+  // เปิดชีตเลือกผลจำลองอยู่ กันกดชำระเงินรัวจนชีตเด้งซ้อน
+  bool _isChoosingScenario = false;
   final Set<String> _unselectedItemIds = {};
 
   void _setItemSelected(String itemId, bool selected) {
@@ -67,7 +69,7 @@ class _CartPageState extends State<CartPage> {
   }
 
   Future<void> _checkout(List<CartItem> items) async {
-    if (_isCheckingOut || items.isEmpty) return;
+    if (_isCheckingOut || _isChoosingScenario || items.isEmpty) return;
     if (!ApiConfig.mockIapEnabled) {
       _showMessage(
         'โหมดซื้อจำลองถูกปิดอยู่ กรุณาเชื่อม Google Play Billing',
@@ -76,7 +78,13 @@ class _CartPageState extends State<CartPage> {
       return;
     }
 
-    final scenario = await _chooseMockScenario();
+    _isChoosingScenario = true;
+    final _MockPurchaseScenario? scenario;
+    try {
+      scenario = await _chooseMockScenario();
+    } finally {
+      _isChoosingScenario = false;
+    }
     if (scenario == null || !mounted) return;
     if (scenario == _MockPurchaseScenario.cancelled) {
       _showMessage('จำลองการยกเลิกการชำระเงินแล้ว');
@@ -265,8 +273,19 @@ class _CartPageState extends State<CartPage> {
             actions: [
               if (items.isNotEmpty)
                 IconButton(
-                  onPressed: () => _confirmClear(context),
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  onPressed: state.isClearing || _isCheckingOut
+                      ? null
+                      : () => _confirmClear(context),
+                  icon: state.isClearing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: ProfileColors.ink,
+                          ),
+                        )
+                      : const Icon(Icons.delete_outline_rounded),
                   tooltip: 'Clear cart',
                 ),
             ],
@@ -323,14 +342,16 @@ class _CartPageState extends State<CartPage> {
                     );
                   }
                   final item = items[index - 1];
+                  final isRemoving = state.isPending(item.recipeId);
                   return CartItemTile(
                     item: item,
+                    isRemoving: isRemoving,
                     isSelected: !_unselectedItemIds.contains(item.id),
                     onSelectedChanged: _isCheckingOut
                         ? null
                         : (selected) =>
                               _setItemSelected(item.id, selected ?? false),
-                    onRemove: _isCheckingOut
+                    onRemove: _isCheckingOut || isRemoving || state.isClearing
                         ? null
                         : () {
                             _unselectedItemIds.remove(item.id);

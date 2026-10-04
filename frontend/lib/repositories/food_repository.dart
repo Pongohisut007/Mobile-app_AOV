@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/food.dart';
+import 'package:flutter_application_1/models/paged_result.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -9,57 +10,48 @@ class FoodRepository {
   static const String baseUrl = ApiConfig.apiBaseUrl;
   //static const String baseUrl = 'http://localhost:3000';
 
+  /// จำนวนสูตรต่อหน้า (backend รับได้สูงสุด 50)
+  static const int pageSize = 20;
+
+  // รายละเอียดสูตรที่เคยเปิดแล้ว เก็บใน RAM เปิดซ้ำจะโชว์ได้ทันทีระหว่างโหลดของใหม่
+  // (เก็บเฉพาะผลจาก GET /recipes/:id เพราะรายการสูตรไม่มีขั้นตอน/สิทธิ์ดูสูตรเต็ม)
+  static final Map<String, Food> _detailCache = {};
+
+  static Food? cachedFood(String id) => _detailCache[id];
+
+  /// เนื้อหาขึ้นกับว่าใคร login (ซื้อแล้วเห็นขั้นตอนครบ) เปลี่ยนบัญชีต้องล้าง
+  static void clearCache() => _detailCache.clear();
+
   // =========================== เรียกใช้ตรงนี้ ==================================
 
-  Future<List<Food>> fetchFoodsByCategoryId(String categoryId) async {
-    final url = '$baseUrl/categories/$categoryId';
-    return _getFoodsByCategoryId(url);
+  /// รายการสูตรทีละหน้า เรียงจากเผยแพร่ล่าสุด
+  /// categoryId ว่าง/null = ทุกหมวด
+  Future<PagedResult<Food>> fetchRecipesPage({
+    String? type,
+    String? status,
+    String? categoryId,
+    int page = 1,
+  }) async {
+    final uri = Uri.parse('$baseUrl/recipes').replace(
+      queryParameters: {
+        'type': ?type,
+        'status': ?status,
+        if (categoryId != null && categoryId.isNotEmpty)
+          'categoryId': categoryId,
+        'page': '$page',
+        'limit': '$pageSize',
+      },
+    );
+    return _getFoodsPage(uri);
   }
 
-  Future<List<Food>> fetchCommunityFoodsByCategoryId(String categoryId) async {
-    // community แสดงเฉพาะสูตรที่เผยแพร่แล้ว
-    final url = '$baseUrl/categories/$categoryId?type=community&status=published';
-    return _getFoodsByCategoryId(url);
-  }
-
-  Future<List<Food>> fetchOfficialFoodsByCategoryId(String categoryId) async {
-    final url = '$baseUrl/categories/$categoryId?type=official';
-    return _getFoodsByCategoryId(url);
-  }
-
-  // ================================
-
-  Future<List<Food>> fetchCommuityAllFoodsByCategoryId() async {
-    final url = '$baseUrl/categories?type=community&status=published';
-    return _getAllFoodsByCategoryId(url);
-  }
-
-  Future<List<Food>> fetchOfficialAllFoodsByCategoryId() async {
-    final url = '$baseUrl/categories?type=official';
-    return _getAllFoodsByCategoryId(url);
-  }
-
-  // ================================
-
-  Future<List<Food>> fetchFoods() async {
-    return _getFoods('$baseUrl/recipes');
-  }
-
-  Future<List<Food>> fetchCommunityFoods() async {
-    return _getFoods('$baseUrl/recipes?type=community&status=published');
-  }
-
-  Future<List<Food>> fetchOfficialFoods() async {
-    return _getFoods('$baseUrl/recipes?type=official');
-  }
-
-  // ================================
-
-  Future<List<Food>> searchFoods(
+  /// ค้นหาตามชื่อทีละหน้า เรียงตามความใกล้เคียง
+  Future<PagedResult<Food>> searchFoods(
     String query, {
     String? type,
     String? categoryId,
     String? status,
+    int page = 1,
   }) async {
     final uri = Uri.parse('$baseUrl/recipes/search').replace(
       queryParameters: {
@@ -67,7 +59,8 @@ class FoodRepository {
         'type': ?type,
         'status': ?status,
         'categoryId': ?categoryId,
-        'limit': '50', // backend จำกัดไว้สูงสุด 50
+        'page': '$page',
+        'limit': '$pageSize',
       },
     );
     return _searchFoods(uri);
@@ -77,7 +70,9 @@ class FoodRepository {
 
   Future<Food> fetchFoodById(String id) async {
     final url = '$baseUrl/recipes/$id';
-    return _getFoodById(url);
+    final food = await _getFoodById(url);
+    _detailCache[id] = food;
+    return food;
   }
 
   Future<void> createCommunityFood(Map<String, dynamic> recipe) async {
@@ -113,6 +108,8 @@ class FoodRepository {
       headers: headers,
       body: jsonEncode(recipe),
     );
+    // แก้แล้ว ของเดิมใน RAM ไม่ตรงแล้ว
+    _detailCache.remove(id);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = json.decode(response.body);
       final message = body is Map<String, dynamic>
@@ -124,54 +121,17 @@ class FoodRepository {
 
   // ============================ อ่านฟังก์ชั่น ==============================
 
-  Future<List<Food>> _getAllFoodsByCategoryId(String url) async {
-    debugPrint('Fetching from: $url');
-    final response = await http.get(Uri.parse(url));
-
+  Future<PagedResult<Food>> _getFoodsPage(Uri uri) async {
+    debugPrint('Fetching foods from: $uri');
+    final response = await http.get(uri);
     if (response.statusCode == 200) {
-      final List<dynamic> categories = json.decode(response.body);
-      final foods = <Food>[];
-      for (final cat in categories) {
-        final recipes =
-            (cat as Map<String, dynamic>)['recipes'] as List<dynamic>? ?? [];
-        foods.addAll(
-          recipes.map(
-            (r) =>
-                Food.fromJson(r as Map<String, dynamic>, apiBaseUrl: baseUrl),
-          ),
-        );
-      }
-      return foods;
-    } else {
-      throw Exception('Failed to load foods');
+      return PagedResult.fromJson(
+        json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+        (item) => Food.fromJson(item, apiBaseUrl: baseUrl),
+      );
     }
-  }
-
-  Future<List<Food>> _getFoodsByCategoryId(String url) async {
-    debugPrint('Fetching foods by category from: $url');
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final category = json.decode(response.body) as Map<String, dynamic>;
-      final recipes = category['recipes'] as List<dynamic>? ?? [];
-      final foods = recipes
-          .map(
-            (json) => Food.fromJson(
-              json as Map<String, dynamic>,
-              apiBaseUrl: baseUrl,
-            ),
-          )
-          .toList();
-      // debugPrint(
-      //   'Parsed ${foods.length} foods in category ${category['name']}',
-      // );
-      return foods;
-    } else if (response.statusCode == 404) {
-      throw Exception('ไม่พบหมวดหมู่นี้');
-    } else {
-      debugPrint('Failed to load category: ${response.statusCode}');
-      throw Exception('Failed to load foods');
-    }
+    debugPrint('Failed to load foods: ${response.statusCode}');
+    throw Exception('Failed to load foods');
   }
 
   Future<Food> _getFoodById(String url) async {
@@ -200,53 +160,28 @@ class FoodRepository {
     }
   }
 
-  Future<List<Food>> _searchFoods(Uri uri) async {
+  Future<PagedResult<Food>> _searchFoods(Uri uri) async {
     debugPrint('Searching foods from: $uri');
     final response = await http.get(uri);
 
     if (response.statusCode == 200) {
-      // /recipes/search ห่อผลลัพธ์ไว้ใน data ไม่ได้คืน array ตรง ๆ เหมือน /recipes
-      final body = json.decode(response.body) as Map<String, dynamic>;
-      final data = body['data'] as List<dynamic>? ?? const [];
-      return data
-          .map(
-            (json) => Food.fromJson(
-              json as Map<String, dynamic>,
-              apiBaseUrl: baseUrl,
-            ),
-          )
-          .toList();
+      return PagedResult.fromJson(
+        json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+        (item) => Food.fromJson(item, apiBaseUrl: baseUrl),
+      );
     } else if (response.statusCode == 400) {
       // คำค้นหาไม่ผ่าน validation ฝั่ง backend ถือว่าไม่เจอเมนู
       debugPrint('Invalid search query: ${response.body}');
-      return const [];
+      return const PagedResult(items: [], page: 1, totalPages: 0, total: 0);
     } else {
       debugPrint('Failed to search foods: ${response.statusCode}');
       throw Exception('Failed to search foods');
     }
   }
 
-  Future<List<Food>> _getFoods(String url) async {
-    debugPrint('Fetching foods from: $url');
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonList = json.decode(response.body);
-      final foods = jsonList
-          .map((json) => Food.fromJson(json, apiBaseUrl: baseUrl))
-          .toList();
-      // debugPrint('Parsed ${foods.length} foods successfully');
-      // for (var food in foods) {
-      //   debugPrint('  - ${food.idfoods}: ${food.name} (${food.category})');
-      // }
-      return foods;
-    } else {
-      debugPrint('Failed to load foods: ${response.statusCode}');
-      throw Exception('Failed to load foods');
-    }
-  }
-
   Future<void> deleteFood(String foodId) async {
     final response = await http.delete(Uri.parse('$baseUrl/recipes/$foodId'));
+    _detailCache.remove(foodId);
     if (response.statusCode != 200) {
       throw Exception('Failed to delete food');
     }

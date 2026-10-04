@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/banner/banner_bloc.dart';
 import 'package:flutter_application_1/bloc/banner/banner_state.dart';
@@ -182,16 +183,12 @@ class _BannerImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
+    return AppNetworkImage(
       imageUrl,
-      fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return const _BannerPlaceholder();
-      },
-      errorBuilder: (context, error, stackTrace) => Container(
+      placeholder: const _BannerPlaceholder(),
+      errorBuilder: (context) => Container(
         color: Colors.grey.shade200,
         alignment: Alignment.center,
         child: Icon(

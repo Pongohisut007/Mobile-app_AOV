@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { AppCacheService } from '../cache/app-cache.service';
+import { CacheNamespace } from '../cache/app-cache.module';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
+import { PaginatedResult, toPaginated } from '../common/pagination';
 import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
@@ -23,13 +31,7 @@ export interface FindRecipesOptions {
 }
 
 //system search
-export interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+export type { PaginatedResult };
 
 // กัน % _ \ ในคำค้นหาไม่ให้กลายเป็น wildcard ของ LIKE
 function escapeLikeTerm(term: string): string {
@@ -55,9 +57,25 @@ export class RecipesService {
     private readonly commentRepository: Repository<RecipeComment>,
 
     private readonly recipeAccessService: RecipeAccessService,
+
+    @Optional()
+    private readonly cache?: AppCacheService,
   ) {}
 
-  async findAll(options: FindRecipesOptions = {}): Promise<Recipe[]> {
+  // อายุ cache: รายการสั้นไว้ก่อน เพราะยอดหัวใจ/คอมเมนต์เปลี่ยนบ่อย
+  // (ทุกการแก้ไขที่เกี่ยวข้องล้าง cache ทันทีอยู่แล้ว TTL เป็นแค่ตัวกันพลาด)
+  private static readonly listTtlSeconds = 60;
+  private static readonly detailTtlSeconds = 120;
+
+  findAll(options: FindRecipesOptions = {}): Promise<Recipe[]> {
+    return this.cached(
+      stableKey('all', options),
+      RecipesService.listTtlSeconds,
+      () => this.loadAll(options),
+    );
+  }
+
+  private async loadAll(options: FindRecipesOptions): Promise<Recipe[]> {
     const query = this.recipeRepository
       .createQueryBuilder('recipe')
       .leftJoinAndSelect('recipe.creator', 'creator')
@@ -70,8 +88,69 @@ export class RecipesService {
     return this.attachRecipeCounts(await query.getMany());
   }
 
+  // เหมือน findAll แต่แบ่งหน้า เรียงจากเผยแพร่ล่าสุด (ฉบับร่างใช้วันที่สร้าง)
+  findPage(
+    options: FindRecipesOptions,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResult<Recipe>> {
+    return this.cached(
+      stableKey('page', { ...options, page, limit }),
+      RecipesService.listTtlSeconds,
+      () => this.loadPage(options, page, limit),
+    );
+  }
+
+  private async loadPage(
+    options: FindRecipesOptions,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResult<Recipe>> {
+    // หา id ของหน้านี้ก่อน แล้วค่อยโหลด relation
+    // เพราะถ้า limit บน query ที่ join categories แถวจะถูกนับซ้ำ
+    const idQuery = this.recipeRepository.createQueryBuilder('recipe');
+    this.applyFilters(idQuery, options);
+
+    const total = await idQuery.getCount();
+    if (total === 0) return toPaginated([], total, page, limit);
+
+    const rows = await idQuery
+      .select('recipe.id', 'id')
+      .addSelect('COALESCE(recipe.published_at, recipe.created_at)', 'sort_at')
+      .orderBy('sort_at', 'DESC')
+      // วันที่เท่ากันต้องเรียงคงที่ ไม่งั้นข้ามหน้าแล้วสูตรซ้ำ/หาย
+      .addOrderBy('recipe.id', 'ASC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany<{ id: string }>();
+
+    const ids = rows.map((row) => row.id);
+    const recipes = await this.recipeRepository.find({
+      where: { id: In(ids) },
+      relations: { creator: true, categories: true },
+    });
+
+    // find() ไม่การันตีลำดับ จึงเรียงกลับตามลำดับที่หามาได้
+    const byId = new Map(recipes.map((recipe) => [recipe.id, recipe]));
+    const data = ids
+      .map((id) => byId.get(id))
+      .filter((recipe): recipe is Recipe => recipe !== undefined);
+
+    return toPaginated(await this.attachRecipeCounts(data), total, page, limit);
+  }
+
   // ค้นหาตามชื่ออาหาร พร้อมแบ่งหน้าและเรียงตามความใกล้เคียง
-  async search(dto: SearchRecipesDto): Promise<PaginatedResult<Recipe>> {
+  search(dto: SearchRecipesDto): Promise<PaginatedResult<Recipe>> {
+    return this.cached(
+      stableKey('search', { ...dto }),
+      RecipesService.listTtlSeconds,
+      () => this.loadSearch(dto),
+    );
+  }
+
+  private async loadSearch(
+    dto: SearchRecipesDto,
+  ): Promise<PaginatedResult<Recipe>> {
     const { q, page, limit, ...filters } = dto;
 
     // แยกเป็น 2 ขั้น: หา id ที่ตรงก่อน แล้วค่อยโหลด relation
@@ -80,9 +159,7 @@ export class RecipesService {
     this.applyFilters(idQuery, { ...filters, search: q });
 
     const total = await idQuery.getCount();
-    if (total === 0) {
-      return { data: [], total, page, limit, totalPages: 0 };
-    }
+    if (total === 0) return toPaginated([], total, page, limit);
 
     const term = escapeLikeTerm(q);
     const rows = await idQuery
@@ -116,13 +193,7 @@ export class RecipesService {
       .map((id) => byId.get(id))
       .filter((recipe): recipe is Recipe => recipe !== undefined);
 
-    return {
-      data: await this.attachRecipeCounts(data),
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return toPaginated(await this.attachRecipeCounts(data), total, page, limit);
   }
 
   private applyFilters(
@@ -214,7 +285,13 @@ export class RecipesService {
    * สูตร official ที่ยังไม่ซื้อ จะเห็นเฉพาะ section ที่เป็น preview
    */
   async findOneForViewer(id: string, userId?: string): Promise<Recipe> {
-    const recipe = await this.findOne(id);
+    // cache เฉพาะข้อมูลสูตรที่เหมือนกันทุกคน สิทธิ์ดูสูตรเต็มคำนวณใหม่ทุกครั้งตามผู้ชม
+    // (cache คืน object ใหม่ทุกครั้ง ตัด section ด้านล่างได้โดยไม่กระทบของใน cache)
+    const recipe = await this.cached(
+      `detail:${id}`,
+      RecipesService.detailTtlSeconds,
+      () => this.findOne(id),
+    );
     recipe.canViewFullRecipe = await this.canViewFullRecipe(recipe, userId);
     if (recipe.canViewFullRecipe) return recipe;
 
@@ -286,50 +363,54 @@ export class RecipesService {
     const { categoryIds, sections = [], ...recipeData } = dto;
     const categories = await this.resolveCategories(categoryIds);
 
-    return this.recipeRepository.manager.transaction(async (manager) => {
-      const recipeRepository = manager.getRepository(Recipe);
-      const sectionRepository = manager.getRepository(RecipeSection);
-      const contentRepository = manager.getRepository(RecipeContent);
-      const recipe = recipeRepository.create(recipeData);
-      recipe.categories = categories;
-      if (recipe.status === RecipeStatus.PUBLISHED && !recipe.publishedAt) {
-        recipe.publishedAt = new Date();
-      }
-
-      await recipeRepository.save(recipe);
-
-      for (const [sectionIndex, sectionData] of sections.entries()) {
-        const { contents = [], ...sectionFields } = sectionData;
-        const section = await sectionRepository.save(
-          sectionRepository.create({
-            ...sectionFields,
-            recipeId: recipe.id,
-            sortOrder: sectionData.sortOrder ?? sectionIndex,
-          }),
-        );
-
-        if (contents.length > 0) {
-          await contentRepository.save(
-            contents.map((content, contentIndex) =>
-              contentRepository.create({
-                ...content,
-                sectionId: section.id,
-                sortOrder: content.sortOrder ?? contentIndex,
-              }),
-            ),
-          );
+    const created = await this.recipeRepository.manager.transaction(
+      async (manager) => {
+        const recipeRepository = manager.getRepository(Recipe);
+        const sectionRepository = manager.getRepository(RecipeSection);
+        const contentRepository = manager.getRepository(RecipeContent);
+        const recipe = recipeRepository.create(recipeData);
+        recipe.categories = categories;
+        if (recipe.status === RecipeStatus.PUBLISHED && !recipe.publishedAt) {
+          recipe.publishedAt = new Date();
         }
-      }
 
-      return recipeRepository.findOneOrFail({
-        where: { id: recipe.id },
-        relations: {
-          creator: true,
-          categories: true,
-          sections: { contents: true },
-        },
-      });
-    });
+        await recipeRepository.save(recipe);
+
+        for (const [sectionIndex, sectionData] of sections.entries()) {
+          const { contents = [], ...sectionFields } = sectionData;
+          const section = await sectionRepository.save(
+            sectionRepository.create({
+              ...sectionFields,
+              recipeId: recipe.id,
+              sortOrder: sectionData.sortOrder ?? sectionIndex,
+            }),
+          );
+
+          if (contents.length > 0) {
+            await contentRepository.save(
+              contents.map((content, contentIndex) =>
+                contentRepository.create({
+                  ...content,
+                  sectionId: section.id,
+                  sortOrder: content.sortOrder ?? contentIndex,
+                }),
+              ),
+            );
+          }
+        }
+
+        return recipeRepository.findOneOrFail({
+          where: { id: recipe.id },
+          relations: {
+            creator: true,
+            categories: true,
+            sections: { contents: true },
+          },
+        });
+      },
+    );
+    await this.invalidateRecipes();
+    return created;
   }
 
   async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
@@ -350,6 +431,16 @@ export class RecipesService {
       });
       if (!recipe) {
         throw new NotFoundException(`Recipe with id ${id} not found`);
+      }
+      // publish แล้วห้ามเปลี่ยน type
+      if (
+        recipeData.type !== undefined &&
+        recipeData.type !== recipe.type &&
+        recipe.status === RecipeStatus.PUBLISHED
+      ) {
+        throw new BadRequestException(
+          'Cannot change type of a published recipe',
+        );
       }
 
       Object.assign(recipe, recipeData, { id: recipe.id });
@@ -387,6 +478,7 @@ export class RecipesService {
       }
     });
 
+    await this.invalidateRecipes();
     return this.findOne(id);
   }
 
@@ -413,5 +505,37 @@ export class RecipesService {
   async remove(id: string): Promise<void> {
     const recipe = await this.findOne(id);
     await this.recipeRepository.remove(recipe);
+    // คอมเมนต์/รีวิวของสูตรที่ลบไปแล้วต้องไม่ค้างใน cache
+    await Promise.all([
+      this.invalidateRecipes(),
+      this.cache?.invalidate(CacheNamespace.comments),
+      this.cache?.invalidate(CacheNamespace.reviews),
+    ]);
   }
+
+  // ---- cache ----
+
+  /** สูตร/ยอดหัวใจ/รีวิว/คอมเมนต์เปลี่ยน: ทิ้ง cache รายการและรายละเอียดสูตรทั้งหมด */
+  async invalidateRecipes(): Promise<void> {
+    await this.cache?.invalidate(CacheNamespace.recipes);
+  }
+
+  // ไม่มี cache (เช่นในเทสต์) ก็เรียก loader ตรง ๆ
+  private cached<T>(
+    key: string,
+    ttlSeconds: number,
+    loader: () => Promise<T>,
+  ): Promise<T> {
+    return this.cache
+      ? this.cache.getOrSet(CacheNamespace.recipes, key, ttlSeconds, loader)
+      : loader();
+  }
+}
+
+// key คงที่ไม่ขึ้นกับลำดับ field และไม่นับค่าที่ไม่ได้ส่งมา
+function stableKey(prefix: string, value: object): string {
+  const entries = Object.entries(value)
+    .filter(([, field]) => field !== undefined && field !== '')
+    .sort(([left], [right]) => left.localeCompare(right));
+  return `${prefix}:${JSON.stringify(entries)}`;
 }

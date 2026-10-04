@@ -172,10 +172,15 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   Future<void> _onCleared(CartCleared event, Emitter<CartState> emit) async {
     final cartId = state.cartId;
-    if (cartId == null) return;
+    if (cartId == null || state.isClearing) return;
+
+    emit(state.copyWith(isClearing: true));
 
     final accessToken = await _readAccessToken();
-    if (accessToken == null) return;
+    if (accessToken == null) {
+      emit(state.copyWith(isClearing: false));
+      return;
+    }
 
     try {
       await _repository.clearItems(accessToken, cartId);
@@ -183,12 +188,17 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         state.copyWith(
           status: CartStatus.ready,
           items: const [],
+          isClearing: false,
           clearError: true,
         ),
       );
     } on Exception catch (error) {
       emit(
-        state.copyWith(status: CartStatus.failure, error: error.toString()),
+        state.copyWith(
+          status: CartStatus.failure,
+          isClearing: false,
+          error: error.toString(),
+        ),
       );
     }
   }

@@ -3,7 +3,10 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { CacheNamespace } from '../cache/app-cache.module';
+import { AppCacheService } from '../cache/app-cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
@@ -42,9 +45,34 @@ export class RecipeCommentsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly recipeAccessService: RecipeAccessService,
+    @Optional()
+    private readonly cache?: AppCacheService,
   ) {}
 
-  async list(
+  // ยอดคอมเมนต์อยู่ในข้อมูลสูตรที่ cache ไว้ เพิ่ม/ลบคอมเมนต์ต้องล้างทั้งคู่
+  private async invalidateRecipeCounts(): Promise<void> {
+    await Promise.all([
+      this.cache?.invalidate(CacheNamespace.comments),
+      this.cache?.invalidate(CacheNamespace.recipes),
+    ]);
+  }
+
+  list(
+    recipeId: string,
+    query: ListRecipeCommentsQueryDto,
+  ): Promise<RecipeCommentPage> {
+    const load = () => this.loadList(recipeId, query);
+    return this.cache
+      ? this.cache.getOrSet(
+          CacheNamespace.comments,
+          `list:${recipeId}:${query.page}:${query.limit}`,
+          60,
+          load,
+        )
+      : load();
+  }
+
+  private async loadList(
     recipeId: string,
     query: ListRecipeCommentsQueryDto,
   ): Promise<RecipeCommentPage> {
@@ -109,6 +137,7 @@ export class RecipeCommentsService {
       where: { id: saved.id },
       relations: { user: true },
     });
+    await this.invalidateRecipeCounts();
     return this.toView(created);
   }
 
@@ -124,6 +153,7 @@ export class RecipeCommentsService {
 
     comment.comment = text;
     const updated = await this.commentRepository.save(comment);
+    await this.cache?.invalidate(CacheNamespace.comments);
     return this.toView(updated);
   }
 
@@ -134,6 +164,7 @@ export class RecipeCommentsService {
   ): Promise<void> {
     const comment = await this.findOwnedComment(recipeId, commentId, userId);
     await this.commentRepository.remove(comment);
+    await this.invalidateRecipeCounts();
   }
 
   private async findOwnedComment(

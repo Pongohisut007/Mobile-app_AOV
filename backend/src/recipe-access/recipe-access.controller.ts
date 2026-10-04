@@ -7,7 +7,13 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
+import {
+  DEFAULT_PAGE_LIMIT,
+  OptionalPaginationQueryDto,
+  PaginatedResult,
+} from '../common/pagination';
 import { RecipeAccess } from './entities/recipe-access.entity';
 import { RecipeAccessService } from './recipe-access.service';
 
@@ -28,11 +34,28 @@ export class RecipeAccessController {
     return this.recipeAccessService.hasActiveAccess(userId, recipeId);
   }
 
+  // ส่ง page มา = แบ่งหน้า ไม่ส่ง = ทั้งหมดเป็น array แบบเดิม
   @Get('user/:userId')
   findPurchasedByUser(
     @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<RecipeAccess[]> {
-    return this.recipeAccessService.findPurchasedByUser(userId);
+    @Query() query: OptionalPaginationQueryDto,
+  ): Promise<RecipeAccess[] | PaginatedResult<RecipeAccess>> {
+    if (query.page === undefined) {
+      return this.recipeAccessService.findPurchasedByUser(userId);
+    }
+    return this.recipeAccessService.findPurchasedPageByUser(
+      userId,
+      query.page,
+      query.limit ?? DEFAULT_PAGE_LIMIT,
+    );
+  }
+
+  // แค่ id ของสูตรที่ซื้อแล้ว ใช้เช็กสิทธิ์ทั้งแอปโดยไม่ต้องโหลดรายละเอียดทุกสูตร
+  @Get('user/:userId/recipe-ids')
+  findPurchasedRecipeIds(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<string[]> {
+    return this.recipeAccessService.findPurchasedRecipeIds(userId);
   }
 
   @Get(':id')

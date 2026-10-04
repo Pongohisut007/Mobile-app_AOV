@@ -13,9 +13,22 @@ final class RecipeLibraryLoading extends RecipeLibraryState {
 }
 
 final class RecipeLibraryLoaded extends RecipeLibraryState {
-  const RecipeLibraryLoaded(this.recipes);
+  const RecipeLibraryLoaded(
+    this.recipes, {
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
+  });
 
+  /// สูตรทุกหน้าที่โหลดมาแล้ว
   final List<RecipeSummary> recipes;
+
+  /// backend ยังมีหน้าถัดไป
+  final bool hasMore;
+  final bool isLoadingMore;
+
+  /// โหลดหน้าถัดไปไม่สำเร็จ (รายการเดิมยังอยู่ ลองใหม่ได้)
+  final String? loadMoreError;
 }
 
 final class RecipeLibraryFailure extends RecipeLibraryState {

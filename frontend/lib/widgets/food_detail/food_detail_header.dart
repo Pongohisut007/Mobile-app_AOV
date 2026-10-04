@@ -11,9 +11,13 @@ class FoodDetailHeader extends StatefulWidget {
     required this.food,
     this.onEdit,
     this.onDelete,
+    this.isBusy = false,
   });
 
   final Food food;
+
+  /// กำลังเปิดหน้าแก้ไขหรือกำลังลบ: แสดงตัวหมุนแทนเมนู กันกดซ้ำ
+  final bool isBusy;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -101,54 +105,63 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
             right: 10,
             child: CircleAvatar(
               backgroundColor: Colors.white,
-              child: PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.more_vert,
-                  color: FoodDetailColors.primaryRed,
-                ),
-                onSelected: (value) {
-                  switch (value) {
-                    case 'edit':
-                      widget.onEdit?.call();
-                      break;
-
-                    case 'delete':
-                      widget.onDelete?.call();
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  if (_canEdit)
-                    const PopupMenuItem<String>(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined),
-                          SizedBox(width: 12),
-                          Text('แก้ไข'),
-                        ],
+              child: widget.isBusy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: FoodDetailColors.primaryRed,
                       ),
-                    ),
-                  const PopupMenuItem<String>(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'ลบสูตรอาหาร',
-                          style: TextStyle(
-                            color: Colors.red,
+                    )
+                  : PopupMenuButton<String>(
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: FoodDetailColors.primaryRed,
+                      ),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'edit':
+                            widget.onEdit?.call();
+                            break;
+
+                          case 'delete':
+                            widget.onDelete?.call();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        if (_canEdit)
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined),
+                                SizedBox(width: 12),
+                                Text('แก้ไข'),
+                              ],
+                            ),
+                          ),
+                        const PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                'ลบสูตรอาหาร',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
       ],

@@ -8,6 +8,7 @@ import {
 import { basename, extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
+import { ByteLruCache } from './byte-lru-cache';
 import { R2Provider } from './storage/r2.provider';
 
 export enum UploadKind {
@@ -74,8 +75,28 @@ const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
   ),
 };
 
+interface CachedImage {
+  body: Buffer;
+  mimeType: string;
+}
+
+// ไฟล์ใน R2 ไม่เคยถูกแก้ (ชื่อไฟล์เป็น uuid ใหม่ทุกครั้ง) จึง cache ได้ไม่มีวันหมดอายุ
+// รูป: เก็บทั้งไฟล์ใน RAM ของ server ไม่ต้องไปดึงจาก R2 ซ้ำ (Redis ไม่เหมาะกับ binary ใหญ่)
+// วิดีโอ: ใหญ่เกินจะเก็บ จึงเก็บแค่ขนาด/ชนิดไฟล์ ข้ามการถาม R2 (HEAD) ทุกครั้งที่เลื่อนดู
+const IMAGE_CACHE_MAX_BYTES = 128 * 1024 * 1024;
+const IMAGE_CACHE_MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_METADATA_ENTRIES = 5000;
+
 @Injectable()
 export class UploadsService {
+  private readonly imageCache = new ByteLruCache<CachedImage>(
+    IMAGE_CACHE_MAX_BYTES,
+  );
+  private readonly metadataCache = new Map<
+    string,
+    { size: number; mimeType: string | undefined }
+  >();
+
   constructor(private readonly r2: R2Provider) {}
 
   async presign(
@@ -154,11 +175,35 @@ export class UploadsService {
     }
 
     const key = `${kind}/${safeFilename}`;
+    const fallbackMime =
+      MIME_BY_EXTENSION[extname(safeFilename).toLowerCase()] ??
+      'application/octet-stream';
+
+    const cachedImage = this.imageCache.get(key);
+    if (cachedImage) {
+      return this.fromBuffer(
+        cachedImage.body,
+        cachedImage.mimeType,
+        rangeHeader,
+      );
+    }
 
     try {
-      const object = await this.r2.head(key);
-      const fileSize = object.ContentLength;
-      if (fileSize === undefined) throw new NotFoundException('File not found');
+      const metadata = await this.metadata(key);
+      const fileSize = metadata.size;
+      const mimeType = metadata.mimeType ?? fallbackMime;
+
+      // รูปเล็กพอ: โหลดทั้งไฟล์ครั้งเดียวเก็บไว้ ครั้งถัดไปตอบจาก RAM เลย
+      if (
+        kind === UploadKind.IMAGES &&
+        fileSize <= IMAGE_CACHE_MAX_FILE_BYTES
+      ) {
+        const downloaded = await this.r2.download(key);
+        if (!downloaded.Body) throw new NotFoundException('File not found');
+        const body = await this.readAll(downloaded.Body as Readable);
+        this.imageCache.set(key, { body, mimeType }, body.length);
+        return this.fromBuffer(body, mimeType, rangeHeader);
+      }
 
       const range = this.parseRange(rangeHeader, fileSize);
       const downloaded = await this.r2.download(
@@ -169,10 +214,7 @@ export class UploadsService {
 
       return {
         stream: downloaded.Body as Readable,
-        mimeType:
-          object.ContentType ??
-          MIME_BY_EXTENSION[extname(safeFilename).toLowerCase()] ??
-          'application/octet-stream',
+        mimeType,
         size: range ? range.end - range.start + 1 : fileSize,
         contentRange: range
           ? `bytes ${range.start}-${range.end}/${fileSize}`
@@ -189,6 +231,58 @@ export class UploadsService {
       }
       throw error;
     }
+  }
+
+  // ขนาด/ชนิดไฟล์จาก R2 (HEAD) ไฟล์ไม่เปลี่ยน ถามครั้งเดียวพอ
+  private async metadata(
+    key: string,
+  ): Promise<{ size: number; mimeType: string | undefined }> {
+    const known = this.metadataCache.get(key);
+    if (known) return known;
+
+    const object = await this.r2.head(key);
+    if (object.ContentLength === undefined) {
+      throw new NotFoundException('File not found');
+    }
+    const metadata = {
+      size: object.ContentLength,
+      mimeType: object.ContentType,
+    };
+    this.metadataCache.set(key, metadata);
+    if (this.metadataCache.size > MAX_METADATA_ENTRIES) {
+      const oldest = this.metadataCache.keys().next().value as
+        string | undefined;
+      if (oldest !== undefined) this.metadataCache.delete(oldest);
+    }
+    return metadata;
+  }
+
+  // ตอบจากไฟล์ที่อยู่ใน RAM รองรับ Range เหมือนตอนดึงจาก R2
+  private fromBuffer(
+    body: Buffer,
+    mimeType: string,
+    rangeHeader: string | undefined,
+  ): StoredFile {
+    const range = this.parseRange(rangeHeader, body.length);
+    const part = range ? body.subarray(range.start, range.end + 1) : body;
+    return {
+      stream: Readable.from([part]),
+      mimeType,
+      size: part.length,
+      contentRange: range
+        ? `bytes ${range.start}-${range.end}/${body.length}`
+        : undefined,
+    };
+  }
+
+  private async readAll(stream: Readable): Promise<Buffer> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(
+        Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string),
+      );
+    }
+    return Buffer.concat(chunks);
   }
 
   private parseRange(

@@ -70,6 +70,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   final _picker = ImagePicker();
 
   bool _isSending = false;
+  bool _isResetting = false;
   bool _isLoadingHistory = false;
   // รูปที่เลือกไว้ รอส่งพร้อมคำถาม
   ChatImage? _image;
@@ -121,7 +122,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   Future<void> _send() async {
     final text = _inputController.text.trim();
     final image = _image;
-    if ((text.isEmpty && image == null) || _isSending) return;
+    if ((text.isEmpty && image == null) || _isSending || _isResetting) return;
 
     _inputController.clear();
     setState(() {
@@ -196,11 +197,16 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   }
 
   Future<void> _reset() async {
+    if (_isResetting || _isSending) return;
+    setState(() => _isResetting = true);
     try {
       await widget.repository.reset(widget.accessToken);
+      if (!mounted) return;
       setState(widget.history.clear);
     } catch (error) {
       _showError(error);
+    } finally {
+      if (mounted) setState(() => _isResetting = false);
     }
   }
 
@@ -267,8 +273,16 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
           ),
           IconButton(
             tooltip: 'เริ่มแชทใหม่',
-            onPressed: _isSending || _messages.isEmpty ? null : _reset,
-            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _isSending || _isResetting || _messages.isEmpty
+                ? null
+                : _reset,
+            icon: _isResetting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded),
           ),
           IconButton(
             tooltip: 'ปิด',
@@ -440,9 +454,15 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
           ),
           const SizedBox(width: 4),
           IconButton(
-            onPressed: _isSending ? null : _send,
+            onPressed: _isSending || _isResetting ? null : _send,
             color: FoodDetailColors.purple,
-            icon: const Icon(Icons.send_rounded),
+            icon: _isSending
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send_rounded),
           ),
         ],
       ),

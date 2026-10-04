@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/category.dart';
+import 'package:flutter_application_1/widgets/home/category_list.dart';
+import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
+/// แถบหมวดหมู่ของหน้า community เป็นชิปแคปซูล (ต่างจากไทล์ของหน้า Home)
+/// ใช้สี ink/accent แบบหน้า Profile และไอคอนชุดเดียวกับหน้า Home
+/// เก็บหมวดที่เลือกไว้เอง ไม่ไปเปลี่ยนหมวดของหน้า Home
 class CategorySelector extends StatefulWidget {
   const CategorySelector({
     super.key,
@@ -16,75 +21,101 @@ class CategorySelector extends StatefulWidget {
 }
 
 class _CategorySelectorState extends State<CategorySelector> {
-  int? selectedCategory;
+  // null = ทั้งหมด
+  String? _selectedId;
+
+  void _select(String? id) {
+    // แตะหมวดเดิมซ้ำ = กลับไปทั้งหมด
+    final next = _selectedId == id ? null : id;
+    if (next == _selectedId) return;
+    setState(() => _selectedId = next);
+    widget.onCategorySelected(next);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+    return SizedBox(
+      height: 42,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: widget.categories.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (_, index) {
+          if (index == 0) {
+            return _CategoryChip(
+              icon: Icons.apps_rounded,
+              label: 'ทั้งหมด',
+              isSelected: _selectedId == null,
+              onTap: () => _select(null),
+            );
+          }
+          final category = widget.categories[index - 1];
+          return _CategoryChip(
+            icon: CategoryList.iconFor(category.slug),
+            label: category.name,
+            isSelected: _selectedId == category.id,
+            onTap: () => _select(category.id),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
+          decoration: ShapeDecoration(
+            color: isSelected ? ProfileColors.ink : Colors.white,
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: isSelected ? ProfileColors.ink : Colors.grey.shade300,
+              ),
+            ),
+          ),
           child: Row(
-            children: widget.categories.asMap().entries.map((entry) {
-              final index = entry.key;
-              final category = entry.value;
-
-              final isSelected = selectedCategory == index;
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (selectedCategory == index) {
-                      selectedCategory = null;
-                    } else {
-                      selectedCategory = index;
-                    }
-                  });
-
-                  final uuid = selectedCategory == null
-                      ? null
-                      : widget.categories[selectedCategory!].id;
-
-                  widget.onCategorySelected(uuid);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 15,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: isSelected
-                            ? Colors.grey.shade700
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    category.name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isSelected
-                          ? Colors.black87
-                          : Colors.grey,
-                    ),
-                  ),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected
+                    ? ProfileColors.accent
+                    : const Color(0xFFE64A19),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : ProfileColors.ink,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
         ),
-
-        Container(
-          height: 1,
-          color: Colors.grey.shade300,
-        ),
-      ],
+      ),
     );
   }
 }

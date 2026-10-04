@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/views/pages/create_section_steps_page.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/section_editor_card.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 
 class CreateCookingStepsPage extends StatefulWidget {
-  const CreateCookingStepsPage({
-    super.key,
-    this.initialDraft,
-  });
+  const CreateCookingStepsPage({super.key, this.initialDraft});
 
   final RecipeSectionDraft? initialDraft;
 
   @override
-  State<CreateCookingStepsPage> createState() =>
-      _CreateCookingStepsPageState();
+  State<CreateCookingStepsPage> createState() => _CreateCookingStepsPageState();
 }
 
 class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
@@ -28,8 +25,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
 
     final draft = widget.initialDraft;
 
-    _sections =
-        draft?.sections.map(SectionEditor.fromDraft).toList() ?? [];
+    _sections = draft?.sections.map(SectionEditor.fromDraft).toList() ?? [];
   }
 
   @override
@@ -65,9 +61,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   String? _required(String? value, String label) {
@@ -91,14 +85,10 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
     final firstStepNumber =
         _sections
             .take(sectionIndex)
-            .fold<int>(
-              0,
-              (total, item) => total + item.contents.length,
-            ) +
+            .fold<int>(0, (total, item) => total + item.contents.length) +
         1;
 
-    final contents =
-        await Navigator.of(context).push<List<RecipeContentDraft>>(
+    final contents = await Navigator.of(context).push<List<RecipeContentDraft>>(
       MaterialPageRoute<List<RecipeContentDraft>>(
         builder: (_) => CreateSectionStepsPage(
           sectionTitle: sectionTitle,
@@ -119,10 +109,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
   int _getFirstStepNumber(int index) {
     return _sections
             .take(index)
-            .fold<int>(
-              0,
-              (total, item) => total + item.contents.length,
-            ) +
+            .fold<int>(0, (total, item) => total + item.contents.length) +
         1;
   }
 
@@ -149,12 +136,11 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
         _autoSaveAndPop();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F5F0),
-        appBar: AppBar(
-          title: const Text('ขั้นตอนการทำอาหาร'),
-          backgroundColor: const Color(0xFFF6F5F0),
+        backgroundColor: RecipeFormStyle.background,
+        appBar: RecipeFormStyle.appBar(
+          title: 'ขั้นตอนการทำอาหาร',
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_rounded),
             tooltip: 'กลับ (บันทึกอัตโนมัติ)',
             onPressed: _autoSaveAndPop,
           ),
@@ -162,13 +148,12 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
         body: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              8,
-              20,
-              32,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
             children: [
+              const _IntroBanner(),
+
+              if (_sections.isEmpty) const _EmptySections(),
+
               for (var index = 0; index < _sections.length; index++)
                 SectionEditorCard(
                   key: ObjectKey(_sections[index]),
@@ -186,21 +171,89 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
                   onTitleChanged: (_) {
                     setState(() {});
                   },
-                  titleValidator: (value) =>
-                      _required(value, 'หัวข้อขั้นตอน'),
+                  titleValidator: (value) => _required(value, 'หัวข้อขั้นตอน'),
                 ),
 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: _addSection,
-                  icon: const Icon(Icons.add),
-                  label: const Text('เพิ่มหัวข้อขั้นตอน'),
-                ),
+              RecipeAddButton(
+                label: 'เพิ่มหัวข้อขั้นตอน',
+                onPressed: _addSection,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// คำอธิบายสั้น ๆ ด้านบน: แบ่งขั้นตอนเป็นชุด และย้อนกลับได้โดยไม่ต้องกดบันทึก
+class _IntroBanner extends StatelessWidget {
+  const _IntroBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: RecipeFormStyle.accentSoft,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.lightbulb_outline_rounded,
+            color: RecipeFormStyle.accent,
+            size: 20,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'แบ่งขั้นตอนเป็นชุด เช่น "เตรียมวัตถุดิบ" "ปรุง" "จัดเสิร์ฟ" '
+              'แล้วแตะการ์ดเพื่อเพิ่มขั้นตอนย่อย กดย้อนกลับได้เลย ระบบบันทึกให้อัตโนมัติ',
+              style: TextStyle(
+                color: Color(0xFF5D4037),
+                fontSize: 12.5,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptySections extends StatelessWidget {
+  const _EmptySections();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 36),
+      child: Column(
+        children: [
+          Icon(
+            Icons.format_list_numbered_rounded,
+            size: 48,
+            color: RecipeFormStyle.muted,
+          ),
+          SizedBox(height: 12),
+          Text(
+            'ยังไม่มีหัวข้อขั้นตอน',
+            style: TextStyle(
+              color: RecipeFormStyle.ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'เริ่มจากเพิ่มหัวข้อชุดแรกด้านล่าง',
+            style: TextStyle(color: RecipeFormStyle.muted, fontSize: 13),
+          ),
+        ],
       ),
     );
   }

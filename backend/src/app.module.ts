@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AppCacheModule } from './cache/app-cache.module';
 import databaseConfig from '../config/database.config';
 import jwtConfig from '../config/jwt.config';
 import { AppController } from './app.controller';
@@ -25,6 +26,7 @@ import r2ClientConfig from '../config/r2.client.config';
 
 @Module({
   imports: [
+    AppCacheModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.production', '.env', '.env.development.local'],

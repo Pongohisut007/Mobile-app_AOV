@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/banner_item.dart';
 import 'package:flutter_application_1/widgets/banner_detail/banner_detail_colors.dart';
 
@@ -153,14 +154,10 @@ class _HeaderImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
+    return AppNetworkImage(
       imageUrl,
       fit: fit,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return Container(color: Colors.grey.shade200);
-      },
-      errorBuilder: (context, error, stackTrace) => Container(
+      errorBuilder: (context) => Container(
         color: Colors.grey.shade200,
         alignment: Alignment.center,
         child: Icon(

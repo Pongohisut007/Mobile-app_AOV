@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { CacheNamespace } from '../cache/app-cache.module';
+import { AppCacheService } from '../cache/app-cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Favorite } from '../favorites/entities/favorite.entity';
@@ -18,11 +20,18 @@ export class CategoriesService {
     private readonly reviewRepository: Repository<Review>,
     @InjectRepository(RecipeComment)
     private readonly commentRepository: Repository<RecipeComment>,
+    @Optional()
+    private readonly cache?: AppCacheService,
   ) {}
 
   async findAll(type?: RecipeType, status?: RecipeStatus): Promise<Category[]> {
     if (!type && !status) {
-      return this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
+      // รายการหมวดแทบไม่เปลี่ยน แต่ถูกเรียกทุกครั้งที่เปิดแอป/หน้าสร้างสูตร
+      const load = () =>
+        this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
+      return this.cache
+        ? this.cache.getOrSet(CacheNamespace.categories, 'all', 600, load)
+        : load();
     }
 
     const recipeFilter = this.recipeJoinFilter(type, status);
@@ -140,18 +149,33 @@ export class CategoriesService {
     return categories;
   }
 
-  create(data: Partial<Category>): Promise<Category> {
-    return this.categoryRepository.save(this.categoryRepository.create(data));
+  async create(data: Partial<Category>): Promise<Category> {
+    const saved = await this.categoryRepository.save(
+      this.categoryRepository.create(data),
+    );
+    await this.invalidate();
+    return saved;
   }
 
   async update(id: string, data: Partial<Category>): Promise<Category> {
     const category = await this.findOne(id);
     Object.assign(category, data, { id: category.id });
-    return this.categoryRepository.save(category);
+    const saved = await this.categoryRepository.save(category);
+    await this.invalidate();
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
     const category = await this.findOne(id);
     await this.categoryRepository.remove(category);
+    await this.invalidate();
+  }
+
+  // ชื่อหมวดอยู่ในข้อมูลสูตรด้วย เปลี่ยนหมวดจึงต้องล้าง cache สูตรไปพร้อมกัน
+  private async invalidate(): Promise<void> {
+    await Promise.all([
+      this.cache?.invalidate(CacheNamespace.categories),
+      this.cache?.invalidate(CacheNamespace.recipes),
+    ]);
   }
 }
