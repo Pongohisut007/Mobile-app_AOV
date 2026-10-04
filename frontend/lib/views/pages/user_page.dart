@@ -1,38 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/data/user_cache.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
-import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
-import 'package:flutter_application_1/bloc/cart/cart_event.dart';
-import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
-import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
-import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
-import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_state.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
-import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/views/pages/edit_profile_page.dart';
+import 'package:flutter_application_1/views/pages/settings_page.dart';
+import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class UserPage extends StatelessWidget {
   const UserPage({super.key});
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('$feature is coming soon'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ProfileColors.ink,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      );
-  }
 
   Future<void> _refresh(BuildContext context) async {
     final bloc = context.read<ProfileBloc>();
@@ -43,49 +23,18 @@ class UserPage extends StatelessWidget {
     await completed;
   }
 
-  Future<void> _confirmSignOut(BuildContext context) async {
-    final cartBloc = context.read<CartBloc>();
-    final favoriteBloc = context.read<FavoriteBloc>();
-    final purchasedRecipesBloc = context.read<PurchasedRecipesBloc>();
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign out?'),
-        content: const Text(
-          'You can sign back in at any time to access your recipes.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              await TokenStorage().clearSession();
-              clearUserCaches();
-              // อ่าน token ไม่เจอแล้ว ทุก bloc จะล้าง state ของคนเก่าทิ้งเอง
-              cartBloc.add(const CartRequested());
-              favoriteBloc.add(const FavoritesRequested());
-              purchasedRecipesBloc.add(const PurchasedRecipesRequested());
-              if (!context.mounted) return;
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.home,
-                (route) => false,
-              );
-            },
-            style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
-            child: const Text('Sign out'),
-          ),
-        ],
-      ),
-    );
+  void _openSettings(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
   }
 
   void _openCart(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.cart);
+    // ซื้อสูตรจากตะกร้าแล้ว ตัวเลข "ซื้อแล้ว" บนโปรไฟล์ต้องอัปเดต
+    final profileBloc = context.read<ProfileBloc>();
+    Navigator.pushNamed(context, AppRoutes.cart).then((_) {
+      profileBloc.add(const ProfileRefreshRequested());
+    });
   }
 
   void _openRecipeCollection(
@@ -98,7 +47,26 @@ class UserPage extends StatelessWidget {
       RecipeCollectionType.favorites => AppRoutes.favoriteRecipes,
       RecipeCollectionType.drafts => AppRoutes.draftRecipes,
     };
-    Navigator.pushNamed(context, routeName);
+    // ในคลังสูตรอาจลบ/สร้าง/เผยแพร่สูตร หรือเลิกกดหัวใจ
+    // กลับมาแล้วอัปเดตตัวเลขบนโปรไฟล์เงียบ ๆ (โชว์ตัวเลขเดิมไว้ระหว่างโหลด)
+    final profileBloc = context.read<ProfileBloc>();
+    Navigator.pushNamed(context, routeName).then((_) {
+      profileBloc.add(const ProfileRefreshRequested());
+    });
+  }
+
+  // หน้าแก้โปรไฟล์คืนโปรไฟล์ใหม่มา (ยกเลิก = null) แสดงได้ทันทีไม่ต้องโหลดซ้ำ
+  Future<void> _openEditProfile(
+    BuildContext context,
+    UserProfile profile,
+  ) async {
+    final profileBloc = context.read<ProfileBloc>();
+    final updated = await Navigator.of(context).push<UserProfile>(
+      MaterialPageRoute<UserProfile>(
+        builder: (_) => EditProfilePage(profile: profile),
+      ),
+    );
+    if (updated != null) profileBloc.add(ProfileUpdated(updated));
   }
 
   @override
@@ -112,20 +80,21 @@ class UserPage extends StatelessWidget {
               ProfileLoaded(:final profile) => _ProfileContent(
                 profile: profile,
                 onRefresh: () => _refresh(context),
-                onActionPressed: (label) => _showComingSoon(context, label),
+                onEditProfile: () => _openEditProfile(context, profile),
+                onSettingsPressed: () => _openSettings(context),
                 onRecipeCollectionPressed: (collectionType) =>
                     _openRecipeCollection(context, collectionType),
-                onSignOut: () => _confirmSignOut(context),
                 onCartPressed: () => _openCart(context),
               ),
               ProfileGuest() => _ProfileContent(
                 profile: UserProfile.guest(),
                 onRefresh: () async {},
-                onActionPressed: (_) =>
+                onEditProfile: () =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                onSettingsPressed: () =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onRecipeCollectionPressed: (_) =>
                     Navigator.pushNamed(context, AppRoutes.login),
-                onSignOut: () => Navigator.pushNamed(context, AppRoutes.login),
                 onCartPressed: () =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 isGuest: true,
@@ -148,18 +117,18 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.profile,
     required this.onRefresh,
-    required this.onActionPressed,
+    required this.onEditProfile,
+    required this.onSettingsPressed,
     required this.onRecipeCollectionPressed,
-    required this.onSignOut,
     required this.onCartPressed,
     this.isGuest = false,
   });
 
   final UserProfile profile;
   final RefreshCallback onRefresh;
-  final ValueChanged<String> onActionPressed;
+  final VoidCallback onEditProfile;
+  final VoidCallback onSettingsPressed;
   final ValueChanged<RecipeCollectionType> onRecipeCollectionPressed;
-  final VoidCallback onSignOut;
   final VoidCallback onCartPressed;
   final bool isGuest;
 
@@ -178,13 +147,13 @@ class _ProfileContent extends StatelessWidget {
             sliver: SliverList.list(
               children: [
                 ProfilePageHeader(
-                  onSettingsPressed: () => onActionPressed('Settings'),
+                  onSettingsPressed: onSettingsPressed,
                   onCartPressed: onCartPressed,
                 ),
                 const SizedBox(height: 22),
                 ProfileCard(
                   profile: profile,
-                  onEditPressed: () => onActionPressed('Edit profile'),
+                  onEditPressed: onEditProfile,
                   actionLabel: isGuest ? 'Sign in' : 'Edit profile',
                   actionIcon: isGuest
                       ? Icons.login_rounded
@@ -202,24 +171,11 @@ class _ProfileContent extends StatelessWidget {
                   profile: profile,
                   onPressed: onRecipeCollectionPressed,
                 ),
-                const SizedBox(height: 30),
-                const ProfileSectionTitle(
-                  title: 'Account',
-                  subtitle: 'Manage your preferences',
-                ),
-                const SizedBox(height: 14),
-                ProfileAccountMenu(
-                  onPressed: onActionPressed,
-                  onSignOut: onSignOut,
-                  signOutLabel: isGuest ? 'Sign in' : 'Sign out',
-                  signOutIcon: isGuest
-                      ? Icons.login_rounded
-                      : Icons.logout_rounded,
-                ),
+                // บัญชี/ความช่วยเหลือ/Sign out อยู่ในหน้า Settings (ไอคอนมุมขวาบน)
                 const SizedBox(height: 24),
                 const Center(
                   child: Text(
-                    'Recipy · Version 1.0.0',
+                    '${AppInfo.name} · Version ${AppInfo.version}',
                     style: TextStyle(
                       color: ProfileColors.muted,
                       fontSize: 12,

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/repositories/image_compressor.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 
 class CreateSectionStepsPage extends StatefulWidget {
@@ -117,7 +118,10 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
           mimeType: mimeType,
         );
       });
-      _showMessage('เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร');
+      _showMessage(
+        'เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร',
+        type: AppSnackType.success,
+      );
     } catch (error) {
       if (mounted) {
         _showMessage(error.toString().replaceFirst('Exception: ', ''));
@@ -145,10 +149,9 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
     };
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  // ส่วนใหญ่เป็นข้อความผิดพลาด ข้อความสำเร็จต้องระบุ type เอง
+  void _showMessage(String message, {AppSnackType type = AppSnackType.error}) {
+    showAppSnackBar(context, message, type: type);
   }
 
   String? _required(String? value, String label) {

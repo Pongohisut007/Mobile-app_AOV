@@ -17,12 +17,7 @@ class CookingStepsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        22,
-        14,
-        14,
-        8,
-      ),
+      padding: const EdgeInsets.fromLTRB(22, 14, 14, 8),
       child: Row(
         children: [
           Expanded(
@@ -31,10 +26,7 @@ class CookingStepsHeader extends StatelessWidget {
               children: [
                 const Text(
                   'กำลังทำอาหาร',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 3),
                 Text(

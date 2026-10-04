@@ -5,6 +5,8 @@ import 'package:flutter_application_1/bloc/cart/cart_state.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/data/recipe_library_cache.dart';
+import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:flutter_application_1/repositories/purchase_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
@@ -13,6 +15,7 @@ import 'package:flutter_application_1/views/pages/checkout_success_page.dart';
 import 'package:flutter_application_1/widgets/cart/cart_empty_view.dart';
 import 'package:flutter_application_1/widgets/cart/cart_item_tile.dart';
 import 'package:flutter_application_1/widgets/cart/cart_summary_bar.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,18 +57,11 @@ class _CartPageState extends State<CartPage> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: isError ? Colors.redAccent : ProfileColors.ink,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      );
+    showAppSnackBar(
+      context,
+      message,
+      type: isError ? AppSnackType.error : AppSnackType.info,
+    );
   }
 
   Future<void> _checkout(List<CartItem> items) async {
@@ -116,6 +112,8 @@ class _CartPageState extends State<CartPage> {
       context.read<PurchasedRecipesBloc>().add(
         const PurchasedRecipesRefreshed(),
       );
+      // หน้า Purchased ที่เคยเปิดไว้ยังไม่มีสูตรที่เพิ่งซื้อ เปิดครั้งหน้าให้โหลดใหม่
+      RecipeLibraryCache.invalidate(const [RecipeCollectionType.purchased]);
     }
     setState(() => _isCheckingOut = false);
 

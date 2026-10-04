@@ -11,6 +11,7 @@ import 'package:flutter_application_1/repositories/favorite_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/routes/route_generator.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() {
@@ -28,9 +29,9 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => CartBloc(
-            HttpCartRepository(baseUrl: ApiConfig.apiBaseUrl),
-          )..add(const CartRequested()),
+          create: (_) =>
+              CartBloc(HttpCartRepository(baseUrl: ApiConfig.apiBaseUrl))
+                ..add(const CartRequested()),
         ),
         BlocProvider(
           create: (_) => FavoriteBloc(
@@ -50,6 +51,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
+          snackBarTheme: appSnackBarTheme,
         ),
         initialRoute: AppRoutes.home,
         onGenerateRoute: (settings) => RoutesGenerator.generateRoute(settings),

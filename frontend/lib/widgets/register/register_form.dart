@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/register/register_form_fields.dart';
 import 'package:flutter_application_1/widgets/register/register_social_buttons.dart';
 import 'package:flutter_application_1/widgets/register/register_submit_button.dart';
@@ -46,10 +47,10 @@ class _RegisterFormState extends State<RegisterForm> {
     if (!_formKey.currentState!.validate()) return;
 
     if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the terms and privacy policy.'),
-        ),
+      showAppSnackBar(
+        context,
+        'Please accept the terms and privacy policy.',
+        type: AppSnackType.error,
       );
       return;
     }

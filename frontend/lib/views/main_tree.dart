@@ -13,6 +13,7 @@ import 'package:flutter_application_1/views/pages/home_page.dart';
 import 'package:flutter_application_1/views/pages/community_page.dart';
 import 'package:flutter_application_1/views/pages/user_page.dart';
 import 'package:flutter_application_1/widgets/bottom_navbar.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 
 class MainTreeWidget extends StatefulWidget {
   const MainTreeWidget({super.key, required this.title});
@@ -112,19 +113,14 @@ class _MainTreeWidgetState extends State<MainTreeWidget> {
     };
     if (message == null) return;
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: state.feedback == CartFeedback.failed
-              ? Colors.redAccent
-              : Colors.black87,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      );
+    showAppSnackBar(
+      context,
+      message,
+      type: switch (state.feedback) {
+        CartFeedback.added => AppSnackType.success,
+        CartFeedback.failed => AppSnackType.error,
+        _ => AppSnackType.info,
+      },
+    );
   }
 }

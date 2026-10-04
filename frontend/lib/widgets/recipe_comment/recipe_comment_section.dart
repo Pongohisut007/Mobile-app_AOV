@@ -6,6 +6,7 @@ import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_tile.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -42,8 +43,10 @@ class RecipeCommentSection extends StatelessWidget {
           onCommentCountChanged?.call(state.total);
         }
         if (state.mutationStatus == RecipeCommentMutationStatus.failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error ?? 'ทำรายการไม่สำเร็จ')),
+          showAppSnackBar(
+            context,
+            state.error ?? 'ทำรายการไม่สำเร็จ',
+            type: AppSnackType.error,
           );
         }
         if (state.mutationStatus == RecipeCommentMutationStatus.success &&

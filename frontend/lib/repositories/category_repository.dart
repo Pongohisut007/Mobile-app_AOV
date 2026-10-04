@@ -29,7 +29,9 @@ class CategoryRepository {
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonList = json.decode(response.body);
-      final categories = jsonList.map((json) => Category.fromJson(json)).toList();
+      final categories = jsonList
+          .map((json) => Category.fromJson(json))
+          .toList();
 
       debugPrint('Parsed ${categories.length} categories successfully');
       for (var category in categories) {

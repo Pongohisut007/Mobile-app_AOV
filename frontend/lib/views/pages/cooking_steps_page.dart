@@ -6,10 +6,7 @@ import 'package:flutter_application_1/widgets/cooking_steps/cooking_step_control
 import 'package:flutter_application_1/widgets/cooking_steps/empty_steps.dart';
 
 class CookingStepsPage extends StatefulWidget {
-  const CookingStepsPage({
-    super.key,
-    required this.food,
-  });
+  const CookingStepsPage({super.key, required this.food});
 
   final Food food;
 
@@ -27,9 +24,7 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
   void initState() {
     super.initState();
 
-    _pageController = PageController(
-      viewportFraction: 0.88,
-    );
+    _pageController = PageController(viewportFraction: 0.88);
   }
 
   @override
@@ -69,12 +64,7 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
       showDragHandle: true,
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            28,
-            8,
-            28,
-            36,
-          ),
+          padding: const EdgeInsets.fromLTRB(28, 8, 28, 36),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -86,15 +76,10 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
               const SizedBox(height: 12),
               const Text(
                 'ทำอาหารเสร็จแล้ว!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              Text(
-                'คุณทำ ${widget.food.name} ครบทุกขั้นตอนแล้ว',
-              ),
+              Text('คุณทำ ${widget.food.name} ครบทุกขั้นตอนแล้ว'),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -121,11 +106,7 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF6650A5),
-              Color(0xFF769FDA),
-              Color(0xFF83D5DC),
-            ],
+            colors: [Color(0xFF6650A5), Color(0xFF769FDA), Color(0xFF83D5DC)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -141,9 +122,7 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
               ),
 
               if (steps.isEmpty)
-                const Expanded(
-                  child: EmptySteps(),
-                )
+                const Expanded(child: EmptySteps())
               else ...[
                 Expanded(
                   child: PageView.builder(
@@ -156,9 +135,7 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
                     },
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
                         child: CookingStepCard(
                           step: steps[index],
                           stepNumber: index + 1,

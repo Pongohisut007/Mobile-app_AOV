@@ -14,3 +14,10 @@ final class RecipeLibraryRefreshRequested extends RecipeLibraryEvent {
 final class RecipeLibraryMoreRequested extends RecipeLibraryEvent {
   const RecipeLibraryMoreRequested();
 }
+
+/// สูตรถูกลบแล้ว (เช่นลบจากหน้ารายละเอียด) เอาออกจากรายการทันทีไม่ต้องรอ API
+final class RecipeLibraryItemRemoved extends RecipeLibraryEvent {
+  const RecipeLibraryItemRemoved(this.recipeId);
+
+  final String recipeId;
+}

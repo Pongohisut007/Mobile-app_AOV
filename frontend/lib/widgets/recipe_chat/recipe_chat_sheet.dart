@@ -329,10 +329,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
           Icon(Icons.error_outline_rounded, color: Colors.red.shade700),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: Colors.red.shade900),
-            ),
+            child: Text(message, style: TextStyle(color: Colors.red.shade900)),
           ),
           IconButton(
             tooltip: 'ปิด',
