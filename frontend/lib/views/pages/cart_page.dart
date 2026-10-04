@@ -5,6 +5,8 @@ import 'package:flutter_application_1/bloc/cart/cart_state.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/data/recipe_library_cache.dart';
+import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:flutter_application_1/repositories/purchase_repository.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
@@ -116,6 +118,8 @@ class _CartPageState extends State<CartPage> {
       context.read<PurchasedRecipesBloc>().add(
         const PurchasedRecipesRefreshed(),
       );
+      // หน้า Purchased ที่เคยเปิดไว้ยังไม่มีสูตรที่เพิ่งซื้อ เปิดครั้งหน้าให้โหลดใหม่
+      RecipeLibraryCache.invalidate(const [RecipeCollectionType.purchased]);
     }
     setState(() => _isCheckingOut = false);
 

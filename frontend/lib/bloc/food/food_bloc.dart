@@ -26,6 +26,19 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     on<SearchFoodEvent>(_onSearchFoodEvent);
     on<FoodLoadMoreRequested>(_onLoadMore);
     on<FoodSilentRefreshRequested>(_onSilentRefresh);
+    on<FoodRemoved>(_onRemoved);
+  }
+
+  void _onRemoved(FoodRemoved event, Emitter<FoodState> emit) {
+    final current = state;
+    if (current is! FoodLoaded) return;
+    emit(
+      current.copyWith(
+        foods: current.foods
+            .where((food) => food.idfoods != event.foodId)
+            .toList(growable: false),
+      ),
+    );
   }
 
   bool _isSilentRefreshing = false;

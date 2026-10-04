@@ -212,15 +212,20 @@ class _HomePageState extends State<HomePage> {
                                 return FoodCard(
                                   food: food,
                                   categoryLabel: selectedCategoryName,
-                                  onTap: () {
-                                    Navigator.push(
+                                  onTap: () async {
+                                    final foodBloc = context.read<FoodBloc>();
+                                    // หน้ารายละเอียดคืน true = ลบสูตรไปแล้ว
+                                    final deleted = await Navigator.push<bool>(
                                       context,
-                                      MaterialPageRoute(
+                                      MaterialPageRoute<bool>(
                                         builder: (_) => FoodDetailPage(
                                           foodsId: food.idfoods,
                                         ),
                                       ),
                                     );
+                                    if (deleted == true) {
+                                      foodBloc.add(FoodRemoved(food.idfoods));
+                                    }
                                   },
                                 );
                               },

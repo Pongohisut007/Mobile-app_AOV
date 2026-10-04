@@ -52,6 +52,13 @@ class RecipeCollectionPage extends StatelessWidget {
           onLoadMore: () => context.read<RecipeLibraryBloc>().add(
             const RecipeLibraryMoreRequested(),
           ),
+          onRecipeDeleted: (recipeId) => context.read<RecipeLibraryBloc>().add(
+            RecipeLibraryItemRemoved(recipeId),
+          ),
+          // มีรายการอยู่แล้ว = อัปเดตเงียบ ๆ ไม่ขึ้นตัวหมุน
+          onRecipeClosed: () => context.read<RecipeLibraryBloc>().add(
+            const RecipeLibraryRefreshRequested(),
+          ),
         ),
       ),
     );
@@ -130,7 +137,15 @@ class RecipeCollectionBody extends StatelessWidget {
     required this.onRefresh,
     required this.onRetry,
     this.onLoadMore,
+    this.onRecipeDeleted,
+    this.onRecipeClosed,
   });
+
+  /// ลบสูตรจากหน้ารายละเอียดแล้วกลับมา
+  final ValueChanged<String>? onRecipeDeleted;
+
+  /// กลับจากหน้ารายละเอียดสูตร (ลบหรือไม่ก็ตาม)
+  final VoidCallback? onRecipeClosed;
 
   final RecipeLibraryState state;
   final String emptyMessage;
@@ -179,12 +194,18 @@ class RecipeCollectionBody extends StatelessWidget {
                     final recipe = loaded.recipes[index];
                     return RecipeLibraryCard(
                       recipe: recipe,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => FoodDetailPage(foodsId: recipe.id),
-                        ),
-                      ),
+                      onTap: () async {
+                        // หน้ารายละเอียดคืน true = ลบสูตรไปแล้ว
+                        final deleted = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute<bool>(
+                            builder: (_) => FoodDetailPage(foodsId: recipe.id),
+                          ),
+                        );
+                        if (deleted == true) onRecipeDeleted?.call(recipe.id);
+                        // อาจแก้ไข/เผยแพร่สูตรมา อัปเดตรายการเงียบ ๆ
+                        onRecipeClosed?.call();
+                      },
                     );
                   },
                 ),

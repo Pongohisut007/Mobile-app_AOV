@@ -1,5 +1,7 @@
 import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_state.dart';
+import 'package:flutter_application_1/data/recipe_library_cache.dart';
+import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/repositories/favorite_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -85,6 +87,8 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
       } else {
         await _repository.addFavorite(accessToken, recipeId);
       }
+      // เปิดหน้า Favorites ครั้งหน้าต้องไม่เห็นรายการเก่าแวบหนึ่ง
+      RecipeLibraryCache.invalidate(const [RecipeCollectionType.favorites]);
       emit(state.copyWith(pendingRecipeIds: _without(recipeId)));
     } on Exception catch (error) {
       final revertedIds = {...state.recipeIds};

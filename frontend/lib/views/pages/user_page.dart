@@ -85,7 +85,11 @@ class UserPage extends StatelessWidget {
   }
 
   void _openCart(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.cart);
+    // ซื้อสูตรจากตะกร้าแล้ว ตัวเลข "ซื้อแล้ว" บนโปรไฟล์ต้องอัปเดต
+    final profileBloc = context.read<ProfileBloc>();
+    Navigator.pushNamed(context, AppRoutes.cart).then((_) {
+      profileBloc.add(const ProfileRefreshRequested());
+    });
   }
 
   void _openRecipeCollection(
@@ -98,7 +102,12 @@ class UserPage extends StatelessWidget {
       RecipeCollectionType.favorites => AppRoutes.favoriteRecipes,
       RecipeCollectionType.drafts => AppRoutes.draftRecipes,
     };
-    Navigator.pushNamed(context, routeName);
+    // ในคลังสูตรอาจลบ/สร้าง/เผยแพร่สูตร หรือเลิกกดหัวใจ
+    // กลับมาแล้วอัปเดตตัวเลขบนโปรไฟล์เงียบ ๆ (โชว์ตัวเลขเดิมไว้ระหว่างโหลด)
+    final profileBloc = context.read<ProfileBloc>();
+    Navigator.pushNamed(context, routeName).then((_) {
+      profileBloc.add(const ProfileRefreshRequested());
+    });
   }
 
   @override

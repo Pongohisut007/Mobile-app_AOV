@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
+import 'package:flutter_application_1/bloc/food/food_bloc.dart';
+import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_state.dart';
 import 'package:flutter_application_1/models/food.dart';
@@ -39,14 +41,17 @@ class PostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final foodBloc = context.read<FoodBloc>();
+            // หน้ารายละเอียดคืน true = ลบสูตรไปแล้ว
+            final deleted = await Navigator.push<bool>(
               context,
-              MaterialPageRoute(
+              MaterialPageRoute<bool>(
                 builder: (_) =>
                     FoodDetailPage(foodsId: food.idfoods, showComments: true),
               ),
             );
+            if (deleted == true) foodBloc.add(FoodRemoved(food.idfoods));
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
