@@ -14,6 +14,7 @@ import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
+import { UserStatus } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
@@ -257,6 +258,13 @@ export class RecipesService {
     if (options.type) {
       query.andWhere('recipe.type = :type', { type: options.type });
     }
+
+    // สูตรของบัญชีที่ลบ/ถูกระงับไม่โผล่ในรายการไหนเลย
+    // (ผู้ซื้อยังเปิดได้จากหน้า Purchased และ GET /recipes/:id)
+    query.andWhere(
+      'recipe.creator_id IN (SELECT id FROM users WHERE status = :activeStatus)',
+      { activeStatus: UserStatus.ACTIVE },
+    );
   }
 
   async findOne(id: string): Promise<Recipe> {

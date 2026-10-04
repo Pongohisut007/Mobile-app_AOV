@@ -45,6 +45,11 @@ export class User extends BaseEntity {
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
   status!: UserStatus;
 
+  // ฝังอยู่ใน JWT ทุกใบ เพิ่มเลขนี้ = token เก่าทุกเครื่องใช้ไม่ได้ทันที
+  // (ออกจากระบบทุกอุปกรณ์ / เปลี่ยนรหัสผ่าน / ลบบัญชี)
+  @Column({ name: 'token_version', type: 'integer', default: 0 })
+  tokenVersion!: number;
+
   @OneToMany(() => Recipe, (recipe) => recipe.creator)
   recipes!: Recipe[];
 

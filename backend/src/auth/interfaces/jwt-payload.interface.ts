@@ -5,6 +5,8 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
+  // token_version ตอนออก token (token ที่ออกก่อนมีฟิลด์นี้ถือเป็น 0)
+  ver?: number;
 }
 
 export interface AuthUser {

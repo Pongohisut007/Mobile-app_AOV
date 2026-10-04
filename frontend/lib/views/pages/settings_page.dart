@@ -1,23 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
-import 'package:flutter_application_1/bloc/cart/cart_event.dart';
-import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
-import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
-import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
-import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
-import 'package:flutter_application_1/data/user_cache.dart';
+import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/config/app_info.dart';
+import 'package:flutter_application_1/content/app_texts.dart';
+import 'package:flutter_application_1/data/session.dart';
+import 'package:flutter_application_1/repositories/auth_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
-import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/change_password_page.dart';
+import 'package:flutter_application_1/views/pages/delete_account_page.dart';
+import 'package:flutter_application_1/views/pages/text_sections_page.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// ตั้งค่า: เปลี่ยนรหัสผ่าน และออกจากระบบ (ปุ่ม Sign out มีที่นี่ที่เดียว)
-class SettingsPage extends StatelessWidget {
+/// ตั้งค่า: บัญชี / ความช่วยเหลือ / เกี่ยวกับแอป / ออกจากระบบ / ลบบัญชี
+/// (ปุ่ม Sign out มีที่นี่ที่เดียว)
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
-  Future<void> _openChangePassword(BuildContext context) async {
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  static const _danger = Color(0xFFD54444);
+
+  bool _isLoggingOutAll = false;
+
+  void _push(Widget page) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+  }
+
+  Future<void> _openChangePassword() async {
     final messenger = ScaffoldMessenger.of(context);
     final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(builder: (_) => const ChangePasswordPage()),
@@ -25,22 +37,24 @@ class SettingsPage extends StatelessWidget {
     if (changed != true) return;
     messenger
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('เปลี่ยนรหัสผ่านแล้ว')));
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ'),
+        ),
+      );
   }
 
-  Future<void> _confirmSignOut(BuildContext context) async {
-    // bloc เหล่านี้อยู่เหนือ MaterialApp จึงอ่านได้จากทุกหน้า
-    final cartBloc = context.read<CartBloc>();
-    final favoriteBloc = context.read<FavoriteBloc>();
-    final purchasedRecipesBloc = context.read<PurchasedRecipesBloc>();
-
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    required String action,
+    bool danger = false,
+  }) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign out?'),
-        content: const Text(
-          'You can sign back in at any time to access your recipes.',
-        ),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -48,22 +62,64 @@ class SettingsPage extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
-            child: const Text('Sign out'),
+            style: FilledButton.styleFrom(
+              backgroundColor: danger ? _danger : ProfileColors.ink,
+            ),
+            child: Text(action),
           ),
         ],
       ),
     );
-    if (confirmed != true) return;
+    return confirmed == true;
+  }
 
-    await TokenStorage().clearSession();
-    clearUserCaches();
-    // อ่าน token ไม่เจอแล้ว ทุก bloc จะล้าง state ของคนเก่าทิ้งเอง
-    cartBloc.add(const CartRequested());
-    favoriteBloc.add(const FavoritesRequested());
-    purchasedRecipesBloc.add(const PurchasedRecipesRequested());
-    if (!context.mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+  Future<void> _signOut() async {
+    final confirmed = await _confirm(
+      title: 'Sign out?',
+      message: 'You can sign back in at any time to access your recipes.',
+      action: 'Sign out',
+    );
+    if (!confirmed || !mounted) return;
+    await signOutLocally(context);
+  }
+
+  Future<void> _logoutAllDevices() async {
+    if (_isLoggingOutAll) return;
+    final confirmed = await _confirm(
+      title: 'ออกจากระบบทุกอุปกรณ์?',
+      message:
+          'ทุกเครื่องที่เข้าสู่ระบบด้วยบัญชีนี้ รวมถึงเครื่องนี้ จะถูกออกจากระบบทันที',
+      action: 'ออกจากระบบทั้งหมด',
+      danger: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isLoggingOutAll = true);
+    try {
+      final token = await TokenStorage().readAccessToken();
+      if (token != null && token.trim().isNotEmpty) {
+        await HttpAuthRepository(
+          baseUrl: ApiConfig.apiBaseUrl,
+        ).logoutAll(accessToken: token);
+      }
+      if (!mounted) return;
+      await signOutLocally(context);
+    } on AuthRepositoryException catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoggingOutAll = false);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  void _openAbout() {
+    showAboutDialog(
+      context: context,
+      applicationName: AppInfo.name,
+      applicationVersion: 'Version ${AppInfo.version}',
+      applicationLegalese: '© ${DateTime.now().year} ${AppInfo.name}',
+    );
   }
 
   @override
@@ -80,7 +136,51 @@ class SettingsPage extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.lock_reset_rounded,
                 label: 'เปลี่ยนรหัสผ่าน',
-                onTap: () => _openChangePassword(context),
+                onTap: _openChangePassword,
+              ),
+              _SettingsTile(
+                icon: Icons.devices_other_rounded,
+                label: 'ออกจากระบบทุกอุปกรณ์',
+                subtitle: 'ใช้เมื่อมือถือหาย หรือสงสัยว่ามีคนใช้บัญชี',
+                isLoading: _isLoggingOutAll,
+                onTap: _logoutAllDevices,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const _SectionLabel('ความช่วยเหลือและข้อกำหนด'),
+          _SettingsGroup(
+            children: [
+              _SettingsTile(
+                icon: Icons.help_outline_rounded,
+                label: 'Help & support',
+                onTap: () => _push(const HelpSupportPage()),
+              ),
+              _SettingsTile(
+                icon: Icons.privacy_tip_outlined,
+                label: 'นโยบายความเป็นส่วนตัว',
+                onTap: () => _push(
+                  const TextSectionsPage(
+                    title: 'นโยบายความเป็นส่วนตัว',
+                    sections: privacySections,
+                  ),
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.description_outlined,
+                label: 'ข้อกำหนดการใช้งาน',
+                onTap: () => _push(
+                  const TextSectionsPage(
+                    title: 'ข้อกำหนดการใช้งาน',
+                    sections: termsSections,
+                  ),
+                ),
+              ),
+              _SettingsTile(
+                icon: Icons.info_outline_rounded,
+                label: 'เกี่ยวกับแอป',
+                subtitle: 'เวอร์ชัน ${AppInfo.version} · ไลเซนส์โอเพนซอร์ส',
+                onTap: _openAbout,
               ),
             ],
           ),
@@ -90,16 +190,29 @@ class SettingsPage extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.logout_rounded,
                 label: 'Sign out',
-                foregroundColor: const Color(0xFFD54444),
+                foregroundColor: _danger,
                 showChevron: false,
-                onTap: () => _confirmSignOut(context),
+                onTap: _signOut,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const _SectionLabel('โซนอันตราย'),
+          _SettingsGroup(
+            children: [
+              _SettingsTile(
+                icon: Icons.delete_forever_outlined,
+                label: 'ลบบัญชี',
+                subtitle: 'ปิดบัญชีและลบข้อมูลส่วนตัว กู้คืนไม่ได้',
+                foregroundColor: _danger,
+                onTap: () => _push(const DeleteAccountPage()),
               ),
             ],
           ),
           const SizedBox(height: 24),
           const Center(
             child: Text(
-              'Recipy · Version 1.0.0',
+              '${AppInfo.name} · Version ${AppInfo.version}',
               style: TextStyle(
                 color: ProfileColors.muted,
                 fontSize: 12,
@@ -145,7 +258,14 @@ class _SettingsGroup extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(24),
       clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
+      child: Column(
+        children: [
+          for (final (index, child) in children.indexed) ...[
+            if (index > 0) const Divider(height: 1, indent: 70, endIndent: 16),
+            child,
+          ],
+        ],
+      ),
     );
   }
 }
@@ -156,20 +276,24 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.subtitle,
     this.foregroundColor = ProfileColors.ink,
     this.showChevron = true,
+    this.isLoading = false,
   });
 
   final IconData icon;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
   final Color foregroundColor;
   final bool showChevron;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       minTileHeight: 58,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       leading: Container(
@@ -189,7 +313,21 @@ class _SettingsTile extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
-      trailing: showChevron
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle!,
+              style: const TextStyle(color: ProfileColors.muted, fontSize: 12),
+            ),
+      trailing: isLoading
+          ? const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: ProfileColors.ink,
+              ),
+            )
+          : showChevron
           ? Icon(
               Icons.chevron_right_rounded,
               color: foregroundColor.withValues(alpha: 0.45),

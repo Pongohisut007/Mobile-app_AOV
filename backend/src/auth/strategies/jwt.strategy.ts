@@ -26,6 +26,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('ไม่พบผู้ใช้งาน หรือบัญชีถูกระงับ');
     }
+    // ออกจากระบบทุกอุปกรณ์/เปลี่ยนรหัสผ่านแล้ว token ใบเก่าใช้ไม่ได้
+    if ((payload.ver ?? 0) !== user.tokenVersion) {
+      throw new UnauthorizedException('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    }
     return AuthService.toAuthUser(user);
   }
 }

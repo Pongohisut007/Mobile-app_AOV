@@ -47,10 +47,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           'Your session has expired. Please sign in again.',
         );
       }
-      await _repository.changePassword(
+      final response = await _repository.changePassword(
         accessToken: token,
         currentPassword: _currentController.text,
         newPassword: _newController.text,
+      );
+      // token ใบเดิมใช้ไม่ได้แล้ว (เครื่องอื่นหลุด) เก็บใบใหม่ไว้ให้เครื่องนี้ใช้ต่อ
+      await TokenStorage().saveSession(
+        accessToken: response.accessToken,
+        userId: response.user.id,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);

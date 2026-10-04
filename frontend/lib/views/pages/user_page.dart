@@ -7,6 +7,8 @@ import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/edit_profile_page.dart';
 import 'package:flutter_application_1/views/pages/settings_page.dart';
+import 'package:flutter_application_1/views/pages/text_sections_page.dart';
+import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -96,7 +98,14 @@ class UserPage extends StatelessWidget {
                 onRefresh: () => _refresh(context),
                 onEditProfile: () => _openEditProfile(context, profile),
                 onSettingsPressed: () => _openSettings(context),
-                onActionPressed: (label) => _showComingSoon(context, label),
+                onActionPressed: (label) => label == 'Help & support'
+                    ? Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const HelpSupportPage(),
+                        ),
+                      )
+                    // Notifications ยังไม่มีระบบรองรับ
+                    : _showComingSoon(context, label),
                 onRecipeCollectionPressed: (collectionType) =>
                     _openRecipeCollection(context, collectionType),
                 onCartPressed: () => _openCart(context),
@@ -201,7 +210,7 @@ class _ProfileContent extends StatelessWidget {
                 const SizedBox(height: 24),
                 const Center(
                   child: Text(
-                    'Recipy · Version 1.0.0',
+                    '${AppInfo.name} · Version ${AppInfo.version}',
                     style: TextStyle(
                       color: ProfileColors.muted,
                       fontSize: 12,
