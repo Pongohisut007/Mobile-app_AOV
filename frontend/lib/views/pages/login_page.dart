@@ -72,11 +72,16 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: const Color(0xFFD96868),
         body: SafeArea(
           bottom: false,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
-                LoginForm(
+          // ฟอร์มสีขาวยืดเต็มพื้นที่ที่เหลือจนถึงล่างสุด ไม่ให้เห็นพื้นแดงด้านล่าง
+          // ถ้าเนื้อหายาวกว่าจอ (จอเล็ก/คีย์บอร์ดขึ้น) ก็ยังเลื่อนได้
+          child: CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(
+                child: LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
+              ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: LoginForm(
                   formKey: _formKey,
                   emailController: _emailController,
                   passwordController: _passwordController,
@@ -89,8 +94,8 @@ class _LoginPageState extends State<LoginPage> {
                     Navigator.pushReplacementNamed(context, AppRoutes.register);
                   },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
