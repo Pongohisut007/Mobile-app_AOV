@@ -59,6 +59,12 @@ FROM base AS production
 
 ENV NODE_ENV=production
 
+# The runtime starts Node directly; package managers are only needed in build stages.
+# Remove their bundled dependencies from the image scanned and deployed to production.
+RUN rm -rf /usr/local/lib/node_modules/npm /opt/yarn-* \
+  && rm -f /usr/local/bin/npm /usr/local/bin/npx \
+    /usr/local/bin/yarn /usr/local/bin/yarnpkg
+
 COPY --from=production-deps \
   --chown=node:node \
   /app/node_modules \
