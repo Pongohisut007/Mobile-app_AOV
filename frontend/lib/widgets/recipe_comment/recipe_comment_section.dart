@@ -130,8 +130,14 @@ class RecipeCommentSection extends StatelessWidget {
                   RecipeCommentTile(
                     comment: comment,
                     isOwner: comment.userId == state.userId,
-                    onEdit: () => _editComment(context, comment),
-                    onDelete: () => _confirmDelete(context, comment),
+                    isBusy: state.mutatingCommentId == comment.id,
+                    // ระหว่างแก้ไข/ลบคอมเมนต์หนึ่งอยู่ ปิดเมนูของทุกคอมเมนต์
+                    onEdit: state.isMutating
+                        ? null
+                        : () => _editComment(context, comment),
+                    onDelete: state.isMutating
+                        ? null
+                        : () => _confirmDelete(context, comment),
                   ),
                   const SizedBox(height: 10),
                 ],

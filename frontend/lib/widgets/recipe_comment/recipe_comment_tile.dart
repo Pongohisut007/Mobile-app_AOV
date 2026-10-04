@@ -11,10 +11,14 @@ class RecipeCommentTile extends StatelessWidget {
     this.isOwner = false,
     this.onEdit,
     this.onDelete,
+    this.isBusy = false,
   });
 
   final RecipeComment comment;
   final bool isOwner;
+
+  /// กำลังแก้ไข/ลบคอมเมนต์นี้อยู่: แสดงตัวหมุนแทนเมนู
+  final bool isBusy;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -82,10 +86,22 @@ class RecipeCommentTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (isOwner)
+                    if (isOwner && isBusy)
+                      const SizedBox.square(
+                        dimension: 32,
+                        child: Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    else if (isOwner)
                       SizedBox.square(
                         dimension: 32,
                         child: PopupMenuButton<String>(
+                          enabled: onEdit != null || onDelete != null,
                           tooltip: 'จัดการความคิดเห็น',
                           padding: EdgeInsets.zero,
                           iconSize: 18,

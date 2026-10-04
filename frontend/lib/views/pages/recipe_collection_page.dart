@@ -55,7 +55,7 @@ class RecipeCollectionPage extends StatelessWidget {
   }
 }
 
-/// ปุ่ม + สร้างสูตรใหม่ (สูตรใหม่เป็น community เสมอ จึงไม่แสดงช่องราคา)
+/// ปุ่ม + สร้างสูตรใหม่ (สร้างเป็น official มีช่องราคา)
 class _AddRecipeButton extends StatefulWidget {
   const _AddRecipeButton();
 
@@ -79,7 +79,7 @@ class _AddRecipeButtonState extends State<_AddRecipeButton> {
         MaterialPageRoute<bool>(
           builder: (_) => CreateFoodcardPage(
             categories: categories,
-            isFromCommunity: true,
+            isFromCommunity: false,
           ),
         ),
       );

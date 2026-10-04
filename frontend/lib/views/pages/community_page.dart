@@ -26,6 +26,8 @@ class _CommunityPageState extends State<CommunityPage> {
   static const int _postsPerPage = 3;
 
   int _visiblePostCount = _postsPerPage;
+  // กันกด + รัวจนเปิดหน้าสร้างสูตรซ้อนกัน
+  bool _isOpeningCreate = false;
 
   void _resetVisiblePosts() {
     setState(() {
@@ -51,23 +53,31 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   Future<void> _createFood(CategoryLoaded categoryState) async {
-    final creatorId = await TokenStorage().readUserId();
+    if (_isOpeningCreate) return;
+    _isOpeningCreate = true;
 
-    if (!mounted) return;
+    final bool? created;
+    try {
+      final creatorId = await TokenStorage().readUserId();
 
-    if (creatorId == null || creatorId.trim().isEmpty) {
-      await Navigator.of(context).pushNamed(AppRoutes.login);
-      return;
-    }
+      if (!mounted) return;
 
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => CreateFoodcardPage(
-          categories: categoryState.categories,
-          isFromCommunity: true,
+      if (creatorId == null || creatorId.trim().isEmpty) {
+        await Navigator.of(context).pushNamed(AppRoutes.login);
+        return;
+      }
+
+      created = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => CreateFoodcardPage(
+            categories: categoryState.categories,
+            isFromCommunity: true,
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _isOpeningCreate = false;
+    }
 
     if (!mounted || created != true) return;
 

@@ -7,6 +7,7 @@ import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
+import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/repositories/upload_repository.dart';
 import 'package:flutter_application_1/views/pages/create_cooking_steps_page.dart';
@@ -16,6 +17,7 @@ import 'package:flutter_application_1/widgets/create_food/recipe_cover_section.d
 import 'package:flutter_application_1/widgets/create_food/recipe_detail_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_category_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_steps_section.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_type_section.dart';
 
 class CreateFoodcardPage extends StatefulWidget {
   const CreateFoodcardPage({
@@ -48,6 +50,8 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   final _uploadRepository = HttpUploadRepository(baseUrl: ApiConfig.apiBaseUrl);
 
   String? _difficulty;
+  late String _type = widget.isFromCommunity ? 'community' : 'official';
+  bool _isCreator = false;
   RecipeSectionDraft? _sectionDraft;
   _PendingUpload? _coverSelection;
   String? _existingCoverUrl;
@@ -63,11 +67,18 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   bool get _isEditing => widget.initialFood != null;
   bool get _isEditingDraft => widget.initialFood?.status == 'draft';
 
+  // เปลี่ยน type ได้เฉพาะตอนแก้ไขสูตรที่ยังไม่ publish และ user ต้องเป็น creator
+  // (backend เช็คซ้ำ)
+  bool get _canChangeType =>
+      _isEditing && widget.initialFood?.status != 'published' && _isCreator;
+
   @override
   void initState() {
     super.initState();
     final food = widget.initialFood;
     if (food == null) return;
+
+    _loadIsCreator();
 
     _titleController.text = food.name;
     _slugController.text = food.slug;
@@ -87,6 +98,20 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     );
     if (food.steps.isNotEmpty) {
       _sectionDraft = RecipeSectionDraft.fromSteps(food.steps);
+    }
+  }
+
+  Future<void> _loadIsCreator() async {
+    try {
+      final token = await TokenStorage().readAccessToken();
+      if (token == null || token.trim().isEmpty) return;
+      final profile = await HttpProfileRepository(
+        baseUrl: ApiConfig.apiBaseUrl,
+      ).fetchProfile(token);
+      if (!mounted) return;
+      setState(() => _isCreator = profile.role == 'creator');
+    } catch (_) {
+      // โหลดโปรไฟล์ไม่ได้ก็แค่ไม่แสดง dropdown ประเภทสูตร
     }
   }
 
@@ -257,7 +282,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final draftSlugMaxLength = 255 - draftSlugSuffix.length;
       final generatedDraftSlug =
           '${draftSlugBase.substring(0, draftSlugBase.length < draftSlugMaxLength ? draftSlugBase.length : draftSlugMaxLength)}$draftSlugSuffix';
-      final price = double.tryParse(_priceController.text.trim()) ?? 0;
+      // community เป็นสูตรฟรี ไม่มีช่องราคา จึงส่ง 0 เสมอ
+      final price = _type == 'community'
+          ? 0.0
+          : double.tryParse(_priceController.text.trim()) ?? 0;
 
       final recipe = <String, dynamic>{
         if (!_isEditing) 'creatorId': creatorId,
@@ -265,13 +293,14 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         'slug': slug.isEmpty && asDraft ? generatedDraftSlug : slug,
         'shortDescription': _optionalText(_descriptionController.text),
         'coverImageUrl': coverUpload?.url ?? _existingCoverUrl,
-        'showImgCommu': _showImgCommu,
+        // official ไม่มี checkbox นี้ ส่ง false กันค่าเก่าค้างตอนเปลี่ยน type
+        'showImgCommu': _type == 'community' && _showImgCommu,
         'price': price.toStringAsFixed(2),
         'preparationMinutes': int.tryParse(_preparationController.text.trim()),
         'cookingMinutes': int.tryParse(_cookingController.text.trim()),
         'servingCount': int.tryParse(_servingsController.text.trim()),
         'difficulty': _difficulty,
-        if (!_isEditing) 'type': 'community',
+        if (!_isEditing || _canChangeType) 'type': _type,
         'status': asDraft ? 'draft' : 'published',
         'categoryIds': _selectedCategoryIds.toList(),
         'sections': recipeSections,
@@ -562,6 +591,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 fileName: _coverSelection?.name,
                 coverUrl: _existingCoverUrl,
                 showImgCommu: _showImgCommu,
+                showImgCommuOption: _type == 'community',
                 isBusy: _isBusy,
                 isSaving: _isSaving,
                 isPickingFile: _isPickingFile,
@@ -586,7 +616,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 cookingController: _cookingController,
                 servingsController: _servingsController,
                 difficulty: _difficulty,
-                showPrice: !widget.isFromCommunity,
+                showPrice: _type == 'official',
                 requiredWholeNumber: _requiredWholeNumber,
                 nonNegativeNumber: _nonNegativeNumber,
                 onDifficultyChanged: (value) {
@@ -607,6 +637,14 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                   });
                 },
               ),
+
+              if (_canChangeType) ...[
+                const SizedBox(height: 22),
+                RecipeTypeSection(
+                  type: _type,
+                  onTypeChanged: (value) => setState(() => _type = value),
+                ),
+              ],
 
               const SizedBox(height: 22),
 

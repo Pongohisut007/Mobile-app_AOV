@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseUUIDPipe,
@@ -12,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { UserRole } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
@@ -62,11 +64,17 @@ export class RecipesController {
     return this.recipesService.create(dto);
   }
 
+  // login ไม่บังคับเหมือนเดิม แต่ถ้าจะเปลี่ยน type ต้องเป็น creator
+  @UseGuards(OptionalJwtAuthGuard)
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateRecipeDto,
+    @CurrentUser('role') role?: UserRole,
   ): Promise<Recipe> {
+    if (dto.type !== undefined && role !== UserRole.CREATOR) {
+      throw new ForbiddenException('Only creators can change recipe type');
+    }
     return this.recipesService.update(id, dto);
   }
 

@@ -100,7 +100,9 @@ class _FavoriteButton extends StatelessWidget {
 
         return IconButton(
           // กดที่หัวใจต้องไม่ไปเปิดหน้ารายละเอียดของการ์ด
+          // ไม่ใส่ null ตอนกำลังยิง API เพราะปุ่มที่ปิดอยู่จะปล่อยให้แตะทะลุไปเปิดการ์ด
           onPressed: () async {
+            if (state.isPending(recipeId)) return;
             final favoriteBloc = context.read<FavoriteBloc>();
             if (await _requireSignIn(context)) return;
             favoriteBloc.add(FavoriteToggled(recipeId));

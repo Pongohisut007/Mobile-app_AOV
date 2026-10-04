@@ -190,6 +190,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
       state.copyWith(
         mutationStatus: RecipeCommentMutationStatus.loading,
         mutationType: RecipeCommentMutationType.edit,
+        mutatingCommentId: event.commentId,
         clearError: true,
       ),
     );
@@ -206,12 +207,14 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
               .map((comment) => comment.id == updated.id ? updated : comment)
               .toList(growable: false),
           mutationStatus: RecipeCommentMutationStatus.success,
+          clearMutatingCommentId: true,
         ),
       );
     } on Exception catch (error) {
       emit(
         state.copyWith(
           mutationStatus: RecipeCommentMutationStatus.failure,
+          clearMutatingCommentId: true,
           error: error.toString(),
         ),
       );
@@ -237,6 +240,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
     emit(
       state.copyWith(
         mutationStatus: RecipeCommentMutationStatus.loading,
+        mutatingCommentId: event.commentId,
         clearError: true,
       ),
     );
@@ -271,6 +275,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
             total: totalAfterDelete,
             mutationStatus: RecipeCommentMutationStatus.success,
             mutationType: RecipeCommentMutationType.delete,
+            clearMutatingCommentId: true,
             error: error.toString(),
           ),
         );
@@ -285,6 +290,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
           limit: refreshedLimit,
           mutationStatus: RecipeCommentMutationStatus.success,
           mutationType: RecipeCommentMutationType.delete,
+          clearMutatingCommentId: true,
           clearError: true,
         ),
       );
@@ -292,6 +298,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
       emit(
         state.copyWith(
           mutationStatus: RecipeCommentMutationStatus.failure,
+          clearMutatingCommentId: true,
           error: error.toString(),
         ),
       );

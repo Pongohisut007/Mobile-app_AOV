@@ -17,7 +17,11 @@ class RecipeCoverSection extends StatelessWidget {
     required this.onPickImage,
     required this.onRemoveImage,
     required this.onShowImgCommuChanged,
+    this.showImgCommuOption = true,
   });
+
+  // สูตร official ไม่ได้ขึ้นในชุมชน จึงซ่อน checkbox นี้
+  final bool showImgCommuOption;
 
   final File? coverFile;
   final String? fileName;
@@ -116,17 +120,18 @@ class RecipeCoverSection extends StatelessWidget {
           ),
         ],
 
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('แสดงรูปในชุมชน'),
-          value: showImgCommu,
-          onChanged: disabled
-              ? null
-              : (value) {
-                  onShowImgCommuChanged(value ?? false);
-                },
-        ),
+        if (showImgCommuOption)
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text('แสดงรูปในชุมชน'),
+            value: showImgCommu,
+            onChanged: disabled
+                ? null
+                : (value) {
+                    onShowImgCommuChanged(value ?? false);
+                  },
+          ),
       ],
     );
   }

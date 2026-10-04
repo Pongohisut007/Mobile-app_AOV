@@ -9,9 +9,11 @@ class CartItemTile extends StatelessWidget {
     required this.onRemove,
     required this.isSelected,
     required this.onSelectedChanged,
+    this.isRemoving = false,
   });
 
   final CartItem item;
+  final bool isRemoving;
   final VoidCallback? onRemove;
   final bool isSelected;
   final ValueChanged<bool?>? onSelectedChanged;
@@ -94,7 +96,16 @@ class CartItemTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 constraints: const BoxConstraints(),
                 color: ProfileColors.muted,
-                icon: const Icon(Icons.close_rounded, size: 18),
+                icon: isRemoving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: ProfileColors.muted,
+                        ),
+                      )
+                    : const Icon(Icons.close_rounded, size: 18),
                 tooltip: 'Remove',
               ),
             ),

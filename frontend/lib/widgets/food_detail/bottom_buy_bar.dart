@@ -9,7 +9,11 @@ class BottomBuyBar extends StatelessWidget {
     required this.onBuyPressed,
     this.buyLabel = 'Buy Now',
     this.cartKey,
+    this.isLoading = false,
   });
+
+  /// กำลังเพิ่มลงตะกร้า: แสดงตัวหมุนแทนข้อความ
+  final bool isLoading;
 
   final VoidCallback onCartPressed;
   // null = ยังกดไม่ได้ (โหลดเมนูไม่เสร็จ หรือกำลังเพิ่มลงตะกร้า)
@@ -82,13 +86,22 @@ class BottomBuyBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: Text(
-                    buyLabel,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          buyLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                 ),
               ),
             ),

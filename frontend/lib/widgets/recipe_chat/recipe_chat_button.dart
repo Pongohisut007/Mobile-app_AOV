@@ -23,6 +23,8 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
 
   String? _accessToken;
   bool _canChat = false;
+  // กันกดรัวจนเปิดแชทซ้อนกันหลายชีต
+  bool _isOpening = false;
 
   // เก็บแชทไว้ที่นี่ ปิด popup แล้วเปิดใหม่ก็ยังเห็นแชทเดิม
   final _history = RecipeChatHistory();
@@ -50,25 +52,34 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
   }
 
   Future<void> _openChat() async {
-    // ปุ่มอาจโชว์จาก PurchasedRecipesBloc ก่อนที่เช็กสิทธิ์จะเสร็จ token จึงยังไม่มี
-    final accessToken = _accessToken ?? await _tokenStorage.readAccessToken();
-    if (accessToken == null || accessToken.trim().isEmpty || !mounted) return;
+    if (_isOpening) return;
+    setState(() => _isOpening = true);
 
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => RecipeChatSheet(
-        repository: _repository,
-        accessToken: accessToken,
-        recipeId: widget.recipeId,
-        history: _history,
-      ),
-    );
+    try {
+      // ปุ่มอาจโชว์จาก PurchasedRecipesBloc ก่อนที่เช็กสิทธิ์จะเสร็จ token จึงยังไม่มี
+      final accessToken = _accessToken ?? await _tokenStorage.readAccessToken();
+      if (accessToken == null || accessToken.trim().isEmpty || !mounted) {
+        return;
+      }
+
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (_) => RecipeChatSheet(
+          repository: _repository,
+          accessToken: accessToken,
+          recipeId: widget.recipeId,
+          history: _history,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isOpening = false);
+    }
   }
 
   @override
@@ -84,7 +95,7 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
       width: double.infinity,
       height: 56,
       child: OutlinedButton.icon(
-        onPressed: _openChat,
+        onPressed: _isOpening ? null : _openChat,
         style: OutlinedButton.styleFrom(
           foregroundColor: FoodDetailColors.purple,
           side: const BorderSide(color: FoodDetailColors.purple, width: 1.5),

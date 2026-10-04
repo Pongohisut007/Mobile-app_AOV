@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
@@ -350,6 +354,16 @@ export class RecipesService {
       });
       if (!recipe) {
         throw new NotFoundException(`Recipe with id ${id} not found`);
+      }
+      // publish แล้วห้ามเปลี่ยน type
+      if (
+        recipeData.type !== undefined &&
+        recipeData.type !== recipe.type &&
+        recipe.status === RecipeStatus.PUBLISHED
+      ) {
+        throw new BadRequestException(
+          'Cannot change type of a published recipe',
+        );
       }
 
       Object.assign(recipe, recipeData, { id: recipe.id });
