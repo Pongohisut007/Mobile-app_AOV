@@ -32,8 +32,9 @@ class RegisterLogo extends StatelessWidget {
             left: 8,
             top: 8,
             child: IconButton(
+              // maybePop ให้ PopScope ของหน้า register พากลับไปหน้า login
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.maybePop(context);
               },
               icon: const Icon(
                 Icons.arrow_back,

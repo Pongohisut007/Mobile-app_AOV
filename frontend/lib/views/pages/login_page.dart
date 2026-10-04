@@ -25,7 +25,6 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -36,15 +35,6 @@ class _LoginPageState extends State<LoginPage> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-
-    if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the terms and privacy policy.'),
-        ),
-      );
-      return;
-    }
 
     context.read<AuthBloc>().add(
       AuthLoginRequested(
@@ -93,10 +83,6 @@ class _LoginPageState extends State<LoginPage> {
                   obscurePassword: _obscurePassword,
                   onTogglePassword: () => setState(() {
                     _obscurePassword = !_obscurePassword;
-                  }),
-                  acceptedTerms: _acceptedTerms,
-                  onTermsChanged: (value) => setState(() {
-                    _acceptedTerms = value;
                   }),
                   onSubmit: _submit,
                   onSignUp: () {

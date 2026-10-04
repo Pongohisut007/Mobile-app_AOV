@@ -40,34 +40,43 @@ class RegisterPage extends StatelessWidget {
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFD96868),
-        body: SafeArea(
-          bottom: false,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const RegisterLogo(),
-                RegisterForm(
-                  onSubmit:
-                      ({
-                        required email,
-                        required password,
-                        required displayName,
-                      }) {
-                        context.read<AuthBloc>().add(
-                          AuthRegisterRequested(
-                            email: email,
-                            password: password,
-                            displayName: displayName,
-                          ),
-                        );
-                      },
-                  onSignIn: () {
-                    Navigator.pushReplacementNamed(context, AppRoutes.login);
-                  },
-                ),
-              ],
+      // ย้อนกลับ (ทั้งปุ่มบนจอและปุ่ม back ของระบบ) ให้กลับไปหน้า login
+      // ใช้ replace แทน push จะได้ไม่มีหน้า login/register ซ้อนกันใน stack
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          Navigator.pushReplacementNamed(context, AppRoutes.login);
+        },
+        child: Scaffold(
+          backgroundColor: const Color(0xFFD96868),
+          body: SafeArea(
+            bottom: false,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const RegisterLogo(),
+                  RegisterForm(
+                    onSubmit:
+                        ({
+                          required email,
+                          required password,
+                          required displayName,
+                        }) {
+                          context.read<AuthBloc>().add(
+                            AuthRegisterRequested(
+                              email: email,
+                              password: password,
+                              displayName: displayName,
+                            ),
+                          );
+                        },
+                    onSignIn: () {
+                      Navigator.pushReplacementNamed(context, AppRoutes.login);
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
