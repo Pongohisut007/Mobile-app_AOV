@@ -3,6 +3,8 @@ import 'package:flutter_application_1/bloc/recipe_library/recipe_library_bloc.da
 import 'package:flutter_application_1/bloc/recipe_library/recipe_library_event.dart';
 import 'package:flutter_application_1/bloc/recipe_library/recipe_library_state.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
+import 'package:flutter_application_1/repositories/category_repository.dart';
+import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_library/recipe_library_card.dart';
@@ -34,6 +36,10 @@ class RecipeCollectionPage extends StatelessWidget {
           collectionType.title,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          if (collectionType == RecipeCollectionType.myRecipes)
+            const _AddRecipeButton(),
+        ],
       ),
       body: BlocBuilder<RecipeLibraryBloc, RecipeLibraryState>(
         builder: (context, state) => RecipeCollectionBody(
@@ -45,6 +51,69 @@ class RecipeCollectionPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// ปุ่ม + สร้างสูตรใหม่ (สูตรใหม่เป็น community เสมอ จึงไม่แสดงช่องราคา)
+class _AddRecipeButton extends StatefulWidget {
+  const _AddRecipeButton();
+
+  @override
+  State<_AddRecipeButton> createState() => _AddRecipeButtonState();
+}
+
+class _AddRecipeButtonState extends State<_AddRecipeButton> {
+  bool _isOpening = false;
+
+  Future<void> _createRecipe() async {
+    setState(() => _isOpening = true);
+
+    try {
+      // หน้าสร้างสูตรต้องมีรายการหมวดหมู่ทั้งหมดให้เลือก
+      final categories = await CategoryRepository().fetchCategories();
+      if (!mounted) return;
+      setState(() => _isOpening = false);
+
+      final created = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => CreateFoodcardPage(
+            categories: categories,
+            isFromCommunity: true,
+          ),
+        ),
+      );
+
+      if (!mounted || created != true) return;
+      context.read<RecipeLibraryBloc>().add(
+        const RecipeLibraryRefreshRequested(),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isOpening = false);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Could not open recipe editor: $error')),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Create recipe',
+      onPressed: _isOpening ? null : _createRecipe,
+      icon: _isOpening
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: ProfileColors.ink,
+              ),
+            )
+          : const Icon(Icons.add_rounded, size: 28),
     );
   }
 }
