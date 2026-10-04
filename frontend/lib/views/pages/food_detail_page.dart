@@ -56,8 +56,15 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
   late Future<Food> _foodFuture;
 
+  // ข้อมูลจาก RAM ตอนเปิดหน้า (เคยเปิดสูตรนี้แล้ว) โชว์ทันทีโดยไม่ต้องรอ API
+  Food? _cachedFood;
+
   bool _commentScrollScheduled = false;
   bool _isOpeningEditor = false;
+  bool _isDeleting = false;
+  bool _isStartingCooking = false;
+  // สูตร community ต้อง login ก่อนถึงจะเห็นปุ่มเริ่มทำอาหาร
+  bool _isLoggedIn = false;
 
   // เพิ่มทุกครั้งที่ดึงลง refresh ใช้เป็น key ให้รีวิว/คอมเมนต์โหลดใหม่ด้วย
   int _refreshCount = 0;
@@ -69,7 +76,24 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   void initState() {
     super.initState();
 
-    _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+    final cached = FoodRepository.cachedFood(widget.foodsId);
+    if (cached != null) {
+      // โชว์ของเดิมทันที แล้วโหลดของใหม่มาแทนเงียบ ๆ
+      _cachedFood = cached;
+      _foodFuture = Future.value(cached);
+      _refresh(silent: true);
+    } else {
+      _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+    }
+    _loadLoginState();
+  }
+
+  Future<void> _loadLoginState() async {
+    final accessToken = await TokenStorage().readAccessToken();
+    if (!mounted) return;
+    setState(() {
+      _isLoggedIn = accessToken != null && accessToken.trim().isNotEmpty;
+    });
   }
 
   void _reload() {
@@ -80,16 +104,18 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   }
 
   // ดึงลงเพื่อโหลดใหม่: โชว์ข้อมูลเดิมไว้ระหว่างรอ โหลดพลาดก็ไม่ทับของเดิม
-  Future<void> _refresh() async {
+  // silent = อัปเดตเบื้องหลังตอนเปิดหน้าจาก RAM: ไม่โหลดรีวิว/คอมเมนต์ซ้ำ และไม่เด้ง error
+  Future<void> _refresh({bool silent = false}) async {
     try {
       final food = await FoodRepository().fetchFoodById(widget.foodsId);
       if (!mounted) return;
       setState(() {
         _foodFuture = Future.value(food);
-        _refreshCount++;
+        _cachedFood = food;
+        if (!silent) _refreshCount++;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || silent) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -134,8 +160,13 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                 ? null
                 : FutureBuilder<Food>(
                     future: _foodFuture,
+                    initialData: _cachedFood,
                     builder: (context, snapshot) {
                       final food = snapshot.data;
+                      // สูตร community ฟรี ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
+                      if (food != null && _isCommunity(food)) {
+                        return const SizedBox.shrink();
+                      }
 
                       final isPending = context.select(
                         (CartBloc bloc) =>
@@ -149,6 +180,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                       return BottomBuyBar(
                         cartKey: _cartKey,
+                        isLoading: isPending,
                         onCartPressed: () =>
                             Navigator.pushNamed(context, AppRoutes.cart),
                         buyLabel: inCart ? 'Checkout now' : 'Buy Now',
@@ -165,6 +197,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                   ),
         body: FutureBuilder<Food>(
           future: _foodFuture,
+          initialData: _cachedFood,
           builder: (context, state) {
             // มีข้อมูลเดิมอยู่แล้ว (เช่นหลังแก้ไขสูตร) ให้โชว์ของเดิมไว้ระหว่างโหลด
             if (state.connectionState == ConnectionState.waiting &&
@@ -186,10 +219,17 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     );
   }
 
+  // สูตร community ใช้คอมเมนต์ ส่วน official ใช้รีวิว
+  // ดูจาก type ของสูตรเอง เพราะเข้าหน้านี้ได้จากหลายที่ (Profile, Home ฯลฯ)
+  bool _isCommunity(Food food) => food.type == 'community';
+
   Widget _buildBody(Food food, {required bool isPurchased}) {
     // official ที่ยังไม่ได้ซื้อ ไม่ให้เริ่มทำอาหาร
     // เช็กการซื้อด้วย เพราะเพิ่งซื้อในหน้านี้ข้อมูลสูตรยังไม่ได้โหลดใหม่
-    final canStartCooking = food.canViewFullRecipe || isPurchased;
+    // สูตร community ไม่ login ก็ไม่ให้เริ่มทำอาหาร
+    final canStartCooking =
+        (food.canViewFullRecipe || isPurchased) &&
+        (!_isCommunity(food) || _isLoggedIn);
 
     return SafeArea(
       child: RefreshIndicator(
@@ -202,45 +242,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                 key: _headerKey,
                 child: FoodDetailHeader(
                   food: food,
+                  isBusy: _isOpeningEditor || _isDeleting,
                   onEdit: () => _editFood(food),
-                  onDelete: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('ลบสูตรอาหาร'),
-                          content: const Text(
-                            'คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\n'
-                            'ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.pop(context, false),
-                              child: const Text('ยกเลิก'),
-                            ),
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.pop(context, true),
-                              child: const Text(
-                                'ลบ',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (confirmed != true || !context.mounted) {
-                      return;
-                    }
-
-                    await FoodRepository().deleteFood(food.idfoods);
-                    if (!mounted) return;
-
-                    Navigator.pop(context, true);
-                  },
+                  onDelete: () => _deleteFood(food),
                 ),
               ),
 
@@ -273,16 +277,27 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                         width: double.infinity,
                         height: 56,
                         child: FilledButton.icon(
-                          onPressed: () => _startCooking(food),
+                          onPressed: _isStartingCooking
+                              ? null
+                              : () => _startCooking(food),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF6650A5),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          icon: const Icon(
-                            Icons.restaurant_menu_rounded,
-                          ),
+                          icon: _isStartingCooking
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.restaurant_menu_rounded,
+                                ),
                           label: const Text(
                             'เริ่มทำอาหาร',
                             style: TextStyle(
@@ -296,8 +311,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       const SizedBox(height: 12),
                     ],
 
-                    // แสดงเฉพาะคนที่ซื้อสูตรแล้ว
-                    RecipeChatButton(recipeId: food.idfoods),
+                    // แสดงเฉพาะคนที่ซื้อสูตรแล้ว และสูตรต้องไม่ใช่ฉบับร่าง
+                    if (food.status != 'draft')
+                      RecipeChatButton(recipeId: food.idfoods),
 
                     const SizedBox(height: 32),
 
@@ -308,7 +324,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                     const SizedBox(height: 28),
 
-                    if (widget.showComments || widget.scrollToComments)
+                    if (widget.showComments ||
+                        widget.scrollToComments ||
+                        _isCommunity(food))
                       BlocProvider(
                         create: (_) => RecipeCommentBloc(
                           HttpRecipeCommentRepository(
@@ -350,25 +368,81 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   }
 
   Future<void> _startCooking(Food food) async {
-    var target = food;
-    // เพิ่งซื้อในหน้านี้ ข้อมูลที่มียังมีแค่ขั้นตอน preview ต้องโหลดใหม่ก่อน
-    if (!food.canViewFullRecipe) {
-      await _refresh();
-      if (!mounted) return;
-      target = await _foodFuture;
-      if (!mounted) return;
+    if (_isStartingCooking) return;
+    setState(() => _isStartingCooking = true);
+
+    try {
+      var target = food;
+      // เพิ่งซื้อในหน้านี้ ข้อมูลที่มียังมีแค่ขั้นตอน preview ต้องโหลดใหม่ก่อน
+      if (!food.canViewFullRecipe) {
+        await _refresh();
+        if (!mounted) return;
+        target = await _foodFuture;
+        if (!mounted) return;
+      }
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CookingStepsPage(food: target),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isStartingCooking = false);
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => CookingStepsPage(food: target),
-      ),
+  }
+
+  Future<void> _deleteFood(Food food) async {
+    if (_isDeleting) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('ลบสูตรอาหาร'),
+          content: const Text(
+            'คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\n'
+            'ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('ยกเลิก'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text(
+                'ลบ',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
     );
+
+    if (confirmed != true || !mounted || _isDeleting) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      await FoodRepository().deleteFood(food.idfoods);
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isDeleting = false);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+    }
   }
 
   Future<void> _editFood(Food food) async {
-    if (_isOpeningEditor) return;
+    if (_isOpeningEditor || _isDeleting) return;
 
-    _isOpeningEditor = true;
+    setState(() => _isOpeningEditor = true);
 
     try {
       // หน้าแก้ไขต้องมีรายการหมวดหมู่ทั้งหมด
@@ -415,7 +489,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
           ),
         );
     } finally {
-      _isOpeningEditor = false;
+      if (mounted) setState(() => _isOpeningEditor = false);
     }
   }
 

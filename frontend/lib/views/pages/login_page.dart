@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/data/user_cache.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
@@ -25,7 +26,6 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -36,15 +36,6 @@ class _LoginPageState extends State<LoginPage> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-
-    if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the terms and privacy policy.'),
-        ),
-      );
-      return;
-    }
 
     context.read<AuthBloc>().add(
       AuthLoginRequested(
@@ -59,6 +50,7 @@ class _LoginPageState extends State<LoginPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          clearUserCaches();
           // secure storage ไม่มี stream บอกว่า token เปลี่ยน
           // ต้องสั่งให้ตะกร้ากับหัวใจโหลดของคนนี้เองหลัง AuthBloc เขียน token แล้ว
           context.read<CartBloc>().add(const CartRequested());
@@ -82,11 +74,16 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: const Color(0xFFD96868),
         body: SafeArea(
           bottom: false,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
-                LoginForm(
+          // ฟอร์มสีขาวยืดเต็มพื้นที่ที่เหลือจนถึงล่างสุด ไม่ให้เห็นพื้นแดงด้านล่าง
+          // ถ้าเนื้อหายาวกว่าจอ (จอเล็ก/คีย์บอร์ดขึ้น) ก็ยังเลื่อนได้
+          child: CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(
+                child: LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
+              ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: LoginForm(
                   formKey: _formKey,
                   emailController: _emailController,
                   passwordController: _passwordController,
@@ -94,17 +91,13 @@ class _LoginPageState extends State<LoginPage> {
                   onTogglePassword: () => setState(() {
                     _obscurePassword = !_obscurePassword;
                   }),
-                  acceptedTerms: _acceptedTerms,
-                  onTermsChanged: (value) => setState(() {
-                    _acceptedTerms = value;
-                  }),
                   onSubmit: _submit,
                   onSignUp: () {
                     Navigator.pushReplacementNamed(context, AppRoutes.register);
                   },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

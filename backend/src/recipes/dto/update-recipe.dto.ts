@@ -12,7 +12,11 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { RecipeDifficulty, RecipeStatus } from '../entities/recipe.entity';
+import {
+  RecipeDifficulty,
+  RecipeStatus,
+  RecipeType,
+} from '../entities/recipe.entity';
 import { CreateRecipeDto, CreateRecipeSectionDto } from './create-recipe.dto';
 
 // ValidationPipe ใช้ whitelist + forbidNonWhitelisted ทุก field จึงต้องมี decorator
@@ -65,6 +69,11 @@ export class UpdateRecipeDto implements Partial<CreateRecipeDto> {
   @IsOptional()
   @IsEnum(RecipeStatus)
   status?: RecipeStatus;
+
+  // เปลี่ยนได้เฉพาะ user ที่เป็น creator (เช็คใน controller)
+  @IsOptional()
+  @IsEnum(RecipeType)
+  type?: RecipeType;
 
   @IsOptional()
   @IsArray()

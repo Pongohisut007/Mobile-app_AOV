@@ -3,7 +3,6 @@ import 'package:flutter_application_1/widgets/login/login_footer.dart';
 import 'package:flutter_application_1/widgets/login/login_form_fields.dart';
 import 'package:flutter_application_1/widgets/login/login_social_buttons.dart';
 import 'package:flutter_application_1/widgets/login/login_submit_button.dart';
-import 'package:flutter_application_1/widgets/login/login_terms.dart';
 
 class LoginForm extends StatelessWidget {
   const LoginForm({
@@ -12,8 +11,6 @@ class LoginForm extends StatelessWidget {
     required this.passwordController,
     required this.obscurePassword,
     required this.onTogglePassword,
-    required this.acceptedTerms,
-    required this.onTermsChanged,
     required this.onSubmit,
     this.onSignUp,
     super.key,
@@ -24,8 +21,6 @@ class LoginForm extends StatelessWidget {
   final TextEditingController passwordController;
   final bool obscurePassword;
   final VoidCallback onTogglePassword;
-  final bool acceptedTerms;
-  final ValueChanged<bool> onTermsChanged;
   final VoidCallback onSubmit;
   final VoidCallback? onSignUp;
 
@@ -50,9 +45,7 @@ class LoginForm extends StatelessWidget {
               onTogglePassword: onTogglePassword,
               onSubmitted: onSubmit,
             ),
-            const SizedBox(height: 2),
-            LoginTerms(accepted: acceptedTerms, onChanged: onTermsChanged),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             LoginSubmitButton(onPressed: onSubmit),
             const SizedBox(height: 22),
             const LoginSocialButtons(),

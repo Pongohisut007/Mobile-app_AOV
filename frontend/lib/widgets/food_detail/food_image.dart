@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/food_detail/image_placeholder.dart';
 
@@ -15,23 +16,20 @@ class FoodImage extends StatelessWidget {
       tag: heroTag,
       child: imageUrl.isEmpty
           ? const ImagePlaceholder()
-          : Image.network(
+          : AppNetworkImage(
               imageUrl,
-              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
               height: 240,
               fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const ImagePlaceholder(),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return const SizedBox(
-                  height: 240,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: FoodDetailColors.primaryRed,
-                    ),
+              errorBuilder: (_) => const ImagePlaceholder(),
+              // รูปเดียวกับการ์ดหน้า Home ส่วนใหญ่อยู่ใน cache แล้ว ตัวหมุนแทบไม่โผล่
+              placeholder: const SizedBox(
+                height: 240,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: FoodDetailColors.primaryRed,
                   ),
-                );
-              },
+                ),
+              ),
             ),
     );
   }

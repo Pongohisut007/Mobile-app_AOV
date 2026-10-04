@@ -7,6 +7,8 @@ import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/repositories/food_repository.dart';
+import 'package:flutter_application_1/repositories/image_compressor.dart';
+import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/repositories/upload_repository.dart';
 import 'package:flutter_application_1/views/pages/create_cooking_steps_page.dart';
@@ -14,8 +16,10 @@ import 'package:flutter_application_1/views/pages/create_cooking_steps_page.dart
 import 'package:flutter_application_1/widgets/create_food/recipe_basic_info_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_cover_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_detail_section.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_category_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_steps_section.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_type_section.dart';
 
 class CreateFoodcardPage extends StatefulWidget {
   const CreateFoodcardPage({
@@ -48,6 +52,8 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   final _uploadRepository = HttpUploadRepository(baseUrl: ApiConfig.apiBaseUrl);
 
   String? _difficulty;
+  late String _type = widget.isFromCommunity ? 'community' : 'official';
+  bool _isCreator = false;
   RecipeSectionDraft? _sectionDraft;
   _PendingUpload? _coverSelection;
   String? _existingCoverUrl;
@@ -63,11 +69,18 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   bool get _isEditing => widget.initialFood != null;
   bool get _isEditingDraft => widget.initialFood?.status == 'draft';
 
+  // เปลี่ยน type ได้เฉพาะตอนแก้ไขสูตรที่ยังไม่ publish และ user ต้องเป็น creator
+  // (backend เช็คซ้ำ)
+  bool get _canChangeType =>
+      _isEditing && widget.initialFood?.status != 'published' && _isCreator;
+
   @override
   void initState() {
     super.initState();
     final food = widget.initialFood;
     if (food == null) return;
+
+    _loadIsCreator();
 
     _titleController.text = food.name;
     _slugController.text = food.slug;
@@ -87,6 +100,20 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     );
     if (food.steps.isNotEmpty) {
       _sectionDraft = RecipeSectionDraft.fromSteps(food.steps);
+    }
+  }
+
+  Future<void> _loadIsCreator() async {
+    try {
+      final token = await TokenStorage().readAccessToken();
+      if (token == null || token.trim().isEmpty) return;
+      final profile = await HttpProfileRepository(
+        baseUrl: ApiConfig.apiBaseUrl,
+      ).fetchProfile(token);
+      if (!mounted) return;
+      setState(() => _isCreator = profile.role == 'creator');
+    } catch (_) {
+      // โหลดโปรไฟล์ไม่ได้ก็แค่ไม่แสดง dropdown ประเภทสูตร
     }
   }
 
@@ -257,7 +284,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final draftSlugMaxLength = 255 - draftSlugSuffix.length;
       final generatedDraftSlug =
           '${draftSlugBase.substring(0, draftSlugBase.length < draftSlugMaxLength ? draftSlugBase.length : draftSlugMaxLength)}$draftSlugSuffix';
-      final price = double.tryParse(_priceController.text.trim()) ?? 0;
+      // community เป็นสูตรฟรี ไม่มีช่องราคา จึงส่ง 0 เสมอ
+      final price = _type == 'community'
+          ? 0.0
+          : double.tryParse(_priceController.text.trim()) ?? 0;
 
       final recipe = <String, dynamic>{
         if (!_isEditing) 'creatorId': creatorId,
@@ -265,13 +295,14 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         'slug': slug.isEmpty && asDraft ? generatedDraftSlug : slug,
         'shortDescription': _optionalText(_descriptionController.text),
         'coverImageUrl': coverUpload?.url ?? _existingCoverUrl,
-        'showImgCommu': _showImgCommu,
+        // official ไม่มี checkbox นี้ ส่ง false กันค่าเก่าค้างตอนเปลี่ยน type
+        'showImgCommu': _type == 'community' && _showImgCommu,
         'price': price.toStringAsFixed(2),
         'preparationMinutes': int.tryParse(_preparationController.text.trim()),
         'cookingMinutes': int.tryParse(_cookingController.text.trim()),
         'servingCount': int.tryParse(_servingsController.text.trim()),
         'difficulty': _difficulty,
-        if (!_isEditing) 'type': 'community',
+        if (!_isEditing || _canChangeType) 'type': _type,
         'status': asDraft ? 'draft' : 'published',
         'categoryIds': _selectedCategoryIds.toList(),
         'sections': recipeSections,
@@ -434,19 +465,37 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       if (path == null) {
         throw Exception('ไม่สามารถเปิดไฟล์ที่เลือกได้');
       }
+
+      var file = File(path);
+      var name = selectedFile.name;
+      var mimeType = _mimeType(kind, selectedFile.extension);
+      var size = selectedFile.size;
+      // ย่อรูปก่อน แล้วค่อยเช็กขนาด รูปต้นฉบับใหญ่เกินแต่ย่อแล้วผ่านก็ใช้ได้
+      if (kind == UploadKind.images) {
+        final prepared = await prepareImageForUpload(
+          file: file,
+          name: name,
+          mimeType: mimeType,
+        );
+        file = prepared.file;
+        name = prepared.name;
+        mimeType = prepared.mimeType;
+        size = prepared.size;
+      }
+
       final maximumSize = kind == UploadKind.images
           ? 10 * 1024 * 1024
           : 100 * 1024 * 1024;
-      if (selectedFile.size < 1 || selectedFile.size > maximumSize) {
+      if (size < 1 || size > maximumSize) {
         final maximumMb = maximumSize ~/ (1024 * 1024);
         throw Exception('ไฟล์ต้องมีขนาดไม่เกิน $maximumMb MB');
       }
 
       return _PendingUpload(
-        file: File(path),
-        name: selectedFile.name,
+        file: file,
+        name: name,
         kind: kind,
-        mimeType: _mimeType(kind, selectedFile.extension),
+        mimeType: mimeType,
       );
     } catch (error) {
       if (mounted) {
@@ -538,15 +587,16 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F5F0),
-        appBar: AppBar(
-          title: Text(_isEditing ? 'แก้ไขสูตรอาหาร' : 'สร้างสูตรอาหาร'),
-          backgroundColor: const Color(0xFFF6F5F0),
+        backgroundColor: RecipeFormStyle.background,
+        appBar: RecipeFormStyle.appBar(
+          title: _isEditing ? 'แก้ไขสูตรอาหาร' : 'สร้างสูตรอาหาร',
         ),
+        // ปุ่มเผยแพร่/บันทึกติดล่างจอเสมอ ไม่ต้องเลื่อนลงไปหา
+        bottomNavigationBar: _buildBottomActions(),
         body: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             children: [
               RecipeBasicInfoSection(
                 titleController: _titleController,
@@ -555,13 +605,12 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 validator: _requiredText,
               ),
 
-              const SizedBox(height: 22),
-
               RecipeCoverSection(
                 coverFile: _coverSelection?.file,
                 fileName: _coverSelection?.name,
                 coverUrl: _existingCoverUrl,
                 showImgCommu: _showImgCommu,
+                showImgCommuOption: _type == 'community',
                 isBusy: _isBusy,
                 isSaving: _isSaving,
                 isPickingFile: _isPickingFile,
@@ -578,23 +627,19 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 },
               ),
 
-              const SizedBox(height: 22),
-
               RecipeDetailSection(
                 priceController: _priceController,
                 preparationController: _preparationController,
                 cookingController: _cookingController,
                 servingsController: _servingsController,
                 difficulty: _difficulty,
-                showPrice: !widget.isFromCommunity,
+                showPrice: _type == 'official',
                 requiredWholeNumber: _requiredWholeNumber,
                 nonNegativeNumber: _nonNegativeNumber,
                 onDifficultyChanged: (value) {
                   setState(() => _difficulty = value);
                 },
               ),
-
-              const SizedBox(height: 22),
 
               RecipeCategorySection(
                 categories: widget.categories,
@@ -606,9 +651,18 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     }
                   });
                 },
+                onCategoryRemoved: _isSaving || _isBusy
+                    ? null
+                    : (category) => setState(
+                        () => _selectedCategoryIds.remove(category.id),
+                      ),
               ),
 
-              const SizedBox(height: 22),
+              if (_canChangeType)
+                RecipeTypeSection(
+                  type: _type,
+                  onTypeChanged: (value) => setState(() => _type = value),
+                ),
 
               RecipeStepsSection(
                 sectionCount: _sectionDraft?.sections.length ?? 0,
@@ -623,30 +677,50 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 isSaving: _isSaving,
                 onEdit: _openCookingSteps,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-              const SizedBox(height: 24),
-
-              if (_isEditingDraft)
-                _buildDraftActions()
-              else
-                FilledButton.icon(
-                  onPressed:
-                      _isSaving || _isBusy ? null : _saveRecipe,
-                  icon: const Icon(Icons.publish_rounded),
+  // แถบปุ่มล่างจอ: ฉบับร่างมี 2 ปุ่ม (บันทึก/เผยแพร่) นอกนั้นปุ่มเดียว
+  Widget _buildBottomActions() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: _isEditingDraft
+              ? _buildDraftActions()
+              : FilledButton.icon(
+                  onPressed: _isSaving || _isBusy ? null : _saveRecipe,
+                  icon: _isSaving
+                      ? const _ButtonSpinner()
+                      : Icon(
+                          _isEditing
+                              ? Icons.check_rounded
+                              : Icons.publish_rounded,
+                        ),
                   label: Text(
                     _isUploading
                         ? 'กำลังอัปโหลดไฟล์...'
                         : _isSaving
-                            ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
-                            : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
+                        ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
+                        : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFCE4D35),
-                    minimumSize: const Size.fromHeight(54),
-                  ),
+                  style: RecipeFormStyle.primaryButton(),
                 ),
-            ],
-          ),
         ),
       ),
     );
@@ -662,36 +736,47 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: disabled ? null : _saveDraftEdit,
-            icon: const Icon(Icons.save_outlined),
+            icon: savingDraft
+                ? const _ButtonSpinner(color: RecipeFormStyle.primary)
+                : const Icon(Icons.save_outlined),
             label: Text(
               savingDraft
                   ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังบันทึก...')
                   : 'บันทึกการแก้ไข',
             ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFCE4D35),
-              side: const BorderSide(color: Color(0xFFCE4D35)),
-              minimumSize: const Size.fromHeight(54),
-            ),
+            style: RecipeFormStyle.secondaryButton(),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: FilledButton.icon(
             onPressed: disabled ? null : _saveRecipe,
-            icon: const Icon(Icons.publish_rounded),
+            icon: publishing
+                ? const _ButtonSpinner()
+                : const Icon(Icons.publish_rounded),
             label: Text(
               publishing
                   ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังเผยแพร่...')
                   : 'เผยแพร่',
             ),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFCE4D35),
-              minimumSize: const Size.fromHeight(54),
-            ),
+            style: RecipeFormStyle.primaryButton(),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ButtonSpinner extends StatelessWidget {
+  const _ButtonSpinner({this.color = Colors.white});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 18,
+      child: CircularProgressIndicator(strokeWidth: 2.2, color: color),
     );
   }
 }

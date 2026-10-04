@@ -1,11 +1,10 @@
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_state.dart';
-import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// โหลดสูตรที่ซื้อแล้วครั้งเดียวแล้วเก็บไว้ทั้งแอป หน้าอื่นอ่านจากที่นี่แทนการยิง API เอง
+/// โหลด id ของสูตรที่ซื้อแล้วครั้งเดียวแล้วเก็บไว้ทั้งแอป หน้าอื่นอ่านจากที่นี่แทนการยิง API เอง
 /// อ่าน token จาก secure storage เองแบบเดียวกับ FavoriteBloc
 /// storage ไม่มี stream บอกว่าค่าเปลี่ยน หน้า login/logout จึงต้องสั่ง
 /// PurchasedRecipesRequested เองหลังเขียน/ลบ token
@@ -13,7 +12,7 @@ class PurchasedRecipesBloc
     extends Bloc<PurchasedRecipesEvent, PurchasedRecipesState> {
   PurchasedRecipesBloc(this._repository, {TokenStorage? tokenStorage})
     : _tokenStorage = tokenStorage ?? TokenStorage(),
-      super(PurchasedRecipesState()) {
+      super(const PurchasedRecipesState()) {
     on<PurchasedRecipesRequested>(_onRequested);
     on<PurchasedRecipesRefreshed>(_onRefreshed);
   }
@@ -48,34 +47,33 @@ class PurchasedRecipesBloc
         accessToken.trim().isEmpty ||
         userId == null ||
         userId.trim().isEmpty) {
-      emit(PurchasedRecipesState(status: PurchasedRecipesStatus.ready));
+      emit(const PurchasedRecipesState(status: PurchasedRecipesStatus.ready));
       return;
     }
 
     emit(
       PurchasedRecipesState(
         status: PurchasedRecipesStatus.loading,
-        recipes: keepCurrent ? state.recipes : const [],
+        recipeIds: keepCurrent ? state.recipeIds : const {},
       ),
     );
 
     try {
-      final recipes = await _repository.fetchCollection(
-        RecipeCollectionType.purchased,
+      final recipeIds = await _repository.fetchPurchasedRecipeIds(
         userId: userId,
         accessToken: accessToken,
       );
       emit(
         PurchasedRecipesState(
           status: PurchasedRecipesStatus.ready,
-          recipes: recipes,
+          recipeIds: recipeIds,
         ),
       );
     } on Exception catch (error) {
       emit(
         PurchasedRecipesState(
           status: PurchasedRecipesStatus.failure,
-          recipes: state.recipes,
+          recipeIds: state.recipeIds,
           error: error.toString(),
         ),
       );

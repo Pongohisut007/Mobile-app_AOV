@@ -8,7 +8,11 @@ import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'category_item.dart';
 
 class CategoryList extends StatelessWidget {
-  const CategoryList({super.key});
+  const CategoryList({super.key, this.onCategoryChanged});
+
+  /// เปลี่ยนหมวดแล้วให้หน้าที่ใช้เป็นคนโหลดเมนูเอง (เช่น ค้นหาคำเดิมในหมวดใหม่)
+  /// ถ้าไม่ส่งมา จะโหลดเมนูทั้งหมดของหมวดนั้น
+  final ValueChanged<String>? onCategoryChanged;
 
   static const Map<String, IconData> _icons = {
     'noodles': Icons.ramen_dining,
@@ -22,7 +26,8 @@ class CategoryList extends StatelessWidget {
     'thai-food': Icons.rice_bowl,
   };
 
-  static IconData _iconFor(String slug) =>
+  // หน้า community ใช้ไอคอนชุดเดียวกัน
+  static IconData iconFor(String slug) =>
       _icons[slug.trim().toLowerCase()] ?? Icons.restaurant_menu;
 
   @override
@@ -61,6 +66,11 @@ class CategoryList extends StatelessWidget {
           listenWhen: (previous, current) =>
               previous.selectedId != current.selectedId,
           listener: (context, state) {
+            final onChanged = onCategoryChanged;
+            if (onChanged != null) {
+              onChanged(state.selectedId);
+              return;
+            }
             context.read<FoodBloc>().add(
               FetchFoodByCategoryEvent(state.selectedId),
             );
@@ -92,7 +102,7 @@ class CategoryList extends StatelessWidget {
                 itemBuilder: (_, index) {
                   final category = state.categories[index];
                   return CategoryItem(
-                    icon: _iconFor(category.slug),
+                    icon: iconFor(category.slug),
                     title: category.name,
                     categoryId: category.id,
                     isSelected: state.selectedId == category.id,

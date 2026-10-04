@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { In, IsNull, MoreThan, Repository } from 'typeorm';
+import { PaginatedResult, toPaginated } from '../common/pagination';
 import {
   RecipeAccess,
   RecipeAccessType,
@@ -18,11 +19,57 @@ export class RecipeAccessService {
   }
 
   findPurchasedByUser(userId: string): Promise<RecipeAccess[]> {
-    return this.accessRepository
-      .createQueryBuilder('access')
+    return this.purchasedQuery(userId)
       .leftJoinAndSelect('access.recipe', 'recipe')
       .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'category')
+      .orderBy('access.granted_at', 'DESC')
+      .getMany();
+  }
+
+  async findPurchasedPageByUser(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResult<RecipeAccess>> {
+    const total = await this.purchasedQuery(userId).getCount();
+    if (total === 0) return toPaginated([], total, page, limit);
+
+    // หา id ของหน้านี้ก่อน (ไม่ join categories) ไม่งั้น limit นับแถวที่ join ซ้ำ
+    const rows = await this.purchasedQuery(userId)
+      .select('access.id', 'id')
+      .addSelect('access.granted_at', 'granted_at')
+      .orderBy('access.granted_at', 'DESC')
+      .addOrderBy('access.id', 'ASC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany<{ id: string }>();
+    const ids = rows.map((row) => row.id);
+
+    const accesses = await this.accessRepository.find({
+      where: { id: In(ids) },
+      relations: { recipe: { creator: true, categories: true } },
+    });
+    const byId = new Map(accesses.map((access) => [access.id, access]));
+    const data = ids
+      .map((id) => byId.get(id))
+      .filter((access): access is RecipeAccess => access !== undefined);
+
+    return toPaginated(data, total, page, limit);
+  }
+
+  /** id ของสูตรที่ซื้อแล้วทั้งหมด (แอปใช้เช็กว่าซื้อหรือยัง ไม่ต้องโหลดรายละเอียด) */
+  async findPurchasedRecipeIds(userId: string): Promise<string[]> {
+    const rows = await this.purchasedQuery(userId)
+      .select('DISTINCT access.recipe_id', 'recipeId')
+      .getRawMany<{ recipeId: string }>();
+    return rows.map((row) => row.recipeId);
+  }
+
+  // สิทธิ์จากการซื้อที่ยังใช้ได้อยู่ของ user คนนี้
+  private purchasedQuery(userId: string) {
+    return this.accessRepository
+      .createQueryBuilder('access')
       .where('access.user_id = :userId', { userId })
       .andWhere('access.access_type = :accessType', {
         accessType: RecipeAccessType.PURCHASE,
@@ -30,9 +77,7 @@ export class RecipeAccessService {
       .andWhere('access.revoked_at IS NULL')
       .andWhere(
         '(access.expires_at IS NULL OR access.expires_at > CURRENT_TIMESTAMP)',
-      )
-      .orderBy('access.granted_at', 'DESC')
-      .getMany();
+      );
   }
 
   async findOne(id: string): Promise<RecipeAccess> {

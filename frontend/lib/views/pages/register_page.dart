@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/data/user_cache.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
@@ -21,6 +22,7 @@ class RegisterPage extends StatelessWidget {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          clearUserCaches();
           // secure storage ไม่มี stream บอกว่า token เปลี่ยน
           // ต้องสั่งให้ตะกร้ากับหัวใจโหลดของคนนี้เองหลัง AuthBloc เขียน token แล้ว
           context.read<CartBloc>().add(const CartRequested());
@@ -40,32 +42,43 @@ class RegisterPage extends StatelessWidget {
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFD96868),
-        body: SafeArea(
-          bottom: false,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const RegisterLogo(),
-                RegisterForm(
-                  onSubmit:
-                      ({
-                        required email,
-                        required password,
-                        required displayName,
-                      }) {
-                        context.read<AuthBloc>().add(
-                          AuthRegisterRequested(
-                            email: email,
-                            password: password,
-                            displayName: displayName,
-                          ),
-                        );
-                      },
-                  onSignIn: () {
-                    Navigator.pushReplacementNamed(context, AppRoutes.login);
-                  },
+      // ย้อนกลับ (ทั้งปุ่มบนจอและปุ่ม back ของระบบ) ให้กลับไปหน้า login
+      // ใช้ replace แทน push จะได้ไม่มีหน้า login/register ซ้อนกันใน stack
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          Navigator.pushReplacementNamed(context, AppRoutes.login);
+        },
+        child: Scaffold(
+          backgroundColor: const Color(0xFFD96868),
+          body: SafeArea(
+            bottom: false,
+            // โลโก้ย่อตามการเลื่อน ส่วนฟอร์มสีขาวยืดถึงล่างสุดเสมอ
+            child: CustomScrollView(
+              slivers: [
+                const RegisterLogoHeader(),
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: RegisterForm(
+                    onSubmit:
+                        ({
+                          required email,
+                          required password,
+                          required displayName,
+                        }) {
+                          context.read<AuthBloc>().add(
+                            AuthRegisterRequested(
+                              email: email,
+                              password: password,
+                              displayName: displayName,
+                            ),
+                          );
+                        },
+                    onSignIn: () {
+                      Navigator.pushReplacementNamed(context, AppRoutes.login);
+                    },
+                  ),
                 ),
               ],
             ),

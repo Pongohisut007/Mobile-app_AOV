@@ -2,7 +2,10 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { CacheNamespace } from '../cache/app-cache.module';
+import { AppCacheService } from '../cache/app-cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
@@ -52,7 +55,16 @@ export class ReviewsService {
     @InjectRepository(Recipe)
     private readonly recipeRepository: Repository<Recipe>,
     private readonly recipeAccessService: RecipeAccessService,
+    @Optional()
+    private readonly cache?: AppCacheService,
   ) {}
+
+  // รีวิวเปลี่ยนน้อย แต่ถูกอ่านทุกครั้งที่เปิดหน้าสูตร
+  private cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
+    return this.cache
+      ? this.cache.getOrSet(CacheNamespace.reviews, key, 120, loader)
+      : loader();
+  }
 
   findAll(recipeId?: string): Promise<Review[]> {
     return this.reviewRepository.find({
@@ -72,7 +84,15 @@ export class ReviewsService {
   }
 
   // คะแนนเฉลี่ยและรีวิวล่าสุด นับเฉพาะรีวิวที่ไม่ถูกซ่อน
-  async getRecipeSummary(recipeId: string): Promise<RecipeReviewSummary> {
+  getRecipeSummary(recipeId: string): Promise<RecipeReviewSummary> {
+    return this.cached(`summary:${recipeId}`, () =>
+      this.loadRecipeSummary(recipeId),
+    );
+  }
+
+  private async loadRecipeSummary(
+    recipeId: string,
+  ): Promise<RecipeReviewSummary> {
     await this.ensureRecipeExists(recipeId);
 
     const rows = await this.reviewRepository
@@ -113,7 +133,16 @@ export class ReviewsService {
   }
 
   // หน้ารีวิวทั้งหมด เลื่อนโหลดทีละหน้า
-  async listRecipeReviews(
+  listRecipeReviews(
+    recipeId: string,
+    query: ListReviewsQueryDto,
+  ): Promise<ReviewPage> {
+    return this.cached(`list:${recipeId}:${query.page}:${query.limit}`, () =>
+      this.loadRecipeReviews(recipeId, query),
+    );
+  }
+
+  private async loadRecipeReviews(
     recipeId: string,
     query: ListReviewsQueryDto,
   ): Promise<ReviewPage> {
@@ -175,6 +204,11 @@ export class ReviewsService {
       where: { recipeId, userId },
       relations: { user: true },
     });
+    // คะแนน/รายการรีวิว และยอดรีวิวในข้อมูลสูตรเปลี่ยน
+    await Promise.all([
+      this.cache?.invalidate(CacheNamespace.reviews),
+      this.cache?.invalidate(CacheNamespace.recipes),
+    ]);
     return this.toView(saved);
   }
 

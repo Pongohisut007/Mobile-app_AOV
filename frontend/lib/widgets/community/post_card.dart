@@ -6,6 +6,8 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
+import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PostCard extends StatelessWidget {
@@ -29,137 +31,139 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeLabel = _timeAgo(food.publishedAt);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  FoodDetailPage(foodsId: food.idfoods, showComments: true),
-            ),
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header: รูปโปรไฟล์ + ชื่อ + เวลา ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
-              child: Row(
-                children: [
-                  // รูปโปรไฟล์
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.grey.shade300,
-                    backgroundImage:
-                        (food.creatorAvatar != null &&
-                            food.creatorAvatar!.isNotEmpty)
-                        ? NetworkImage(food.creatorAvatar!)
-                        : null,
-                    child:
-                        (food.creatorAvatar == null ||
-                            food.creatorAvatar!.isEmpty)
-                        ? const Icon(
-                            Icons.person,
-                            size: 20,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 10),
+    // การ์ดขาวมุมโค้ง 20 ไม่มีเงา เหมือนการ์ดอาหารหน้า Home
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    FoodDetailPage(foodsId: food.idfoods, showComments: true),
+              ),
+            );
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header: รูปโปรไฟล์ + ชื่อ + เวลา ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 2),
+                child: Row(
+                  children: [
+                    // รูปโปรไฟล์
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFFFFF3E0),
+                      backgroundImage:
+                          (food.creatorAvatar != null &&
+                              food.creatorAvatar!.isNotEmpty)
+                          ? appNetworkImageProvider(
+                              context,
+                              food.creatorAvatar!,
+                              logicalSize: 40,
+                            )
+                          : null,
+                      child:
+                          (food.creatorAvatar == null ||
+                              food.creatorAvatar!.isEmpty)
+                          ? const Icon(
+                              Icons.person,
+                              size: 20,
+                              color: Color(0xFFE64A19),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
 
-                  // ชื่อ + เวลา
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          food.creatorName ?? 'ผู้ใช้งาน',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (timeLabel.isNotEmpty)
+                    // ชื่อ + เวลา
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            timeLabel,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
+                            food.creatorName ?? 'ผู้ใช้งาน',
+                            style: const TextStyle(
+                              color: ProfileColors.ink,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── ชื่ออาหาร + หมวดหมู่ + คำอธิบาย ──
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (food.description.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      food.description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ],
-
-                  // รูปเล็กใต้คำอธิบาย เฉพาะสูตรที่ติ๊ก "แสดงรูปในชุมชน"
-                  if (food.showImgCommu && food.filePathImage.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        food.filePathImage,
-                        width: 120,
-                        height: 90,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          width: 120,
-                          height: 90,
-                          color: Colors.grey.shade200,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
+                          if (timeLabel.isNotEmpty)
+                            Text(
+                              timeLabel,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: ProfileColors.muted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],
-
-                  const SizedBox(height: 12),
-
-                  Container(height: 1, color: Colors.grey.shade300),
-
-                  const SizedBox(height: 8),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      _PostFavoriteButton(food: food),
-
-                      const SizedBox(width: 16),
-
-                      _PostCommentButton(food: food),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+
+              // ── ชื่ออาหาร + หมวดหมู่ + คำอธิบาย ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (food.description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        food.description,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: ProfileColors.ink,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+
+                    // รูปเล็กใต้คำอธิบาย เฉพาะสูตรที่ติ๊ก "แสดงรูปในชุมชน"
+                    if (food.showImgCommu && food.filePathImage.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: AppNetworkImage(
+                          food.filePathImage,
+                          width: 120,
+                          height: 90,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 12),
+
+                    Container(height: 1, color: Colors.grey.shade200),
+
+                    const SizedBox(height: 4),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        _PostFavoriteButton(food: food),
+
+                        const SizedBox(width: 16),
+
+                        _PostCommentButton(food: food),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -206,9 +210,19 @@ class _PostCommentButtonState extends State<_PostCommentButton> {
       icon: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.comment_outlined, size: 22),
+          const Icon(
+            Icons.chat_bubble_outline_rounded,
+            size: 21,
+            color: ProfileColors.muted,
+          ),
           const SizedBox(width: 5),
-          Text('$_commentCount'),
+          Text(
+            '$_commentCount',
+            style: const TextStyle(
+              color: ProfileColors.muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -283,10 +297,16 @@ class _PostFavoriteButtonState extends State<_PostFavoriteButton> {
               Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
                 size: 22,
-                color: isFavorite ? Colors.redAccent : Colors.grey.shade700,
+                color: isFavorite ? Colors.redAccent : ProfileColors.muted,
               ),
               const SizedBox(width: 5),
-              Text('$favoriteCount'),
+              Text(
+                '$favoriteCount',
+                style: const TextStyle(
+                  color: ProfileColors.muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
         );

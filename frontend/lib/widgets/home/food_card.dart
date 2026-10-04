@@ -8,13 +8,23 @@ import 'package:flutter_application_1/bloc/favorite/favorite_state.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FoodCard extends StatelessWidget {
   final Food food;
   final VoidCallback? onTap;
 
-  const FoodCard({super.key, required this.food, this.onTap});
+  /// ชื่อหมวดที่แสดงข้างปุ่มตะกร้า ถ้าไม่ส่งมาใช้หมวดแรกของสูตร
+  /// (หน้า Home ส่งหมวดที่กำลังกรองอยู่มา สูตรที่มีหลายหมวดจะได้แสดงหมวดที่ตรงกับ filter)
+  final String? categoryLabel;
+
+  const FoodCard({
+    super.key,
+    required this.food,
+    this.onTap,
+    this.categoryLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +45,12 @@ class FoodCard extends StatelessWidget {
             ),
             Expanded(
               child: Center(
-                child: Image.network(
+                child: AppNetworkImage(
                   food.filePathImage,
-                  webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Icon(
+                  // การ์ดพื้นขาว ไม่ต้องมีกรอบเทาตอนกำลังโหลด
+                  placeholder: const SizedBox.shrink(),
+                  errorBuilder: (context) => Icon(
                     Icons.fastfood,
                     size: 48,
                     color: Colors.grey.shade400,
@@ -65,11 +76,15 @@ class FoodCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  food.category,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                Flexible(
+                  child: Text(
+                    categoryLabel ?? food.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
                 _AddToCartButton(food: food), // add
@@ -100,7 +115,9 @@ class _FavoriteButton extends StatelessWidget {
 
         return IconButton(
           // กดที่หัวใจต้องไม่ไปเปิดหน้ารายละเอียดของการ์ด
+          // ไม่ใส่ null ตอนกำลังยิง API เพราะปุ่มที่ปิดอยู่จะปล่อยให้แตะทะลุไปเปิดการ์ด
           onPressed: () async {
+            if (state.isPending(recipeId)) return;
             final favoriteBloc = context.read<FavoriteBloc>();
             if (await _requireSignIn(context)) return;
             favoriteBloc.add(FavoriteToggled(recipeId));

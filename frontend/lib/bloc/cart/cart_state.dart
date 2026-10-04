@@ -11,6 +11,7 @@ class CartState {
     this.cartId,
     this.items = const [],
     this.pendingRecipeIds = const {},
+    this.isClearing = false,
     this.feedback = CartFeedback.none,
     this.feedbackTitle,
     this.error,
@@ -25,6 +26,9 @@ class CartState {
 
   /// สูตรที่กำลังยิง API อยู่ ใช้กันกดรัว ๆ ซ้อนกัน
   final Set<String> pendingRecipeIds;
+
+  /// กำลังล้างตะกร้า ใช้กันกดล้างซ้ำ
+  final bool isClearing;
 
   final CartFeedback feedback;
   final String? feedbackTitle;
@@ -46,6 +50,7 @@ class CartState {
     String? cartId,
     List<CartItem>? items,
     Set<String>? pendingRecipeIds,
+    bool? isClearing,
     CartFeedback? feedback,
     String? feedbackTitle,
     String? error,
@@ -56,6 +61,7 @@ class CartState {
       cartId: cartId ?? this.cartId,
       items: items ?? this.items,
       pendingRecipeIds: pendingRecipeIds ?? this.pendingRecipeIds,
+      isClearing: isClearing ?? this.isClearing,
       feedback: feedback ?? CartFeedback.none,
       feedbackTitle: feedback == null ? null : feedbackTitle,
       error: clearError ? null : (error ?? this.error),

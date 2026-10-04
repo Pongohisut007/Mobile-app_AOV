@@ -5,6 +5,7 @@ import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_state.d
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_tile.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -65,11 +66,12 @@ class RecipeCommentSection extends StatelessWidget {
                   ),
                 )
               else if (!state.isLoggedIn)
-                TextButton.icon(
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.login),
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('เข้าสู่ระบบเพื่อแสดงความคิดเห็น'),
+                // หน้าตาเหมือนตอน login แล้ว แต่กดส่งจะพาไป login ก่อน
+                _InlineCommentComposer(
+                  isSubmitting: false,
+                  submitStatus: RecipeCommentSubmitStatus.idle,
+                  avatarUrl: null,
+                  onSubmit: (_) => _goToLogin(context),
                 )
               else
                 Padding(
@@ -130,8 +132,14 @@ class RecipeCommentSection extends StatelessWidget {
                   RecipeCommentTile(
                     comment: comment,
                     isOwner: comment.userId == state.userId,
-                    onEdit: () => _editComment(context, comment),
-                    onDelete: () => _confirmDelete(context, comment),
+                    isBusy: state.mutatingCommentId == comment.id,
+                    // ระหว่างแก้ไข/ลบคอมเมนต์หนึ่งอยู่ ปิดเมนูของทุกคอมเมนต์
+                    onEdit: state.isMutating
+                        ? null
+                        : () => _editComment(context, comment),
+                    onDelete: state.isMutating
+                        ? null
+                        : () => _confirmDelete(context, comment),
                   ),
                   const SizedBox(height: 10),
                 ],
@@ -166,6 +174,12 @@ class RecipeCommentSection extends StatelessWidget {
         );
       },
     );
+  }
+
+  void _goToLogin(BuildContext context) {
+    // กดส่งรัว ๆ ไม่ต้องเปิดหน้า login ซ้อน (เปิดไปแล้วหน้านี้จะไม่ใช่หน้าบนสุด)
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    Navigator.of(context).pushNamed(AppRoutes.login);
   }
 
   Future<void> _editComment(BuildContext context, RecipeComment comment) async {
@@ -331,7 +345,11 @@ class _InlineCommentComposerState extends State<_InlineCommentComposer> {
           backgroundColor: Colors.grey.shade200,
           foregroundImage: resolvedAvatarUrl == null
               ? null
-              : NetworkImage(resolvedAvatarUrl),
+              : appNetworkImageProvider(
+                  context,
+                  resolvedAvatarUrl,
+                  logicalSize: 38,
+                ),
           child: resolvedAvatarUrl == null
               ? Icon(Icons.person_outline, color: Colors.grey.shade700)
               : null,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/recipe_review.dart';
 import 'package:flutter_application_1/models/review_tag.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
@@ -30,7 +31,9 @@ class RecipeReviewTile extends StatelessWidget {
           CircleAvatar(
             radius: 20,
             backgroundColor: FoodDetailColors.softOrange,
-            foregroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+            foregroundImage: hasAvatar
+                ? appNetworkImageProvider(context, avatarUrl, logicalSize: 40)
+                : null,
             child: Text(
               initial,
               style: const TextStyle(

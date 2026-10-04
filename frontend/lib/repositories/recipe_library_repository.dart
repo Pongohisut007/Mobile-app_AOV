@@ -1,15 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_application_1/models/paged_result.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/models/recipe_summary.dart';
 import 'package:http/http.dart' as http;
 
 abstract interface class RecipeLibraryRepository {
+  /// สูตรในคลังทีละหน้า
   /// favorites ถูก guard ด้วย JWT จึงต้องแนบ accessToken
   /// ส่วน myRecipes/drafts/purchased ยังอ้างอิง userId ทาง query
-  Future<List<RecipeSummary>> fetchCollection(
+  Future<PagedResult<RecipeSummary>> fetchCollectionPage(
     RecipeCollectionType type, {
+    required String userId,
+    required String accessToken,
+    int page = 1,
+  });
+
+  /// id ของสูตรที่ซื้อแล้วทั้งหมด ใช้เช็กว่าซื้อหรือยังทั้งแอป (ไม่โหลดรายละเอียดสูตร)
+  Future<Set<String>> fetchPurchasedRecipeIds({
     required String userId,
     required String accessToken,
   });
@@ -23,29 +32,98 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
        _client = client ?? http.Client();
 
+  /// จำนวนสูตรต่อหน้า (backend รับได้สูงสุด 50)
+  static const int pageSize = 20;
+
   final String _baseUrl;
   final http.Client _client;
   final Duration requestTimeout;
 
   @override
-  Future<List<RecipeSummary>> fetchCollection(
+  Future<PagedResult<RecipeSummary>> fetchCollectionPage(
     RecipeCollectionType type, {
     required String userId,
     required String accessToken,
+    int page = 1,
   }) async {
-    final normalizedUserId = userId.trim();
-    final normalizedToken = accessToken.trim();
-    if (normalizedUserId.isEmpty || normalizedToken.isEmpty) {
+    final normalizedUserId = _requireUserId(userId, accessToken);
+    final uri = _uriFor(type, normalizedUserId, page);
+
+    final decoded = await _get(
+      uri,
+      accessToken,
+      errorLabel: type.title.toLowerCase(),
+    );
+    if (decoded is! Map<String, dynamic>) {
       throw const RecipeLibraryException(
-        'Please sign in to see your recipes.',
+        'Backend returned an invalid recipe list.',
       );
     }
 
-    final uri = _uriFor(type, normalizedUserId);
+    try {
+      return PagedResult.fromJson(decoded, (item) {
+        final recipeJson = switch (type) {
+          RecipeCollectionType.favorites ||
+          RecipeCollectionType.purchased => item['recipe'],
+          _ => item,
+        };
+        if (recipeJson is! Map<String, dynamic>) {
+          throw const RecipeLibraryException(
+            'Backend response does not include recipe details.',
+          );
+        }
+        return RecipeSummary.fromJson(recipeJson, apiBaseUrl: _baseUrl);
+      });
+    } on FormatException {
+      throw const RecipeLibraryException(
+        'Backend returned an invalid recipe list.',
+      );
+    }
+  }
 
+  @override
+  Future<Set<String>> fetchPurchasedRecipeIds({
+    required String userId,
+    required String accessToken,
+  }) async {
+    final normalizedUserId = _requireUserId(userId, accessToken);
+    final uri = Uri.parse(
+      '$_baseUrl/recipe-access/user/'
+      '${Uri.encodeComponent(normalizedUserId)}/recipe-ids',
+    );
+
+    final decoded = await _get(
+      uri,
+      accessToken,
+      errorLabel: 'purchased recipes',
+    );
+    if (decoded is! List) {
+      throw const RecipeLibraryException(
+        'Backend returned an invalid purchased recipe list.',
+      );
+    }
+    return {
+      for (final id in decoded)
+        if (id is String) id,
+    };
+  }
+
+  String _requireUserId(String userId, String accessToken) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty || accessToken.trim().isEmpty) {
+      throw const RecipeLibraryException('Please sign in to see your recipes.');
+    }
+    return normalizedUserId;
+  }
+
+  Future<Object?> _get(
+    Uri uri,
+    String accessToken, {
+    required String errorLabel,
+  }) async {
     try {
       final response = await _client
-          .get(uri, headers: {'Authorization': 'Bearer $normalizedToken'})
+          .get(uri, headers: {'Authorization': 'Bearer ${accessToken.trim()}'})
           .timeout(requestTimeout);
 
       if (response.statusCode == 401) {
@@ -55,40 +133,11 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
       }
       if (response.statusCode != 200) {
         throw RecipeLibraryException(
-          'Could not load ${type.title.toLowerCase()} '
-          '(HTTP ${response.statusCode}).',
+          'Could not load $errorLabel (HTTP ${response.statusCode}).',
         );
       }
 
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! List) {
-        throw const RecipeLibraryException(
-          'Backend returned an invalid recipe list.',
-        );
-      }
-
-      return decoded
-          .map((item) {
-            if (item is! Map<String, dynamic>) {
-              throw const RecipeLibraryException(
-                'Backend returned an invalid recipe item.',
-              );
-            }
-
-            final recipeJson = switch (type) {
-              RecipeCollectionType.favorites ||
-              RecipeCollectionType.purchased => item['recipe'],
-              _ => item,
-            };
-            if (recipeJson is! Map<String, dynamic>) {
-              throw const RecipeLibraryException(
-                'Backend response does not include recipe details.',
-              );
-            }
-
-            return RecipeSummary.fromJson(recipeJson, apiBaseUrl: _baseUrl);
-          })
-          .toList(growable: false);
+      return jsonDecode(utf8.decode(response.bodyBytes));
     } on TimeoutException {
       throw const RecipeLibraryException(
         'The request timed out. Check the backend connection.',
@@ -102,19 +151,26 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
     }
   }
 
-  Uri _uriFor(RecipeCollectionType type, String userId) {
+  Uri _uriFor(RecipeCollectionType type, String userId, int page) {
+    final paging = {'page': '$page', 'limit': '$pageSize'};
     return switch (type) {
-      RecipeCollectionType.myRecipes => Uri.parse(
-        '$_baseUrl/recipes',
-      ).replace(queryParameters: {'creatorId': userId, 'status': 'published'}),
-      RecipeCollectionType.drafts => Uri.parse(
-        '$_baseUrl/recipes',
-      ).replace(queryParameters: {'creatorId': userId, 'status': 'draft'}),
+      RecipeCollectionType.myRecipes => Uri.parse('$_baseUrl/recipes').replace(
+        queryParameters: {
+          'creatorId': userId,
+          'status': 'published',
+          ...paging,
+        },
+      ),
+      RecipeCollectionType.drafts => Uri.parse('$_baseUrl/recipes').replace(
+        queryParameters: {'creatorId': userId, 'status': 'draft', ...paging},
+      ),
       // /favorites รู้ว่าเป็นของใครจาก token แล้ว ไม่ต้องส่ง userId
-      RecipeCollectionType.favorites => Uri.parse('$_baseUrl/favorites'),
+      RecipeCollectionType.favorites => Uri.parse(
+        '$_baseUrl/favorites',
+      ).replace(queryParameters: paging),
       RecipeCollectionType.purchased => Uri.parse(
         '$_baseUrl/recipe-access/user/${Uri.encodeComponent(userId)}',
-      ),
+      ).replace(queryParameters: paging),
     };
   }
 }

@@ -4,6 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
+import 'package:flutter_application_1/repositories/image_compressor.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 
 class CreateSectionStepsPage extends StatefulWidget {
   const CreateSectionStepsPage({
@@ -80,19 +83,38 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
       if (!isVideo && !imageExtensions.contains(extension)) {
         throw Exception('รองรับไฟล์รูปภาพหรือวิดีโอเท่านั้น');
       }
+
+      final kind = isVideo ? RecipeMediaKind.video : RecipeMediaKind.image;
+      var upload = File(path);
+      var name = file.name;
+      var mimeType = _mimeType(kind, file.extension);
+      var size = file.size;
+      // ย่อรูปก่อน แล้วค่อยเช็กขนาด (วิดีโออัปโหลดตามเดิม)
+      if (!isVideo) {
+        final prepared = await prepareImageForUpload(
+          file: upload,
+          name: name,
+          mimeType: mimeType,
+        );
+        upload = prepared.file;
+        name = prepared.name;
+        mimeType = prepared.mimeType;
+        size = prepared.size;
+      }
+
       final maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (file.size < 1 || file.size > maxSize) {
+      if (size < 1 || size > maxSize) {
         throw Exception('ไฟล์ต้องมีขนาดไม่เกิน ${maxSize ~/ (1024 * 1024)} MB');
       }
 
-      final kind = isVideo ? RecipeMediaKind.video : RecipeMediaKind.image;
+      if (!mounted) return;
       setState(() {
         step.existingMediaUrl = null;
         step.media = PendingRecipeUpload(
-          file: File(path),
-          name: file.name,
+          file: upload,
+          name: name,
           kind: kind,
-          mimeType: _mimeType(kind, file.extension),
+          mimeType: mimeType,
         );
       });
       _showMessage('เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร');
@@ -150,12 +172,11 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
         _autoSaveAndPop();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F5F0),
-        appBar: AppBar(
-          title: Text(widget.sectionTitle),
-          backgroundColor: const Color(0xFFF6F5F0),
+        backgroundColor: RecipeFormStyle.background,
+        appBar: RecipeFormStyle.appBar(
+          title: widget.sectionTitle,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_rounded),
             tooltip: 'กลับ (บันทึกอัตโนมัติ)',
             onPressed: _autoSaveAndPop,
           ),
@@ -163,10 +184,16 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
         body: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
             children: [
               for (var index = 0; index < _steps.length; index++)
                 _buildStepCard(index),
+              RecipeAddButton(
+                label: 'เพิ่มขั้นตอน',
+                onPressed: _isPickingFile
+                    ? null
+                    : () => setState(() => _steps.add(_StepEditor())),
+              ),
             ],
           ),
         ),
@@ -176,24 +203,63 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
 
   Widget _buildStepCard(int index) {
     final step = _steps[index];
+    final number = widget.firstStepNumber + index;
     return Container(
       key: ObjectKey(step),
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E2DA)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(RecipeFormStyle.cardRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // หัวการ์ด: เลขขั้นตอนในวงกลม + ชื่อย่อ + ปุ่มลบ/พับ
           Row(
             children: [
-              Expanded(
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: RecipeFormStyle.accentSoft,
+                  shape: BoxShape.circle,
+                ),
                 child: Text(
-                  'ขั้นตอนที่ ${widget.firstStepNumber + index}',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  '$number',
+                  style: const TextStyle(
+                    color: RecipeFormStyle.accent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ขั้นตอนที่ $number',
+                      style: const TextStyle(
+                        color: RecipeFormStyle.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    // พับอยู่: โชว์ชื่อขั้นตอนไว้ให้รู้ว่าการ์ดนี้คืออะไร
+                    if (!step.isExpanded && step.title.text.trim().isNotEmpty)
+                      Text(
+                        step.title.text.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: RecipeFormStyle.muted,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               if (_steps.length > 1)
@@ -201,158 +267,235 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                   onPressed: _isPickingFile
                       ? null
                       : () => setState(() => _steps.removeAt(index).dispose()),
+                  visualDensity: VisualDensity.compact,
+                  color: RecipeFormStyle.muted,
                   tooltip: 'ลบขั้นตอน',
-                  icon: const Icon(Icons.delete_outline),
+                  icon: const Icon(Icons.delete_outline_rounded),
                 ),
               IconButton(
                 onPressed: () =>
                     setState(() => step.isExpanded = !step.isExpanded),
+                visualDensity: VisualDensity.compact,
+                color: RecipeFormStyle.muted,
                 tooltip: step.isExpanded ? 'พับรายละเอียด' : 'ขยายรายละเอียด',
                 icon: Icon(
-                  step.isExpanded ? Icons.expand_less : Icons.expand_more,
+                  step.isExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
                 ),
               ),
             ],
           ),
-          if (step.isExpanded) ...[
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: step.title,
-              decoration: const InputDecoration(
-                labelText: 'ชื่อขั้นตอนย่อย',
-                hintText: 'เช่น เตรียมหมูและเครื่องปรุง',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) => _required(value, 'ชื่อขั้นตอนย่อย'),
+          if (step.isExpanded)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildStepFields(step),
             ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: step.description,
-              decoration: const InputDecoration(
-                labelText: 'วิธีทำ',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-              maxLines: 3,
-              validator: (value) => _required(value, 'วิธีทำ'),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: step.contentType,
-                    decoration: const InputDecoration(
-                      labelText: 'ชนิดขั้นตอน',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'text', child: Text('วิธีทำ')),
-                      DropdownMenuItem(value: 'tip', child: Text('เคล็ดลับ')),
-                      DropdownMenuItem(
-                        value: 'warning',
-                        child: Text('ข้อควรระวัง'),
-                      ),
-                      DropdownMenuItem(value: 'image', child: Text('รูปภาพ')),
-                      DropdownMenuItem(
-                        value: 'video',
-                        child: Text('คลิปวิดีโอ'),
-                      ),
-                    ],
-                    validator: (value) {
-                      if ((value == 'image' || value == 'video') &&
-                          !step.hasMedia) {
-                        return 'เลือกไฟล์รูปภาพหรือวิดีโอ';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        step.contentType = value;
-                        if (value != 'image' && value != 'video') {
-                          step.media = null;
-                          step.existingMediaUrl = null;
-                        } else if (step.existingMediaUrl != null &&
-                            step.media == null) {
-                          // ไม่รู้ชนิดไฟล์เดิมแน่ชัด ให้เลือกไฟล์ใหม่เมื่อเปลี่ยนชนิด
-                          step.existingMediaUrl = null;
-                        } else if (step.media != null &&
-                            value !=
-                                (step.media!.kind == RecipeMediaKind.video
-                                    ? 'video'
-                                    : 'image')) {
-                          step.media = null;
-                        }
-                      });
-                    },
-                  ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepFields(_StepEditor step) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: step.title,
+          decoration: RecipeFormStyle.input(
+            label: 'ชื่อขั้นตอนย่อย',
+            hint: 'เช่น เตรียมหมูและเครื่องปรุง',
+          ),
+          validator: (value) => _required(value, 'ชื่อขั้นตอนย่อย'),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: step.description,
+          decoration: RecipeFormStyle.input(
+            label: 'วิธีทำ',
+            hint: 'อธิบายสิ่งที่ต้องทำในขั้นตอนนี้',
+            alignLabelWithHint: true,
+          ),
+          minLines: 3,
+          maxLines: 6,
+          validator: (value) => _required(value, 'วิธีทำ'),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                initialValue: step.contentType,
+                borderRadius: BorderRadius.circular(16),
+                dropdownColor: Colors.white,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: RecipeFormStyle.muted,
                 ),
-                const SizedBox(width: 10),
+                decoration: RecipeFormStyle.input(label: 'ชนิดขั้นตอน'),
+                items: const [
+                  DropdownMenuItem(value: 'text', child: Text('วิธีทำ')),
+                  DropdownMenuItem(value: 'tip', child: Text('เคล็ดลับ')),
+                  DropdownMenuItem(
+                    value: 'warning',
+                    child: Text('ข้อควรระวัง'),
+                  ),
+                  DropdownMenuItem(value: 'image', child: Text('รูปภาพ')),
+                  DropdownMenuItem(value: 'video', child: Text('คลิปวิดีโอ')),
+                ],
+                validator: (value) {
+                  if ((value == 'image' || value == 'video') &&
+                      !step.hasMedia) {
+                    return 'เลือกไฟล์รูปภาพหรือวิดีโอ';
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    step.contentType = value;
+                    if (value != 'image' && value != 'video') {
+                      step.media = null;
+                      step.existingMediaUrl = null;
+                    } else if (step.existingMediaUrl != null &&
+                        step.media == null) {
+                      // ไม่รู้ชนิดไฟล์เดิมแน่ชัด ให้เลือกไฟล์ใหม่เมื่อเปลี่ยนชนิด
+                      step.existingMediaUrl = null;
+                    } else if (step.media != null &&
+                        value !=
+                            (step.media!.kind == RecipeMediaKind.video
+                                ? 'video'
+                                : 'image')) {
+                      step.media = null;
+                    }
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: TextFormField(
+                controller: step.durationMinutes,
+                decoration: RecipeFormStyle.input(
+                  label: 'เวลา',
+                  suffixText: 'นาที',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: _minutes,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildMediaPicker(step),
+        if (step.media != null) ...[
+          const SizedBox(height: 10),
+          if (step.media!.kind == RecipeMediaKind.image) ...[
+            _ImagePreview(file: step.media!.file),
+            const SizedBox(height: 6),
+          ],
+          Text(
+            step.media!.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: RecipeFormStyle.muted,
+              fontSize: 12.5,
+            ),
+          ),
+        ] else if (step.existingMediaUrl case final mediaUrl?) ...[
+          const SizedBox(height: 10),
+          if (step.contentType == 'video')
+            const Row(
+              children: [
+                Icon(Icons.videocam_outlined, color: RecipeFormStyle.muted),
+                SizedBox(width: 6),
                 Expanded(
-                  child: TextFormField(
-                    controller: step.durationMinutes,
-                    decoration: const InputDecoration(
-                      labelText: 'เวลา (นาที)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: _minutes,
+                  child: Text(
+                    'ใช้คลิปวิดีโอเดิม',
+                    style: TextStyle(color: RecipeFormStyle.muted),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: _isPickingFile ? null : () => _pickMedia(step),
-              icon: _isPickingFile
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.upload_file_rounded),
-              label: Text(
-                step.hasMedia ? 'เปลี่ยนไฟล์' : 'เลือกรูปภาพหรือวิดีโอ',
-              ),
-            ),
-            if (step.media != null) ...[
-              const SizedBox(height: 8),
-              if (step.media!.kind == RecipeMediaKind.image)
-                _ImagePreview(file: step.media!.file),
-              Text(
-                step.media!.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ] else if (step.existingMediaUrl case final mediaUrl?) ...[
-              const SizedBox(height: 8),
-              if (step.contentType == 'video')
-                const Row(
-                  children: [
-                    Icon(Icons.videocam_outlined),
-                    SizedBox(width: 6),
-                    Expanded(child: Text('ใช้คลิปวิดีโอเดิม')),
-                  ],
-                )
-              else
-                _ImagePreview(url: mediaUrl),
-            ],
-          ],
-          if (index == _steps.length - 1) ...[
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _isPickingFile
-                    ? null
-                    : () => setState(() => _steps.add(_StepEditor())),
-                icon: const Icon(Icons.add),
-                label: const Text('เพิ่มขั้นตอน'),
-              ),
-            ),
-          ],
+            )
+          else
+            _ImagePreview(url: mediaUrl),
         ],
+      ],
+    );
+  }
+
+  // แถบเลือกไฟล์: ไอคอนในวงกลม + ข้อความ เต็มความกว้าง
+  Widget _buildMediaPicker(_StepEditor step) {
+    final hasMedia = step.hasMedia;
+    return Material(
+      color: RecipeFormStyle.fieldFill,
+      borderRadius: BorderRadius.circular(RecipeFormStyle.fieldRadius),
+      child: InkWell(
+        onTap: _isPickingFile ? null : () => _pickMedia(step),
+        borderRadius: BorderRadius.circular(RecipeFormStyle.fieldRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: _isPickingFile
+                    ? const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: RecipeFormStyle.primary,
+                        ),
+                      )
+                    : Icon(
+                        hasMedia
+                            ? Icons.swap_horiz_rounded
+                            : Icons.perm_media_outlined,
+                        size: 20,
+                        color: RecipeFormStyle.primary,
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasMedia ? 'เปลี่ยนไฟล์' : 'เลือกรูปภาพหรือวิดีโอ',
+                      style: const TextStyle(
+                        color: RecipeFormStyle.ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Text(
+                      'รูปไม่เกิน 10 MB · วิดีโอไม่เกิน 100 MB',
+                      style: TextStyle(
+                        color: RecipeFormStyle.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: RecipeFormStyle.muted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -427,12 +570,15 @@ class _ImagePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(14),
       child: AspectRatio(
         aspectRatio: 16 / 9,
         child: file != null
             ? Image.file(file!, fit: BoxFit.cover, errorBuilder: _broken)
-            : Image.network(url!, fit: BoxFit.cover, errorBuilder: _broken),
+            : AppNetworkImage(
+                url!,
+                errorBuilder: (context) => _broken(context, Object(), null),
+              ),
       ),
     );
   }

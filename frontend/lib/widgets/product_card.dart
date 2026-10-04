@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/product.dart';
 
 class ProductCard extends StatelessWidget {
@@ -27,12 +28,11 @@ class ProductCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(8.0),
               ), // BorderRadius.vertical
-              child: Image.network(
+              child: AppNetworkImage(
                 product.image,
                 height: 150,
                 width: double.infinity,
-                fit: BoxFit.cover,
-              ), // Image.network
+              ),
             ), // ClipRRect
             Padding(
               padding: const EdgeInsets.all(8.0),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_comment.dart';
+import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/comment_text.dart';
 
@@ -11,10 +12,14 @@ class RecipeCommentTile extends StatelessWidget {
     this.isOwner = false,
     this.onEdit,
     this.onDelete,
+    this.isBusy = false,
   });
 
   final RecipeComment comment;
   final bool isOwner;
+
+  /// กำลังแก้ไข/ลบคอมเมนต์นี้อยู่: แสดงตัวหมุนแทนเมนู
+  final bool isBusy;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -41,7 +46,9 @@ class RecipeCommentTile extends StatelessWidget {
           CircleAvatar(
             radius: 20,
             backgroundColor: FoodDetailColors.softOrange,
-            foregroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+            foregroundImage: hasAvatar
+                ? appNetworkImageProvider(context, avatarUrl, logicalSize: 40)
+                : null,
             child: Text(
               initial,
               style: const TextStyle(
@@ -82,10 +89,22 @@ class RecipeCommentTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (isOwner)
+                    if (isOwner && isBusy)
+                      const SizedBox.square(
+                        dimension: 32,
+                        child: Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    else if (isOwner)
                       SizedBox.square(
                         dimension: 32,
                         child: PopupMenuButton<String>(
+                          enabled: onEdit != null || onDelete != null,
                           tooltip: 'จัดการความคิดเห็น',
                           padding: EdgeInsets.zero,
                           iconSize: 18,

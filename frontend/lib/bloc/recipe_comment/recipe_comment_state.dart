@@ -22,6 +22,7 @@ class RecipeCommentState {
     this.submitStatus = RecipeCommentSubmitStatus.idle,
     this.mutationStatus = RecipeCommentMutationStatus.idle,
     this.mutationType,
+    this.mutatingCommentId,
     this.userId,
     this.error,
   });
@@ -38,11 +39,15 @@ class RecipeCommentState {
   final RecipeCommentSubmitStatus submitStatus;
   final RecipeCommentMutationStatus mutationStatus;
   final RecipeCommentMutationType? mutationType;
+
+  /// คอมเมนต์ที่กำลังแก้ไข/ลบอยู่ ใช้แสดงตัวหมุนบนการ์ดนั้น
+  final String? mutatingCommentId;
   final String? userId;
   final String? error;
 
   bool get hasMore => comments.length < total;
   bool get isSubmitting => submitStatus == RecipeCommentSubmitStatus.submitting;
+  bool get isMutating => mutationStatus == RecipeCommentMutationStatus.loading;
 
   RecipeCommentState copyWith({
     RecipeCommentStatus? status,
@@ -57,6 +62,8 @@ class RecipeCommentState {
     RecipeCommentSubmitStatus? submitStatus,
     RecipeCommentMutationStatus? mutationStatus,
     RecipeCommentMutationType? mutationType,
+    String? mutatingCommentId,
+    bool clearMutatingCommentId = false,
     String? userId,
     String? error,
     bool clearError = false,
@@ -74,6 +81,9 @@ class RecipeCommentState {
       submitStatus: submitStatus ?? this.submitStatus,
       mutationStatus: mutationStatus ?? this.mutationStatus,
       mutationType: mutationType ?? this.mutationType,
+      mutatingCommentId: clearMutatingCommentId
+          ? null
+          : (mutatingCommentId ?? this.mutatingCommentId),
       userId: userId ?? this.userId,
       error: clearError ? null : (error ?? this.error),
     );
