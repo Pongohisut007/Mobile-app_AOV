@@ -4,9 +4,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserRole } from '../users/entities/user.entity';
 import type { UserProfileResponse } from '../users/dto/user-profile-response.dto';
 import { UsersService } from '../users/users.service';
@@ -53,6 +55,16 @@ export class AuthController {
   @Get('profile')
   profile(@CurrentUser() user: AuthUser): Promise<UserProfileResponse> {
     return this.usersService.findProfile(user.id);
+  }
+
+  // แก้ได้เฉพาะโปรไฟล์ของคนที่ login อยู่ (id มาจาก token ไม่ใช่จาก URL)
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  updateProfile(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<UserProfileResponse> {
+    return this.usersService.updateOwnProfile(user.id, dto);
   }
 
   // ตัวอย่างการจำกัดสิทธิ์เฉพาะ creator

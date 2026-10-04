@@ -12,6 +12,7 @@ import 'package:flutter_application_1/bloc/profile/profile_state.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/views/pages/edit_profile_page.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -110,6 +111,20 @@ class UserPage extends StatelessWidget {
     });
   }
 
+  // หน้าแก้โปรไฟล์คืนโปรไฟล์ใหม่มา (ยกเลิก = null) แสดงได้ทันทีไม่ต้องโหลดซ้ำ
+  Future<void> _openEditProfile(
+    BuildContext context,
+    UserProfile profile,
+  ) async {
+    final profileBloc = context.read<ProfileBloc>();
+    final updated = await Navigator.of(context).push<UserProfile>(
+      MaterialPageRoute<UserProfile>(
+        builder: (_) => EditProfilePage(profile: profile),
+      ),
+    );
+    if (updated != null) profileBloc.add(ProfileUpdated(updated));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,6 +136,7 @@ class UserPage extends StatelessWidget {
               ProfileLoaded(:final profile) => _ProfileContent(
                 profile: profile,
                 onRefresh: () => _refresh(context),
+                onEditProfile: () => _openEditProfile(context, profile),
                 onActionPressed: (label) => _showComingSoon(context, label),
                 onRecipeCollectionPressed: (collectionType) =>
                     _openRecipeCollection(context, collectionType),
@@ -130,6 +146,8 @@ class UserPage extends StatelessWidget {
               ProfileGuest() => _ProfileContent(
                 profile: UserProfile.guest(),
                 onRefresh: () async {},
+                onEditProfile: () =>
+                    Navigator.pushNamed(context, AppRoutes.login),
                 onActionPressed: (_) =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onRecipeCollectionPressed: (_) =>
@@ -157,6 +175,7 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.profile,
     required this.onRefresh,
+    required this.onEditProfile,
     required this.onActionPressed,
     required this.onRecipeCollectionPressed,
     required this.onSignOut,
@@ -166,6 +185,7 @@ class _ProfileContent extends StatelessWidget {
 
   final UserProfile profile;
   final RefreshCallback onRefresh;
+  final VoidCallback onEditProfile;
   final ValueChanged<String> onActionPressed;
   final ValueChanged<RecipeCollectionType> onRecipeCollectionPressed;
   final VoidCallback onSignOut;
@@ -193,7 +213,7 @@ class _ProfileContent extends StatelessWidget {
                 const SizedBox(height: 22),
                 ProfileCard(
                   profile: profile,
-                  onEditPressed: () => onActionPressed('Edit profile'),
+                  onEditPressed: onEditProfile,
                   actionLabel: isGuest ? 'Sign in' : 'Edit profile',
                   actionIcon: isGuest
                       ? Icons.login_rounded

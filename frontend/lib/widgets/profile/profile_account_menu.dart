@@ -24,12 +24,6 @@ class ProfileAccountMenu extends StatelessWidget {
       child: Column(
         children: [
           _MenuTile(
-            icon: Icons.person_outline_rounded,
-            label: 'Personal information',
-            onTap: () => onPressed('Personal information'),
-          ),
-          const _MenuDivider(),
-          _MenuTile(
             icon: Icons.notifications_none_rounded,
             label: 'Notifications',
             onTap: () => onPressed('Notifications'),

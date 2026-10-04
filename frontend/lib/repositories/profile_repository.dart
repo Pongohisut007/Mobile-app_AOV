@@ -6,6 +6,14 @@ import 'package:http/http.dart' as http;
 
 abstract interface class ProfileRepository {
   Future<UserProfile> fetchProfile(String accessToken);
+
+  /// แก้ชื่อ/รูปโปรไฟล์ของตัวเอง (ไม่ส่ง = ไม่แตะ field นั้น)
+  /// avatarPath เป็น path ที่อัปโหลดแล้ว เช่น /uploads/images/xxx.jpg
+  Future<UserProfile> updateProfile(
+    String accessToken, {
+    String? displayName,
+    String? avatarPath,
+  });
 }
 
 class HttpProfileRepository implements ProfileRepository {
@@ -21,7 +29,40 @@ class HttpProfileRepository implements ProfileRepository {
   final Duration requestTimeout;
 
   @override
-  Future<UserProfile> fetchProfile(String accessToken) async {
+  Future<UserProfile> fetchProfile(String accessToken) {
+    return _send(
+      accessToken,
+      (uri, headers) => _client.get(uri, headers: headers),
+      failureLabel: 'load profile',
+    );
+  }
+
+  @override
+  Future<UserProfile> updateProfile(
+    String accessToken, {
+    String? displayName,
+    String? avatarPath,
+  }) {
+    return _send(
+      accessToken,
+      (uri, headers) => _client.patch(
+        uri,
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'displayName': ?displayName,
+          'avatarUrl': ?avatarPath,
+        }),
+      ),
+      failureLabel: 'save profile',
+    );
+  }
+
+  Future<UserProfile> _send(
+    String accessToken,
+    Future<http.Response> Function(Uri uri, Map<String, String> headers)
+    request, {
+    required String failureLabel,
+  }) async {
     final normalizedAccessToken = accessToken.trim();
     if (normalizedAccessToken.isEmpty) {
       throw const ProfileRepositoryException('Access token is missing.');
@@ -29,15 +70,15 @@ class HttpProfileRepository implements ProfileRepository {
     final uri = Uri.parse('$_baseUrl/auth/profile');
 
     try {
-      final response = await _client
-          .get(uri, headers: {'Authorization': 'Bearer $normalizedAccessToken'})
-          .timeout(requestTimeout);
+      final response = await request(uri, {
+        'Authorization': 'Bearer $normalizedAccessToken',
+      }).timeout(requestTimeout);
 
       if (response.statusCode != 200) {
         throw ProfileRepositoryException(
           response.statusCode == 401
               ? 'Your session has expired. Please sign in again.'
-              : 'Could not load profile (HTTP ${response.statusCode}).',
+              : 'Could not $failureLabel (HTTP ${response.statusCode}).',
         );
       }
 

@@ -10,6 +10,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       super(const ProfileInitial()) {
     on<ProfileRequested>(_loadProfile);
     on<ProfileRefreshRequested>(_loadProfile);
+    on<ProfileUpdated>((event, emit) => emit(ProfileLoaded(event.profile)));
   }
 
   final ProfileRepository _repository;

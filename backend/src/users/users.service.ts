@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { CacheNamespace } from '../cache/app-cache.module';
+import { AppCacheService } from '../cache/app-cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Favorite } from '../favorites/entities/favorite.entity';
@@ -40,6 +42,8 @@ export class UsersService {
     private readonly accessRepository: Repository<RecipeAccess>,
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+    @Optional()
+    private readonly cache?: AppCacheService,
   ) {}
 
   findAll(): Promise<User[]> {
@@ -140,6 +144,26 @@ export class UsersService {
       }),
     );
     return this.findOne(user.id);
+  }
+
+  /** ผู้ใช้แก้โปรไฟล์ตัวเอง: แค่ชื่อกับรูป */
+  async updateOwnProfile(
+    id: string,
+    input: { displayName?: string; avatarUrl?: string | null },
+  ): Promise<UserProfileResponse> {
+    const user = await this.findOne(id);
+    if (input.displayName !== undefined) user.displayName = input.displayName;
+    // null = ลบรูป, undefined = ไม่แตะ
+    if (input.avatarUrl !== undefined) user.avatarUrl = input.avatarUrl;
+    await this.userRepository.save(user);
+
+    // ชื่อ/รูปผู้ใช้ฝังอยู่ในข้อมูลสูตร (ผู้สร้าง) คอมเมนต์ และรีวิวที่ cache ไว้
+    await Promise.all([
+      this.cache?.invalidate(CacheNamespace.recipes),
+      this.cache?.invalidate(CacheNamespace.comments),
+      this.cache?.invalidate(CacheNamespace.reviews),
+    ]);
+    return this.findProfile(id);
   }
 
   async update(id: string, input: UpdateUserInput): Promise<User> {
