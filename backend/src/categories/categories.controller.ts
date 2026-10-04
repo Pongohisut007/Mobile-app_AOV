@@ -11,10 +11,7 @@ import {
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { Category } from './entities/category.entity';
-import {
-  RecipeStatus,
-  RecipeType,
-} from '../recipes/entities/recipe.entity';
+import { RecipeStatus, RecipeType } from '../recipes/entities/recipe.entity';
 
 @Controller('categories')
 export class CategoriesController {

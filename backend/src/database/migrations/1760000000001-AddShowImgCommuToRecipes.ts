@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddShowImgCommuToRecipes1760000000001
-  implements MigrationInterface
-{
+export class AddShowImgCommuToRecipes1760000000001 implements MigrationInterface {
   name = 'AddShowImgCommuToRecipes1760000000001';
 
   async up(queryRunner: QueryRunner): Promise<void> {

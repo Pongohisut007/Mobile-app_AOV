@@ -8,7 +8,9 @@ import { CategoriesService } from './categories.service';
 import { Category } from './entities/category.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Category, Favorite, Review, RecipeComment])],
+  imports: [
+    TypeOrmModule.forFeature([Category, Favorite, Review, RecipeComment]),
+  ],
   controllers: [CategoriesController],
   providers: [CategoriesService],
 })

@@ -5,10 +5,7 @@ import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { Category } from './entities/category.entity';
-import {
-  RecipeStatus,
-  RecipeType,
-} from '../recipes/entities/recipe.entity';
+import { RecipeStatus, RecipeType } from '../recipes/entities/recipe.entity';
 
 @Injectable()
 export class CategoriesService {
@@ -23,10 +20,7 @@ export class CategoriesService {
     private readonly commentRepository: Repository<RecipeComment>,
   ) {}
 
-  async findAll(
-    type?: RecipeType,
-    status?: RecipeStatus,
-  ): Promise<Category[]> {
+  async findAll(type?: RecipeType, status?: RecipeStatus): Promise<Category[]> {
     if (!type && !status) {
       return this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
     }
