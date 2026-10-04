@@ -74,7 +74,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     onChanged: _onChanged,
                     onSubmitted: _onSubmitted,
                     decoration: const InputDecoration(
-                      hintText: "Search food",
+                      hintText: "search for a recipe",
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                       isCollapsed: true,

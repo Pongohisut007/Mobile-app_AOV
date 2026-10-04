@@ -30,15 +30,6 @@ class CommunityHeader extends StatelessWidget {
                   letterSpacing: -0.8,
                 ),
               ),
-              const SizedBox(height: 7),
-              const Text(
-                'Recipes shared by home cooks',
-                style: TextStyle(
-                  color: ProfileColors.muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
             ],
           ),
         ),
