@@ -1,24 +1,82 @@
-FROM node:22-alpine AS build
+# syntax=docker/dockerfile:1.7
+
+FROM node:24.21.0-alpine AS base
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
+  NPM_CONFIG_FUND=false
 
+
+# =========================================================
+# Build dependencies
+# =========================================================
+
+FROM base AS build-deps
+
+COPY package.json package-lock.json ./
+
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci
+
+
+# =========================================================
+# Build
+# =========================================================
+
+FROM base AS build
+
+COPY --from=build-deps /app/node_modules ./node_modules
+
+COPY package.json package-lock.json ./
 COPY . .
+
 RUN npm run build
 
-FROM node:22-alpine AS production
 
-WORKDIR /app
-# ENV NODE_ENV=production
+# =========================================================
+# Production dependencies
+# =========================================================
 
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+FROM base AS production-deps
 
-COPY --from=build /app/dist ./dist
+ENV NODE_ENV=production
 
-RUN mkdir -p /app/uploads && chown -R node:node /app
+COPY package.json package-lock.json ./
+
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci \
+  --omit=dev \
+  --no-audit \
+  --fund=false
+
+
+# =========================================================
+# Runtime
+# =========================================================
+
+FROM base AS production
+
+ENV NODE_ENV=production
+
+COPY --from=production-deps \
+  --chown=node:node \
+  /app/node_modules \
+  ./node_modules
+
+COPY --from=build \
+  --chown=node:node \
+  /app/dist \
+  ./dist
+
+COPY --chown=node:node \
+  package.json \
+  package-lock.json \
+  ./
+
+RUN mkdir -p /app/uploads \
+  && chown node:node /app/uploads
+
 USER node
 
 EXPOSE 3000
