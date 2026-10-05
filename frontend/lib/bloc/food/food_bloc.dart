@@ -7,6 +7,9 @@ import 'package:flutter_application_1/repositories/food_repository.dart';
 
 typedef _PageLoader = Future<PagedResult<Food>> Function(int page);
 
+/// หน้าแรกที่เคยโหลดเก็บไว้ (ไม่มี = null)
+typedef _CachedPage = Future<PagedResult<Food>?> Function();
+
 class FoodBloc extends Bloc<FoodEvent, FoodState> {
   final FoodRepository repository;
 
@@ -90,6 +93,7 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     return _loadFirstPage(
       emit,
       (page) => repository.fetchRecipesPage(page: page),
+      cached: () => repository.cachedRecipesPage(),
     );
   }
 
@@ -107,6 +111,11 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
         sort: 'rating',
         page: page,
       ),
+      cached: () => repository.cachedRecipesPage(
+        type: 'official',
+        categoryId: event.categoryId,
+        sort: 'rating',
+      ),
     );
   }
 
@@ -122,6 +131,11 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
         status: 'published',
         categoryId: event.categoryId,
         page: page,
+      ),
+      cached: () => repository.cachedRecipesPage(
+        type: 'community',
+        status: 'published',
+        categoryId: event.categoryId,
       ),
     );
   }
@@ -149,22 +163,34 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     );
   }
 
+  /// [cached] มีของเก่า = โชว์ทันที (ไม่ขึ้นตัวหมุน) แล้วค่อยแทนด้วยของใหม่จาก API
+  /// โหลดใหม่ไม่สำเร็จ (เช่น ไม่มีเน็ต) ก็ยังเห็นของเก่าอยู่ ไม่เด้ง error
   Future<void> _loadFirstPage(
     Emitter<FoodState> emit,
     _PageLoader loader, {
     String? query,
+    _CachedPage? cached,
   }) async {
     final requestId = ++_requestId;
     _loader = loader;
     _page = 0;
-    emit(FoodLoading());
+
+    final fromCache = cached == null ? null : await cached();
+    if (requestId != _requestId) return;
+    final showingCache = fromCache != null && fromCache.items.isNotEmpty;
+    emit(
+      showingCache
+          ? FoodLoaded(fromCache.items, query: query, hasMore: false)
+          : FoodLoading(),
+    );
+
     try {
       final result = await loader(1);
       if (requestId != _requestId) return;
       _page = result.page;
       emit(FoodLoaded(result.items, query: query, hasMore: result.hasMore));
     } catch (e) {
-      if (requestId != _requestId) return;
+      if (requestId != _requestId || showingCache) return;
       emit(FoodError(message: e.toString()));
     }
   }

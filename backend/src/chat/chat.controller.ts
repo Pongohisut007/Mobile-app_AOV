@@ -14,6 +14,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RateLimit } from '../common/throttle/rate-limits';
 import type { UploadedFileData } from '../uploads/uploads.service';
 import { CHAT_IMAGE_TYPES, ChatMessage, ChatService } from './chat.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
@@ -27,6 +28,7 @@ export class ChatController {
    * ถามเกี่ยวกับสูตร AI จะจำบทสนทนาก่อนหน้า (หมดอายุเมื่อไม่ใช้งาน 20 นาที หรือเปลี่ยนสูตร)
    * ส่งเป็น JSON ได้ตามเดิม หรือส่ง multipart/form-data พร้อมไฟล์รูปในฟิลด์ image
    */
+  @RateLimit('chat')
   @Post()
   @UseInterceptors(
     FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }),

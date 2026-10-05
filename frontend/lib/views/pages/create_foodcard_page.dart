@@ -209,6 +209,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       _isSavingDraft = asDraft;
     });
     try {
+      // เจ้าของสูตรคือคนที่ login (backend อ่านจาก token) แค่เช็กว่ายัง login อยู่
       final creatorId = await TokenStorage().readUserId();
       if (!mounted) return false;
       if (creatorId == null || creatorId.trim().isEmpty) {
@@ -284,7 +285,6 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
           : double.tryParse(_priceController.text.trim()) ?? 0;
 
       final recipe = <String, dynamic>{
-        if (!_isEditing) 'creatorId': creatorId,
         'title': title.isEmpty && asDraft ? appL10n.draftRecipeTitle : title,
         'titleEn': titleEn,
         'slug': _buildSlug(titleEn, asDraft: asDraft),

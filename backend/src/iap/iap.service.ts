@@ -14,6 +14,7 @@ import {
   RecipeAccess,
   RecipeAccessType,
 } from '../recipe-access/entities/recipe-access.entity';
+import { assertPurchasable } from '../recipes/recipe-permissions';
 
 export interface MockPurchaseResult {
   status: 'purchased' | 'already_owned';
@@ -101,6 +102,9 @@ export class IapService {
         transactionId: null,
       };
     }
+
+    // ตรวจอีกครั้งตอนจ่าย: สูตรอาจถูกซ่อน/เปลี่ยนเป็นฟรีหลังใส่ตะกร้าไปแล้ว
+    assertPurchasable(cartItem.recipe, userId);
 
     const now = new Date();
     const transactionId = `mock_${randomUUID()}`;

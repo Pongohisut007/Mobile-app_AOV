@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { Recipe } from '../recipes/entities/recipe.entity';
+import { canReadRecipe } from '../recipes/recipe-permissions';
 import { ListReviewsQueryDto } from './dto/list-reviews-query.dto';
 import { UpsertReviewDto } from './dto/upsert-review.dto';
 import { Review, ReviewStatus } from './entities/review.entity';
@@ -84,7 +85,11 @@ export class ReviewsService {
   }
 
   // คะแนนเฉลี่ยและรีวิวล่าสุด นับเฉพาะรีวิวที่ไม่ถูกซ่อน
-  getRecipeSummary(recipeId: string): Promise<RecipeReviewSummary> {
+  async getRecipeSummary(
+    recipeId: string,
+    viewerId?: string,
+  ): Promise<RecipeReviewSummary> {
+    await this.assertReadable(recipeId, viewerId);
     return this.cached(`summary:${recipeId}`, () =>
       this.loadRecipeSummary(recipeId),
     );
@@ -133,10 +138,12 @@ export class ReviewsService {
   }
 
   // หน้ารีวิวทั้งหมด เลื่อนโหลดทีละหน้า
-  listRecipeReviews(
+  async listRecipeReviews(
     recipeId: string,
     query: ListReviewsQueryDto,
+    viewerId?: string,
   ): Promise<ReviewPage> {
+    await this.assertReadable(recipeId, viewerId);
     return this.cached(`list:${recipeId}:${query.page}:${query.limit}`, () =>
       this.loadRecipeReviews(recipeId, query),
     );
@@ -210,6 +217,25 @@ export class ReviewsService {
       this.cache?.invalidate(CacheNamespace.recipes),
     ]);
     return this.toView(saved);
+  }
+
+  /** สูตรที่ยังไม่เผยแพร่ ตอบเหมือนไม่มีสูตรนี้ (ยกเว้นเจ้าของ/คนที่ซื้อแล้ว) */
+  private async assertReadable(
+    recipeId: string,
+    viewerId?: string,
+  ): Promise<void> {
+    const recipe = await this.recipeRepository.findOne({
+      where: { id: recipeId },
+      select: { id: true, status: true, creatorId: true },
+    });
+    if (
+      !recipe ||
+      !(await canReadRecipe(recipe, viewerId, (userId, id) =>
+        this.recipeAccessService.hasActiveAccess(userId, id),
+      ))
+    ) {
+      throw new NotFoundException(`Recipe with id ${recipeId} not found`);
+    }
   }
 
   private async ensureRecipeExists(recipeId: string): Promise<void> {

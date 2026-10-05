@@ -80,6 +80,24 @@ export class AppCacheService implements OnModuleDestroy {
     return JSON.parse(json) as T;
   }
 
+  /**
+   * จดไว้ว่า [key] "เกิดขึ้นแล้ว" จนกว่าจะหมดอายุ (เช่น token ที่ออกจากระบบไปแล้ว)
+   * เก็บทั้ง RAM และ Redis: เครื่องอื่นในระบบเห็นด้วย ถ้า Redis ล่มก็ยังกันได้ในเครื่องนี้
+   */
+  async setFlag(key: string, ttlSeconds: number): Promise<void> {
+    if (ttlSeconds <= 0) return;
+    const fullKey = `flag:${key}`;
+    this.remember(fullKey, '1', ttlSeconds);
+    await this.redisCall((redis) => redis.set(fullKey, '1', 'EX', ttlSeconds));
+  }
+
+  async hasFlag(key: string): Promise<boolean> {
+    const fullKey = `flag:${key}`;
+    const fromMemory = this.memory.get(fullKey);
+    if (fromMemory && fromMemory.expiresAt > Date.now()) return true;
+    return (await this.redisCall((redis) => redis.exists(fullKey))) === 1;
+  }
+
   /** ข้อมูลใน namespace นี้เปลี่ยน: ทิ้ง cache ทั้งหมดของมัน */
   async invalidate(namespace: string): Promise<void> {
     const prefix = `cache:${namespace}:`;

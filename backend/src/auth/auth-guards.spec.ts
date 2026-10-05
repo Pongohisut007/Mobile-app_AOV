@@ -8,6 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { User, UserRole, UserStatus } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { RolesGuard } from './guards/roles.guard';
+import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 // @nestjs/jwt เป็น ESM ที่ jest โหลดตรง ๆ ไม่ได้ (jwt.strategy -> auth.service import อยู่)
@@ -66,10 +67,12 @@ describe('RolesGuard', () => {
 
 describe('JwtStrategy', () => {
   const usersService = { findById: jest.fn() };
+  const authService = { isRevoked: jest.fn().mockResolvedValue(false) };
   const config = { getOrThrow: jest.fn().mockReturnValue('test-secret') };
   const strategy = new JwtStrategy(
     config as unknown as ConfigService,
     usersService as unknown as UsersService,
+    authService as unknown as AuthService,
   );
   const activeUser = {
     id: 'u1',
@@ -101,6 +104,15 @@ describe('JwtStrategy', () => {
     await expect(
       strategy.validate({ ...payload, ver: 1 }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects a token that signed out on this device', async () => {
+    usersService.findById.mockResolvedValue(activeUser);
+    authService.isRevoked.mockResolvedValueOnce(true);
+    await expect(
+      strategy.validate({ ...payload, ver: 1, jti: 'token-1' }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(authService.isRevoked).toHaveBeenCalledWith('token-1');
   });
 
   it('rejects tokens issued before signing out everywhere', async () => {

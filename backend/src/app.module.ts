@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { RATE_LIMITS } from './common/throttle/rate-limits';
 import { AppCacheModule } from './cache/app-cache.module';
 import appConfig from '../config/app.config';
 import databaseConfig from '../config/database.config';
@@ -41,6 +43,11 @@ import r2ClientConfig from '../config/r2.client.config';
         googleConfig,
         mailConfig,
       ],
+    }),
+    // เพดานคำขอทั้งระบบ (guard อยู่ใน AuthModule เพราะต้องใช้ JwtService แยกผู้ใช้)
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ...RATE_LIMITS.default }],
+      errorMessage: 'ส่งคำขอถี่เกินไป กรุณารอสักครู่แล้วลองใหม่',
     }),
     DatabaseModule,
     UsersModule,

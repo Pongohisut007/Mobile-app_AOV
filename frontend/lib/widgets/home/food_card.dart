@@ -100,7 +100,14 @@ class FoodCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Flexible(child: _RatingLabel(food: food)),
-                          _AddToCartButton(food: food), // add
+                          // สูตรของตัวเองซื้อไม่ได้ (backend ก็ไม่ยอม) ไม่ต้องมีปุ่มตะกร้า
+                          ValueListenableBuilder<String?>(
+                            valueListenable: TokenStorage.currentUserId,
+                            builder: (context, userId, _) =>
+                                userId != null && userId == food.creatorId
+                                ? const SizedBox.shrink()
+                                : _AddToCartButton(food: food),
+                          ),
                         ],
                       ),
                     ],

@@ -25,7 +25,14 @@ describe('ReviewsService', () => {
     upsert: jest.fn(),
     findOneOrFail: jest.fn(),
   };
-  const recipes = { exists: jest.fn() };
+  const recipes = {
+    exists: jest.fn(),
+    findOne: jest.fn().mockResolvedValue({
+      id: 'recipe-1',
+      status: 'published',
+      creatorId: 'creator-1',
+    }),
+  };
   const access = { hasActiveAccess: jest.fn() };
   const service = new ReviewsService(
     reviews as unknown as Repository<Review>,
@@ -168,9 +175,33 @@ describe('ReviewsService', () => {
       service.upsertMine('recipe-1', 'user-1', { rating: 5 }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(reviews.upsert).not.toHaveBeenCalled();
-    recipes.exists.mockResolvedValue(false);
+    recipes.findOne.mockResolvedValueOnce(null);
     await expect(service.getRecipeSummary('missing')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('hides reviews of unpublished recipes except from the owner and buyers', async () => {
+    const draft = { id: 'recipe-1', status: 'draft', creatorId: 'owner' };
+    recipes.findOne.mockResolvedValue(draft);
+    access.hasActiveAccess.mockResolvedValue(false);
+
+    await expect(service.getRecipeSummary('recipe-1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(
+      service.listRecipeReviews('recipe-1', { page: 1, limit: 20 }, 'stranger'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    reviews.find.mockResolvedValue([]);
+    await expect(
+      service.getRecipeSummary('recipe-1', 'owner'),
+    ).resolves.toEqual(expect.objectContaining({ count: 0 }));
+    access.hasActiveAccess.mockResolvedValue(true);
+    await expect(
+      service.getRecipeSummary('recipe-1', 'buyer'),
+    ).resolves.toEqual(expect.objectContaining({ count: 0 }));
+
+    recipes.findOne.mockResolvedValue({ ...draft, status: 'published' });
   });
 });

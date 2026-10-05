@@ -4,6 +4,8 @@ import { AppCacheService } from '../cache/app-cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { PaginatedResult, toPaginated } from '../common/pagination';
+import { Recipe } from '../recipes/entities/recipe.entity';
+import { canFavorite } from '../recipes/recipe-permissions';
 import { Favorite } from './entities/favorite.entity';
 
 // รหัส error ของ postgres ตอนชน unique constraint
@@ -68,6 +70,15 @@ export class FavoritesService {
 
   // กดหัวใจสูตรเดิมซ้ำไม่ควรพัง คืนแถวเดิมกลับไปแทนการสร้างซ้ำ
   async create(userId: string, recipeId: string): Promise<Favorite> {
+    // draft/สูตรที่ถูกซ่อนของคนอื่น ตอบเหมือนไม่มีสูตรนี้
+    const recipe = await this.favoriteRepository.manager.findOne(Recipe, {
+      where: { id: recipeId },
+      select: { id: true, status: true, creatorId: true },
+    });
+    if (!recipe || !canFavorite(recipe, userId)) {
+      throw new NotFoundException(`Recipe ${recipeId} not found`);
+    }
+
     const existing = await this.favoriteRepository.findOne({
       where: { userId, recipeId },
     });

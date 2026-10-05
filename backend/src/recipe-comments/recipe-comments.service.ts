@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { Recipe, RecipeType } from '../recipes/entities/recipe.entity';
+import { canReadRecipe } from '../recipes/recipe-permissions';
 import { User } from '../users/entities/user.entity';
 import { CreateRecipeCommentDto } from './dto/create-recipe-comment.dto';
 import { ListRecipeCommentsQueryDto } from './dto/list-recipe-comments-query.dto';
@@ -57,10 +58,13 @@ export class RecipeCommentsService {
     ]);
   }
 
-  list(
+  async list(
     recipeId: string,
     query: ListRecipeCommentsQueryDto,
+    viewerId?: string,
   ): Promise<RecipeCommentPage> {
+    // ตรวจก่อนอ่าน cache: cache เก็บรวมทุกคน แต่สิทธิ์อ่านขึ้นกับผู้ชม
+    await this.assertReadable(recipeId, viewerId);
     const load = () => this.loadList(recipeId, query);
     return this.cache
       ? this.cache.getOrSet(
@@ -183,6 +187,25 @@ export class RecipeCommentsService {
       throw new ForbiddenException('You can only change your own comments');
     }
     return comment;
+  }
+
+  /** สูตรที่ยังไม่เผยแพร่ ตอบเหมือนไม่มีสูตรนี้ (ยกเว้นเจ้าของ/คนที่ซื้อแล้ว) */
+  private async assertReadable(
+    recipeId: string,
+    viewerId?: string,
+  ): Promise<void> {
+    const recipe = await this.recipeRepository.findOne({
+      where: { id: recipeId },
+      select: { id: true, status: true, creatorId: true },
+    });
+    if (
+      !recipe ||
+      !(await canReadRecipe(recipe, viewerId, (userId, id) =>
+        this.recipeAccessService.hasActiveAccess(userId, id),
+      ))
+    ) {
+      throw new NotFoundException(`Recipe with id ${recipeId} not found`);
+    }
   }
 
   private async getRecipe(recipeId: string): Promise<Recipe> {

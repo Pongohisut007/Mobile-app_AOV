@@ -29,6 +29,9 @@ abstract interface class AuthRepository {
   /// ทำให้ token ทุกใบของบัญชีนี้ใช้ไม่ได้ (รวมเครื่องนี้)
   Future<void> logoutAll({required String accessToken});
 
+  /// ทำให้ token ใบนี้ใช้ไม่ได้ (ออกจากระบบเครื่องนี้ เครื่องอื่นยังอยู่)
+  Future<void> logout({required String accessToken});
+
   /// ปิดบัญชีและลบข้อมูลส่วนตัว (ต้องยืนยันรหัสผ่าน ถ้าบัญชีมีรหัสผ่าน)
   Future<void> deleteAccount({required String accessToken, String? password});
 
@@ -134,6 +137,11 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<void> logoutAll({required String accessToken}) async {
     await _postWithToken('/auth/logout-all', accessToken);
+  }
+
+  @override
+  Future<void> logout({required String accessToken}) async {
+    await _postWithToken('/auth/logout', accessToken);
   }
 
   @override

@@ -35,6 +35,7 @@ describe('AuthController', () => {
     login: jest.fn().mockResolvedValue('logged-in'),
     changePassword: jest.fn().mockResolvedValue('changed'),
     logoutAll: jest.fn().mockResolvedValue(undefined),
+    logout: jest.fn().mockResolvedValue(undefined),
     deleteAccount: jest.fn().mockResolvedValue(undefined),
   };
   const usersService = {
@@ -113,5 +114,10 @@ describe('AuthController', () => {
     expect(controller.creatorOnly(me)).toEqual({
       message: 'สวัสดี creator Cook',
     });
+  });
+
+  it('signs out only the token that made the request', async () => {
+    await controller.logout('Bearer abc.def.ghi');
+    expect(authService.logout).toHaveBeenCalledWith('abc.def.ghi');
   });
 });

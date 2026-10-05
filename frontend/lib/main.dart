@@ -13,6 +13,7 @@ import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/repositories/cart_repository.dart';
 import 'package:flutter_application_1/repositories/favorite_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/routes/route_generator.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
@@ -29,6 +30,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // ภาษาที่ผู้ใช้เลือกไว้ (หน้าตั้งค่า) ต้องรู้ก่อนวาดหน้าแรก ไม่งั้นจะเห็นไทยแวบหนึ่ง
   await AppLanguage.load();
+  await TokenStorage.loadCurrentUser();
   runApp(const MyApp());
 }
 

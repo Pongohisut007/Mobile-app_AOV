@@ -14,12 +14,15 @@ class BannerBloc extends Bloc<BannerEvent, BannerState> {
     FetchBannersEvent event,
     Emitter<BannerState> emit,
   ) async {
-    emit(BannerLoading());
+    // มีชุดเก่า = โชว์ทันที แล้วค่อยแทนด้วยของใหม่ (โหลดไม่ได้ก็ยังเห็นของเก่า)
+    final cached = await repository.cachedBanners();
+    final showingCache = cached != null && cached.isNotEmpty;
+    emit(showingCache ? BannerLoaded(cached) : BannerLoading());
     try {
       final banners = await repository.fetchBanners();
       emit(BannerLoaded(banners));
     } catch (e) {
-      emit(BannerError(message: e.toString()));
+      if (!showingCache) emit(BannerError(message: e.toString()));
     }
   }
 }

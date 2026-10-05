@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule, type JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppThrottlerGuard } from '../common/throttle/app-throttler.guard';
 import { MailModule } from '../mail/mail.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
@@ -40,6 +42,8 @@ import { LocalStrategy } from './strategies/local.strategy';
     GoogleTokenVerifier,
     LocalStrategy,
     JwtStrategy,
+    // จำกัดจำนวนคำขอทุก endpoint (ดู common/throttle/rate-limits.ts)
+    { provide: APP_GUARD, useClass: AppThrottlerGuard },
   ],
   exports: [AuthService],
 })

@@ -14,6 +14,7 @@ import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
+import type { AuthUser } from '../auth/interfaces/jwt-payload.interface';
 import { UserStatus } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { RecipeSort } from './dto/list-recipes-query.dto';
@@ -22,6 +23,8 @@ import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { RecipeContent } from './entities/recipe-content.entity';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
+import { assertCanManageRecipe } from './recipe-permissions';
+import { MediaSigner } from '../uploads/media-signer.service';
 
 export interface FindRecipesOptions {
   search?: string;
@@ -62,6 +65,9 @@ export class RecipesService {
 
     @Optional()
     private readonly cache?: AppCacheService,
+
+    @Optional()
+    private readonly mediaSigner?: MediaSigner,
   ) {}
 
   // อายุ cache: รายการสั้นไว้ก่อน เพราะยอดหัวใจ/คอมเมนต์เปลี่ยนบ่อย
@@ -341,11 +347,74 @@ export class RecipesService {
       RecipesService.detailTtlSeconds,
       () => this.findOne(id),
     );
+    // สูตรที่ยังไม่เผยแพร่ (draft/ซ่อน) เห็นได้แค่เจ้าของและคนที่ซื้อไปแล้ว
+    // ตอบเหมือนไม่มีสูตรนี้ คนอื่นจะได้ไม่รู้ว่ามี id นี้อยู่
+    if (
+      recipe.status !== RecipeStatus.PUBLISHED &&
+      !(await this.isOwnerOrBuyer(recipe, userId))
+    ) {
+      throw new NotFoundException(`Recipe with id ${id} not found`);
+    }
+
     recipe.canViewFullRecipe = await this.canViewFullRecipe(recipe, userId);
-    if (recipe.canViewFullRecipe) return recipe;
+    if (recipe.canViewFullRecipe) return this.signPaidMedia(recipe);
 
     recipe.sections = recipe.sections.filter((section) => section.isPreview);
     return recipe;
+  }
+
+  /**
+   * ไฟล์ในขั้นตอนที่ต้องซื้อ (ไม่ใช่ตัวอย่าง) ของสูตร official
+   * แนบลายเซ็นชั่วคราวให้คนที่มีสิทธิ์ดู /uploads จะไม่ยอมเปิดถ้าไม่มีลายเซ็น
+   */
+  private signPaidMedia(recipe: Recipe): Recipe {
+    const signer = this.mediaSigner;
+    if (!signer || recipe.type !== RecipeType.OFFICIAL) return recipe;
+    for (const section of recipe.sections) {
+      if (section.isPreview) continue;
+      for (const content of section.contents) {
+        if (content.mediaUrl) content.mediaUrl = signer.sign(content.mediaUrl);
+      }
+    }
+    return recipe;
+  }
+
+  /** ลิงก์ที่แอปส่งกลับมาตอนแก้สูตรอาจติดลายเซ็นมาด้วย เก็บเป็น path เปล่าเสมอ */
+  private static withoutSignedMedia<
+    T extends { sections?: { contents?: { mediaUrl?: string | null }[] }[] },
+  >(dto: T): T {
+    for (const section of dto.sections ?? []) {
+      for (const content of section.contents ?? []) {
+        if (content.mediaUrl) {
+          content.mediaUrl = MediaSigner.stripQuery(content.mediaUrl);
+        }
+      }
+    }
+    return dto;
+  }
+
+  private async isOwnerOrBuyer(
+    recipe: Recipe,
+    userId?: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+    return (
+      recipe.creatorId === userId ||
+      this.recipeAccessService.hasActiveAccess(userId, recipe.id)
+    );
+  }
+
+  /** แก้/ลบได้เฉพาะเจ้าของสูตร (หรือ admin) ไม่มีสูตรนี้ = 404 */
+  async assertCanManage(
+    id: string,
+    user: Pick<AuthUser, 'id' | 'role'>,
+  ): Promise<void> {
+    const recipe = await this.recipeRepository.findOne({
+      where: { id },
+      select: { id: true, creatorId: true },
+    });
+    if (!recipe) throw new NotFoundException(`Recipe with id ${id} not found`);
+    assertCanManageRecipe(recipe, user);
   }
 
   private async canViewFullRecipe(
@@ -419,7 +488,11 @@ export class RecipesService {
   }
 
   async create(dto: CreateRecipeDto): Promise<Recipe> {
-    const { categoryIds, sections = [], ...recipeData } = dto;
+    const {
+      categoryIds,
+      sections = [],
+      ...recipeData
+    } = RecipesService.withoutSignedMedia(dto);
     const categories = await this.resolveCategories(categoryIds);
 
     const created = await this.recipeRepository.manager.transaction(
@@ -473,7 +546,8 @@ export class RecipesService {
   }
 
   async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
-    const { categoryIds, sections, ...recipeData } = dto;
+    const { categoryIds, sections, ...recipeData } =
+      RecipesService.withoutSignedMedia(dto);
     const categories = categoryIds
       ? await this.resolveCategories(categoryIds)
       : undefined;

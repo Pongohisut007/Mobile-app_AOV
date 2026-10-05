@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Readable } from 'node:stream';
 import { UploadKind, UploadsService } from './uploads.service';
 import { R2Provider } from './storage/r2.provider';
 
@@ -7,13 +8,19 @@ describe('UploadsService presigned uploads', () => {
     presignUpload: jest.fn(),
     head: jest.fn(),
     delete: jest.fn(),
+    download: jest.fn(),
+    upload: jest.fn(),
   };
+  const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const firstBytes = (bytes: Buffer) => ({ Body: Readable.from([bytes]) });
   const service = new UploadsService(r2 as unknown as R2Provider);
 
   beforeEach(() => {
     jest.clearAllMocks();
     r2.presignUpload.mockResolvedValue('https://r2.example/signed');
     r2.delete.mockResolvedValue(undefined);
+    r2.upload.mockResolvedValue(undefined);
+    r2.download.mockImplementation(() => Promise.resolve(firstBytes(PNG)));
   });
 
   it('signs an image PUT and preserves the existing read URL', async () => {
@@ -45,6 +52,40 @@ describe('UploadsService presigned uploads', () => {
     const result = await service.complete(UploadKind.IMAGES, filename);
     expect(result.size).toBe(123);
     expect(result.url).toBe(`/uploads/images/${filename}`);
+    expect(r2.download).toHaveBeenCalledWith(
+      `images/${filename}`,
+      'bytes=0-15',
+    );
+  });
+
+  it('deletes an upload whose content is not really the claimed type', async () => {
+    r2.head.mockResolvedValue({ ContentLength: 123, ContentType: 'image/png' });
+    r2.download.mockResolvedValue(firstBytes(Buffer.from('<html><script>')));
+    await expect(
+      service.complete(
+        UploadKind.IMAGES,
+        '7d87b810-4274-4b3f-92bb-83013ba857d9.png',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(r2.delete).toHaveBeenCalled();
+  });
+
+  it('checks direct uploads before storing them', async () => {
+    const file = (buffer: Buffer) => ({
+      buffer,
+      mimetype: 'image/png',
+      originalname: 'x.png',
+      size: buffer.length,
+    });
+    await expect(
+      service.saveImage(file(Buffer.from('GIF89a not a png'))),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(r2.upload).not.toHaveBeenCalled();
+
+    await expect(service.saveImage(file(PNG))).resolves.toEqual(
+      expect.objectContaining({ mimeType: 'image/png' }),
+    );
+    expect(r2.upload).toHaveBeenCalled();
   });
 
   it('deletes an object that exceeds the size limit', async () => {
