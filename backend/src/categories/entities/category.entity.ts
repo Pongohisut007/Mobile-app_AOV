@@ -8,6 +8,10 @@ export class Category extends BaseEntity {
   @Column({ type: 'varchar', length: 100 })
   name!: string;
 
+  // ชื่อภาษาอังกฤษ แอปใช้ตอนผู้ใช้เลือกภาษาอังกฤษ (ว่าง = ใช้ชื่อไทย)
+  @Column({ name: 'name_en', type: 'varchar', length: 100, nullable: true })
+  nameEn!: string | null;
+
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 120 })
   slug!: string;

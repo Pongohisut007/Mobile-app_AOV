@@ -4,6 +4,7 @@ import 'package:flutter_application_1/widgets/register/register_form_fields.dart
 import 'package:flutter_application_1/widgets/register/register_social_buttons.dart';
 import 'package:flutter_application_1/widgets/register/register_submit_button.dart';
 import 'package:flutter_application_1/widgets/register/register_terms.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({
@@ -49,7 +50,7 @@ class _RegisterFormState extends State<RegisterForm> {
     if (!_acceptedTerms) {
       showAppSnackBar(
         context,
-        'Please accept the terms and privacy policy.',
+        context.l10n.acceptTermsRequired,
         type: AppSnackType.error,
       );
       return;
@@ -106,13 +107,13 @@ class _RegisterFormState extends State<RegisterForm> {
             Center(
               child: TextButton(
                 onPressed: widget.onSignIn,
-                child: const Text.rich(
+                child: Text.rich(
                   TextSpan(
-                    text: 'Already have an account? ',
+                    text: context.l10n.haveAccountPrompt,
                     style: TextStyle(color: Color(0xFF8A8A8A)),
                     children: [
                       TextSpan(
-                        text: 'Sign In',
+                        text: context.l10n.signIn,
                         style: TextStyle(
                           color: Color(0xFFF20D13),
                           fontWeight: FontWeight.w700,

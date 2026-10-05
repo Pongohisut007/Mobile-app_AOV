@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/profile/profile_page_header.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class ProfileLoadingView extends StatelessWidget {
   const ProfileLoadingView({super.key});
@@ -55,8 +56,8 @@ class ProfileGuestView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Guest',
+                Text(
+                  context.l10n.guest,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -64,9 +65,9 @@ class ProfileGuestView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const _GuestProfileRow(label: 'Name', value: '-'),
+                _GuestProfileRow(label: context.l10n.fieldName, value: '-'),
                 const SizedBox(height: 8),
-                const _GuestProfileRow(label: 'Email', value: '-'),
+                _GuestProfileRow(label: context.l10n.fieldEmail, value: '-'),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -81,8 +82,8 @@ class ProfileGuestView extends StatelessWidget {
                       ),
                     ),
                     icon: const Icon(Icons.login_rounded, size: 19),
-                    label: const Text(
-                      'Sign in',
+                    label: Text(
+                      context.l10n.signIn,
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -144,8 +145,8 @@ class ProfileErrorView extends StatelessWidget {
               size: 48,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Could not load your profile',
+            Text(
+              context.l10n.profileLoadFailed,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: ProfileColors.ink,
@@ -166,7 +167,7 @@ class ProfileErrorView extends StatelessWidget {
               onPressed: onRetry,
               style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(context.l10n.tryAgain),
             ),
           ],
         ),

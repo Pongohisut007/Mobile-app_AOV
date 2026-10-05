@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RegisterSubmitButton extends StatelessWidget {
   const RegisterSubmitButton({required this.onPressed, super.key});
@@ -34,9 +35,9 @@ class RegisterSubmitButton extends StatelessWidget {
                       color: Colors.white,
                     ),
                   )
-                : const Text(
-                    'Sign Up',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                : Text(
+                    context.l10n.signUp,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
           ),
         );

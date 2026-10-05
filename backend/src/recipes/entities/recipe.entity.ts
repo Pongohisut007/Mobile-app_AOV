@@ -67,6 +67,10 @@ export class Recipe extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   title!: string;
 
+  // ชื่อภาษาอังกฤษ แอปใช้ตอนผู้ใช้เลือกภาษาอังกฤษ (ว่าง = ใช้ชื่อไทย)
+  @Column({ name: 'title_en', type: 'varchar', length: 255, nullable: true })
+  titleEn!: string | null;
+
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 255 })
   slug!: string;
@@ -133,6 +137,7 @@ export class Recipe extends BaseEntity {
 
   favoriteCount?: number;
   reviewCount?: number;
+  averageRating?: number | null;
   commentCount?: number;
 
   // เฉพาะ GET /recipes/:id: ผู้ชมคนนี้เห็นขั้นตอนครบไหม (community / เจ้าของ / ซื้อแล้ว)

@@ -10,4 +10,6 @@ class FoodDetailColors {
   static const softPurple = Color(0xFFEDE7F6);
   static const star = Color(0xFFFFB300);
   static const starEmpty = Color(0xFFE0E0E0);
+  // พื้นหลังตอนรูปกำลังโหลด/ไม่มีรูป สีเดียวกับการ์ดหน้า Home/favorite
+  static const imageBackground = Color(0xFFE8E9E2);
 }

@@ -1,8 +1,11 @@
+import 'package:flutter/widgets.dart';
+
 class CartItem {
   const CartItem({
     required this.id,
     required this.recipeId,
     required this.title,
+    this.titleEn,
     required this.imageUrl,
     required this.price,
   });
@@ -15,6 +18,9 @@ class CartItem {
 
   // ชื่อ รูป ราคา ไม่ได้เก็บใน cart_items แต่ join มาจาก recipe ตอน GET
   final String title;
+
+  /// ชื่อภาษาอังกฤษ null = ใช้ชื่อไทยแทน
+  final String? titleEn;
   final String? imageUrl;
   final double price;
 
@@ -28,10 +34,21 @@ class CartItem {
       id: json['id'] as String,
       recipeId: json['recipeId'] as String,
       title: recipe['title'] as String? ?? '',
+      titleEn:
+          recipe['titleEn'] is String &&
+              (recipe['titleEn'] as String).trim().isNotEmpty
+          ? (recipe['titleEn'] as String).trim()
+          : null,
       imageUrl: _resolveUrl(recipe['coverImageUrl'], apiBaseUrl),
       price: _toDouble(recipe['price']),
     );
   }
+
+  /// ชื่อตามภาษาที่แอปใช้อยู่
+  String displayTitle(BuildContext context) =>
+      Localizations.localeOf(context).languageCode == 'en' && titleEn != null
+      ? titleEn!
+      : title;
 
   static double _toDouble(Object? value) {
     if (value == null) return 0;

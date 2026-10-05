@@ -18,6 +18,7 @@ import 'package:flutter_application_1/widgets/cart/cart_summary_bar.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -67,10 +68,7 @@ class _CartPageState extends State<CartPage> {
   Future<void> _checkout(List<CartItem> items) async {
     if (_isCheckingOut || _isChoosingScenario || items.isEmpty) return;
     if (!ApiConfig.mockIapEnabled) {
-      _showMessage(
-        'โหมดซื้อจำลองถูกปิดอยู่ กรุณาเชื่อม Google Play Billing',
-        isError: true,
-      );
+      _showMessage(context.l10n.mockIapDisabled, isError: true);
       return;
     }
 
@@ -83,11 +81,11 @@ class _CartPageState extends State<CartPage> {
     }
     if (scenario == null || !mounted) return;
     if (scenario == _MockPurchaseScenario.cancelled) {
-      _showMessage('จำลองการยกเลิกการชำระเงินแล้ว');
+      _showMessage(context.l10n.mockPaymentCancelled);
       return;
     }
     if (scenario == _MockPurchaseScenario.failed) {
-      _showFailure('จำลองการชำระเงินไม่สำเร็จ');
+      _showFailure(context.l10n.mockPaymentFailed);
       return;
     }
 
@@ -166,13 +164,13 @@ class _CartPageState extends State<CartPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Google Play Billing — โหมดจำลอง',
+              Text(
+                context.l10n.mockBillingTitle,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'เลือกผลลัพธ์ที่ต้องการทดสอบ ระบบนี้ไม่ตัดเงินจริง',
+              Text(
+                context.l10n.mockBillingSubtitle,
                 style: TextStyle(color: ProfileColors.muted),
               ),
               const SizedBox(height: 20),
@@ -180,14 +178,14 @@ class _CartPageState extends State<CartPage> {
                 onPressed: () =>
                     Navigator.pop(sheetContext, _MockPurchaseScenario.success),
                 icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('จำลองชำระสำเร็จ'),
+                label: Text(context.l10n.mockPaySuccess),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () =>
                     Navigator.pop(sheetContext, _MockPurchaseScenario.failed),
                 icon: const Icon(Icons.error_outline_rounded),
-                label: const Text('จำลองชำระไม่สำเร็จ'),
+                label: Text(context.l10n.mockPayFail),
               ),
               const SizedBox(height: 8),
               TextButton(
@@ -195,7 +193,7 @@ class _CartPageState extends State<CartPage> {
                   sheetContext,
                   _MockPurchaseScenario.cancelled,
                 ),
-                child: const Text('จำลองผู้ใช้ยกเลิก'),
+                child: Text(context.l10n.mockUserCancel),
               ),
             ],
           ),
@@ -211,12 +209,12 @@ class _CartPageState extends State<CartPage> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Clear cart?'),
-        content: const Text('This removes every recipe from your cart.'),
+        title: Text(context.l10n.clearCartTitle),
+        content: Text(context.l10n.clearCartMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -224,7 +222,7 @@ class _CartPageState extends State<CartPage> {
               Navigator.pop(dialogContext);
             },
             style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
-            child: const Text('Clear'),
+            child: Text(context.l10n.clear),
           ),
         ],
       ),
@@ -264,9 +262,9 @@ class _CartPageState extends State<CartPage> {
             backgroundColor: ProfileColors.background,
             foregroundColor: ProfileColors.ink,
             surfaceTintColor: Colors.transparent,
-            title: const Text(
-              'Cart',
-              style: TextStyle(fontWeight: FontWeight.w800),
+            title: Text(
+              context.l10n.cartTitle,
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             actions: [
               if (items.isNotEmpty)
@@ -284,7 +282,7 @@ class _CartPageState extends State<CartPage> {
                           ),
                         )
                       : const Icon(Icons.delete_outline_rounded),
-                  tooltip: 'Clear cart',
+                  tooltip: context.l10n.clearCartTooltip,
                 ),
             ],
           ),
@@ -293,7 +291,7 @@ class _CartPageState extends State<CartPage> {
             CartStatus.initial || CartStatus.loading when items.isEmpty =>
               const Center(child: CircularProgressIndicator()),
             CartStatus.failure when items.isEmpty => _CartErrorView(
-              message: state.error ?? 'Could not load your cart.',
+              message: state.error ?? context.l10n.cartLoadFailed,
               onRetry: () =>
                   context.read<CartBloc>().add(const CartRequested()),
             ),
@@ -330,9 +328,12 @@ class _CartPageState extends State<CartPage> {
                           ? null
                           : (selected) =>
                                 _setAllSelected(items, selected ?? false),
-                      title: const Text('เลือกทั้งหมด'),
+                      title: Text(context.l10n.selectAll),
                       subtitle: Text(
-                        'เลือก ${selectedItems.length} จาก ${items.length} รายการ',
+                        context.l10n.selectedOfTotal(
+                          selectedItems.length,
+                          items.length,
+                        ),
                       ),
                       controlAffinity: ListTileControlAffinity.leading,
                       activeColor: ProfileColors.ink,
@@ -415,7 +416,7 @@ class _CartErrorView extends StatelessWidget {
               onPressed: onRetry,
               style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(context.l10n.tryAgain),
             ),
           ],
         ),

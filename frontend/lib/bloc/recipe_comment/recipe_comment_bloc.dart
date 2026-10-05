@@ -4,6 +4,7 @@ import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/repositories/recipe_comment_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
   RecipeCommentBloc(
@@ -169,7 +170,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
       emit(
         state.copyWith(
           mutationStatus: RecipeCommentMutationStatus.failure,
-          error: 'ความคิดเห็นต้องไม่ว่าง',
+          error: appL10n.commentEmpty,
         ),
       );
       return;
@@ -180,7 +181,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
       emit(
         state.copyWith(
           mutationStatus: RecipeCommentMutationStatus.failure,
-          error: 'กรุณาเข้าสู่ระบบอีกครั้ง',
+          error: appL10n.signInAgain,
         ),
       );
       return;
@@ -231,7 +232,7 @@ class RecipeCommentBloc extends Bloc<RecipeCommentEvent, RecipeCommentState> {
       emit(
         state.copyWith(
           mutationStatus: RecipeCommentMutationStatus.failure,
-          error: 'กรุณาเข้าสู่ระบบอีกครั้ง',
+          error: appL10n.signInAgain,
         ),
       );
       return;

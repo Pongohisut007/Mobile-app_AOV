@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ดาว 5 ดวงแบบดูอย่างเดียว รองรับครึ่งดวง เช่น 3.5
 class StarRatingDisplay extends StatelessWidget {
@@ -60,7 +61,7 @@ class StarRatingInput extends StatelessWidget {
 
         return Semantics(
           button: true,
-          label: '$star ดาว',
+          label: context.l10n.starCount(star),
           selected: star == value,
           child: InkResponse(
             onTap: enabled ? () => onChanged(star) : null,

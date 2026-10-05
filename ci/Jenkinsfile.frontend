@@ -1,0 +1,268 @@
+pipeline {
+    agent {
+        kubernetes {
+            yamlFile 'ci/pods/frontend.yaml'
+            defaultContainer 'ci'
+        }
+    }
+
+    environment {
+        APP_NAME = 'recipy-mobile'
+    }
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        parallelsAlwaysFailFast()
+    }
+
+    stages {
+        stage('Environment') {
+            steps {
+                script {
+                    def isFeatureBranch =
+                        env.BRANCH_NAME ==~ /^feature\/.+/
+
+                    def isPullRequest =
+                        env.CHANGE_ID?.trim()
+
+                    if (isFeatureBranch && !isPullRequest) {
+                        env.CI_MODE = 'FAST'
+                    } else {
+                        env.CI_MODE = 'FULL'
+                    }
+
+                    env.COMMIT_SHA = sh(
+                        script: 'git rev-parse --short=7 HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    env.COMMIT_MESSAGE = sh(
+                        script: 'git log -1 --pretty=%s',
+                        returnStdout: true
+                    ).trim()
+
+                    // Include all changes since the last successful build. A
+                    // first build or a missing baseline must run the component suite.
+                    def baseCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: ''
+                    def changedPaths = []
+                    def runAll = !(baseCommit ==~ /[0-9a-fA-F]{40,64}/)
+                    if (!runAll) {
+                        withEnv(["CI_BASE_COMMIT=${baseCommit}"]) {
+                            runAll = sh(
+                                script: 'git cat-file -e "$CI_BASE_COMMIT^{commit}"',
+                                returnStatus: true
+                            ) != 0
+                            if (!runAll) {
+                                changedPaths = sh(
+                                    script: 'git diff --no-renames --name-only "$CI_BASE_COMMIT" HEAD',
+                                    returnStdout: true
+                                ).readLines()
+                            }
+                        }
+                    }
+                    def pipelineChanged = changedPaths.any {
+                        it == 'Jenkinsfile' || it == 'Makefile' ||
+                        it == '.gitleaks.toml' || it.startsWith('ci/') ||
+                        it.startsWith('policy/')
+                    }
+                    env.FRONTEND_CHANGED = (runAll || pipelineChanged ||
+                        changedPaths.any { it.startsWith('frontend/') }).toString()
+                    if (pipelineChanged) {
+                        env.CI_MODE = 'FULL'
+                    }
+
+                    echo """
+                    ========================================
+                    Pipeline Environment
+                    ========================================
+                    APP_NAME         : ${env.APP_NAME}
+                    BRANCH_NAME      : ${env.BRANCH_NAME}
+                    CHANGE_ID        : ${env.CHANGE_ID ?: '-'}
+                    CHANGE_BRANCH    : ${env.CHANGE_BRANCH ?: '-'}
+                    CHANGE_TARGET    : ${env.CHANGE_TARGET ?: '-'}
+                    CI_MODE          : ${env.CI_MODE}
+                    FRONTEND_CHANGED : ${env.FRONTEND_CHANGED}
+                    COMMIT_SHA       : ${env.COMMIT_SHA}
+                    ========================================
+                    """.stripIndent()
+                }
+
+                sh '''
+                    git --version
+                '''
+            }
+        }
+
+        stage('Secrets Detection') {
+            when {
+                expression {
+                    env.CI_MODE == 'FULL' && env.FRONTEND_CHANGED == 'true'
+                }
+            }
+
+            steps {
+                sh '''
+                    mkdir -p reports
+
+                    echo "Recent commits:"
+                    git log --oneline -5
+
+                    gitleaks git . \
+                        --config=.gitleaks.toml \
+                        --report-format json \
+                        --report-path reports/gitleaks.json \
+                        --redact \
+                        --verbose
+                '''
+            }
+
+            post {
+                always {
+                    archiveArtifacts(
+                        artifacts: 'reports/gitleaks.json',
+                        allowEmptyArchive: true
+                    )
+                }
+            }
+        }
+
+        stage('Mobile Install') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' }
+            }
+
+            steps {
+                container('flutter') {
+                    dir('frontend') {
+                        sh '''
+                            flutter --version
+                            dart --version
+                            flutter pub get
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Mobile Quality & Security') {
+            when {
+                allOf {
+                    expression {
+                        env.CI_MODE == 'FULL'
+                    }
+
+                    expression { env.FRONTEND_CHANGED == 'true' }
+                }
+            }
+
+            failFast true
+
+            parallel {
+                stage('Flutter Analyze') {
+                    steps {
+                        container('flutter') {
+                            dir('frontend') {
+                                sh 'flutter analyze'
+                            }
+                        }
+                    }
+                }
+
+                stage('Flutter Test + Coverage') {
+                    steps {
+                        container('flutter') {
+                            dir('frontend') {
+                                sh 'flutter test --coverage'
+                            }
+                        }
+                    }
+
+                }
+
+                stage('Mobile SCA - OSV Scanner') {
+                    steps {
+                        dir('frontend') {
+                            sh '''
+                                osv-scanner scan source \
+                                    --recursive \
+                                    .
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Mobile - Fast') {
+            when {
+                allOf {
+                    expression {
+                        env.CI_MODE == 'FAST'
+                    }
+
+                    expression { env.FRONTEND_CHANGED == 'true' }
+                }
+            }
+
+            steps {
+                container('flutter') {
+                    dir('frontend') {
+                        sh '''
+                            flutter analyze
+                            flutter test
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Mobile - Build Debug APK') {
+            when {
+                allOf {
+                    expression {
+                        env.CI_MODE == 'FULL'
+                    }
+
+                    expression { env.FRONTEND_CHANGED == 'true' }
+                }
+            }
+
+            steps {
+                container('flutter') {
+                    dir('frontend') {
+                        sh 'flutter build apk --debug'
+                    }
+                }
+            }
+
+            post {
+                success {
+                    archiveArtifacts(
+                        artifacts: 'frontend/build/app/outputs/flutter-apk/app-debug.apk',
+                        fingerprint: true
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts(
+                artifacts: 'frontend/coverage/**',
+                allowEmptyArchive: true
+            )
+        }
+        success {
+            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                sh 'python3 ci/scripts/discord_notify.py success || echo "WARNING: Discord notification failed"'
+            }
+        }
+        failure {
+            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                sh 'python3 ci/scripts/discord_notify.py failure || echo "WARNING: Discord notification failed"'
+            }
+        }
+    }
+}

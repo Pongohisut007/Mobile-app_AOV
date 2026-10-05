@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RegisterFormFields extends StatelessWidget {
   const RegisterFormFields({
@@ -29,73 +30,75 @@ class RegisterFormFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('Display Name'),
+        _label(context.l10n.displayName),
         const SizedBox(height: 9),
         TextFormField(
           controller: displayNameController,
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
-          decoration: _decoration('Enter your display name'),
+          decoration: _decoration(context.l10n.displayNameHint),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Please enter your display name';
+              return context.l10n.displayNameRequired;
             }
             if (value.trim().length > 150) {
-              return 'Display name must be 150 characters or less';
+              return context.l10n.displayNameTooLong;
             }
             return null;
           },
         ),
         const SizedBox(height: 20),
-        _label('Email Address'),
+        _label(context.l10n.emailAddress),
         const SizedBox(height: 9),
         TextFormField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
-          decoration: _decoration('Enter your email address'),
+          decoration: _decoration(context.l10n.emailHint),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Please enter your email address';
+              return context.l10n.emailRequired;
             }
-            if (!value.contains('@')) return 'Enter a valid email address';
+            if (!value.contains('@')) return context.l10n.emailInvalid;
             return null;
           },
         ),
         const SizedBox(height: 20),
-        _label('Password'),
+        _label(context.l10n.password),
         const SizedBox(height: 9),
         _passwordField(
+          context,
           controller: passwordController,
           obscureText: obscurePassword,
-          hint: 'Enter your password',
+          hint: context.l10n.passwordHint,
           onToggle: onTogglePassword,
           onSubmitted: null,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter your password';
+              return context.l10n.passwordRequired;
             }
             if (value.length < 8) {
-              return 'Password must be at least 8 characters';
+              return context.l10n.passwordTooShort;
             }
             return null;
           },
         ),
         const SizedBox(height: 20),
-        _label('Confirm Password'),
+        _label(context.l10n.confirmPassword),
         const SizedBox(height: 9),
         _passwordField(
+          context,
           controller: confirmPasswordController,
           obscureText: obscureConfirmPassword,
-          hint: 'Re-enter your password',
+          hint: context.l10n.confirmPasswordHint,
           onToggle: onToggleConfirmPassword,
           onSubmitted: onSubmitted,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please confirm your password';
+              return context.l10n.confirmPasswordRequired;
             }
             if (value != passwordController.text) {
-              return 'Passwords do not match';
+              return context.l10n.passwordsDoNotMatch;
             }
             return null;
           },
@@ -115,7 +118,8 @@ class RegisterFormFields extends StatelessWidget {
     );
   }
 
-  Widget _passwordField({
+  Widget _passwordField(
+    BuildContext context, {
     required TextEditingController controller,
     required bool obscureText,
     required String hint,
@@ -129,7 +133,9 @@ class RegisterFormFields extends StatelessWidget {
       textInputAction: TextInputAction.done,
       decoration: _decoration(hint).copyWith(
         suffixIcon: IconButton(
-          tooltip: obscureText ? 'Show password' : 'Hide password',
+          tooltip: obscureText
+              ? context.l10n.showPassword
+              : context.l10n.hidePassword,
           onPressed: onToggle,
           icon: Icon(
             obscureText

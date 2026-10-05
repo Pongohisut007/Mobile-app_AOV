@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeBasicInfoSection extends StatelessWidget {
   const RecipeBasicInfoSection({
     super.key,
     required this.titleController,
-    required this.slugController,
+    required this.titleEnController,
     required this.descriptionController,
     required this.validator,
   });
 
   final TextEditingController titleController;
-  final TextEditingController slugController;
+  final TextEditingController titleEnController;
   final TextEditingController descriptionController;
 
   final String? Function(String?, String) validator;
@@ -24,9 +24,9 @@ class RecipeBasicInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const RecipeFormSectionHeading(
-            title: 'สูตรของคุณ',
-            subtitle: 'ชื่อเมนูและเรื่องราวสั้น ๆ',
+          RecipeFormSectionHeading(
+            title: context.l10n.yourRecipe,
+            subtitle: context.l10n.yourRecipeSubtitle,
             icon: Icons.menu_book_rounded,
           ),
           const SizedBox(height: 18),
@@ -34,39 +34,24 @@ class RecipeBasicInfoSection extends StatelessWidget {
           TextFormField(
             controller: titleController,
             decoration: RecipeFormStyle.input(
-              label: 'ชื่อภาษาไทย',
-              hint: 'เช่น ผัดกะเพราไก่',
+              label: context.l10n.thaiName,
+              hint: context.l10n.thaiNameHint,
             ),
-            validator: (value) => validator(value, 'ชื่อสูตรอาหาร'),
+            validator: (value) =>
+                validator(value, context.l10n.recipeNameField),
             textCapitalization: TextCapitalization.words,
           ),
 
           const SizedBox(height: 12),
 
           TextFormField(
-            controller: slugController,
+            controller: titleEnController,
             decoration: RecipeFormStyle.input(
-              label: 'ชื่อภาษาอังกฤษ',
-              hint: 'spicy-basil-chicken',
-            ),
-            validator: (value) {
-              final required = validator(value, 'slug');
-
-              if (required != null) {
-                return required;
-              }
-
-              if (!RegExp(
-                r'^[a-z0-9]+(?:-[a-z0-9]+)*$',
-              ).hasMatch(value!.trim())) {
-                return 'ใช้ a-z, 0-9 และเครื่องหมาย - เท่านั้น';
-              }
-
-              return null;
-            },
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
-            ],
+              label: context.l10n.englishName,
+              hint: context.l10n.englishNameHint,
+            ).copyWith(helperText: context.l10n.englishNameHelper),
+            maxLength: 255,
+            textCapitalization: TextCapitalization.sentences,
           ),
 
           const SizedBox(height: 12),
@@ -74,8 +59,8 @@ class RecipeBasicInfoSection extends StatelessWidget {
           TextFormField(
             controller: descriptionController,
             decoration: RecipeFormStyle.input(
-              label: 'คำอธิบาย',
-              hint: 'เล่าจุดเด่นหรือรสชาติของเมนูนี้',
+              label: context.l10n.descriptionField,
+              hint: context.l10n.descriptionHint,
               alignLabelWithHint: true,
             ),
             minLines: 3,

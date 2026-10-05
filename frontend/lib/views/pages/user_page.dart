@@ -10,6 +10,7 @@ import 'package:flutter_application_1/views/pages/settings_page.dart';
 import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class UserPage extends StatelessWidget {
   const UserPage({super.key});
@@ -154,7 +155,9 @@ class _ProfileContent extends StatelessWidget {
                 ProfileCard(
                   profile: profile,
                   onEditPressed: onEditProfile,
-                  actionLabel: isGuest ? 'Sign in' : 'Edit profile',
+                  actionLabel: isGuest
+                      ? context.l10n.signIn
+                      : context.l10n.editProfile,
                   actionIcon: isGuest
                       ? Icons.login_rounded
                       : Icons.edit_outlined,
@@ -162,9 +165,9 @@ class _ProfileContent extends StatelessWidget {
                 const SizedBox(height: 16),
                 ProfileStatsRow(profile: profile),
                 const SizedBox(height: 30),
-                const ProfileSectionTitle(
-                  title: 'Your kitchen',
-                  subtitle: 'Everything you cook and collect',
+                ProfileSectionTitle(
+                  title: context.l10n.yourKitchenTitle,
+                  subtitle: context.l10n.yourKitchenSubtitle,
                 ),
                 const SizedBox(height: 14),
                 ProfileQuickActions(
@@ -173,9 +176,12 @@ class _ProfileContent extends StatelessWidget {
                 ),
                 // บัญชี/ความช่วยเหลือ/Sign out อยู่ในหน้า Settings (ไอคอนมุมขวาบน)
                 const SizedBox(height: 24),
-                const Center(
+                Center(
                   child: Text(
-                    '${AppInfo.name} · Version ${AppInfo.version}',
+                    context.l10n.appVersionFooter(
+                      AppInfo.name,
+                      AppInfo.version,
+                    ),
                     style: TextStyle(
                       color: ProfileColors.muted,
                       fontSize: 12,

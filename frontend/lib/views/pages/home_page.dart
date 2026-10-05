@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/banner/banner_bloc.dart';
 import 'package:flutter_application_1/bloc/banner/banner_event.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
-import 'package:flutter_application_1/bloc/category/category_state.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
-import 'package:flutter_application_1/views/pages/food_detail_page.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_state.dart';
+import 'package:flutter_application_1/views/pages/recommended_page.dart';
 import 'package:flutter_application_1/widgets/home/category_list.dart';
-import 'package:flutter_application_1/widgets/home/food_card.dart';
+import 'package:flutter_application_1/widgets/home/food_grid_section.dart';
 import 'package:flutter_application_1/widgets/home/home_banner.dart';
 import 'package:flutter_application_1/widgets/home/search_bar.dart';
 import 'package:flutter_application_1/widgets/home/section_title.dart';
@@ -23,28 +23,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  /// Recommended แสดงสูตรคะแนนรีวิวสูงสุดไม่เกินจำนวนนี้ ที่เหลือดูได้ในหน้า See More
+  static const _maxRecommended = 6;
+
   // คำค้นหาปัจจุบัน ใช้ค้นหาซ้ำตอนเปลี่ยนหมวดและตอนดึงรีเฟรช
   String _query = '';
 
-  final _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  // เลื่อนใกล้ล่างสุด (หรือเนื้อหายังไม่เต็มจอ) = โหลดหน้าถัดไป
-  // bloc กันซ้ำเองถ้ากำลังโหลดอยู่หรือหมดแล้ว
-  void _maybeLoadMore() {
-    if (!mounted || !_scrollController.hasClients) return;
-    final state = context.read<FoodBloc>().state;
-    // โหลดหน้าถัดไปพลาด ให้ผู้ใช้กดลองใหม่เอง ไม่วนยิงซ้ำ
-    if (state is! FoodLoaded || !state.hasMore || state.loadMoreError != null) {
-      return;
-    }
-    if (_scrollController.position.extentAfter < 600) {
-      context.read<FoodBloc>().add(FoodLoadMoreRequested());
+  // ซ่อนสูตรที่ซื้อแล้วจนเหลือไม่ถึง 6 อัน = โหลดหน้าถัดไปมาเติมให้ครบ
+  // bloc กันซ้ำเองถ้ากำลังโหลดอยู่
+  void _fillRecommended() {
+    if (!mounted) return;
+    final foodBloc = context.read<FoodBloc>();
+    final purchased = context.read<PurchasedRecipesBloc>().state;
+    if (FoodGridSection.needsMore(foodBloc.state, purchased, _maxRecommended)) {
+      foodBloc.add(FoodLoadMoreRequested());
     }
   }
 
@@ -68,7 +60,6 @@ class _HomePageState extends State<HomePage> {
     context.read<FoodBloc>().add(
       FetchFoodByCategoryEvent(selectedId),
     ); // ดึงข้อมูลตาม food by CategoryBloc
-    _scrollController.addListener(_maybeLoadMore);
   }
 
   // ดึงลงเพื่อโหลดแบนเนอร์และเมนูใหม่ ถ้ากำลังค้นหาอยู่ก็ค้นหาคำเดิมซ้ำ
@@ -84,6 +75,23 @@ class _HomePageState extends State<HomePage> {
     await done;
   }
 
+  // หน้า See More ใช้หมวดที่เลือกร่วมกับหน้านี้ (CategoryBloc ตัวเดียวกัน)
+  // กลับมาแล้วอัปเดตเงียบ ๆ เผื่อมีการลบสูตร/รีวิวใหม่ที่ทำให้อันดับเปลี่ยน
+  Future<void> _openSeeMore() async {
+    final foodBloc = context.read<FoodBloc>();
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => BlocProvider.value(
+          value: context.read<CategoryBloc>(),
+          child: RecommendedPage(initialQuery: _query),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    foodBloc.add(FoodSilentRefreshRequested());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,16 +99,22 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _refresh,
-          // โหลดหน้าแล้วเนื้อหายังไม่ถึงล่างจอ (เช่น ซ่อนสูตรที่ซื้อแล้วไปเยอะ) ก็โหลดต่อเลย
-          child: BlocListener<FoodBloc, FoodState>(
-            listener: (context, state) {
-              if (state is! FoodLoaded) return;
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => _maybeLoadMore(),
-              );
-            },
+          child: MultiBlocListener(
+            listeners: [
+              BlocListener<FoodBloc, FoodState>(
+                listener: (context, state) {
+                  if (state is! FoodLoaded) return;
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _fillRecommended(),
+                  );
+                },
+              ),
+              // เพิ่งซื้อสูตรที่อยู่ใน 6 อันดับ = การ์ดหายไป ต้องเติมอันดับถัดไป
+              BlocListener<PurchasedRecipesBloc, PurchasedRecipesState>(
+                listener: (context, state) => _fillRecommended(),
+              ),
+            ],
             child: SingleChildScrollView(
-              controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -123,136 +137,14 @@ class _HomePageState extends State<HomePage> {
                   // เปลี่ยนหมวดตอนค้นหาอยู่ ต้องค้นหาคำเดิมในหมวดใหม่ ไม่ใช่โหลดทั้งหมวด
                   CategoryList(onCategoryChanged: _loadFoods),
 
-                  const SizedBox(height: 25),
+                  // แถบหมวดเผื่อที่ให้เงาไว้ข้างล่างแล้ว 12
+                  const SizedBox(height: 13),
 
-                  const SectionTitle(),
+                  SectionTitle(onSeeMore: _openSeeMore),
 
                   const SizedBox(height: 20),
 
-                  BlocBuilder<FoodBloc, FoodState>(
-                    builder: (context, state) {
-                      if (state is FoodInitial) {
-                        return const Center(child: Text("Initial Loading..."));
-                      }
-                      if (state is FoodLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (state is FoodLoaded) {
-                        // ซ่อนสูตรที่ซื้อแล้ว ไปเปิดได้จากหน้า "สูตรที่ซื้อแล้ว" แทน
-                        final purchased = context
-                            .watch<PurchasedRecipesBloc>()
-                            .state;
-                        final foods = state.foods
-                            .where(
-                              (food) => !purchased.isPurchased(food.idfoods),
-                            )
-                            .toList(growable: false);
-
-                        // หน้านี้ถูกซ่อนหมดแต่ยังมีหน้าถัดไป = รอโหลดหน้าถัดไปก่อน
-                        if (foods.isEmpty && state.hasMore) {
-                          return _LoadMoreFooter(
-                            state: state,
-                            onRetry: () => context.read<FoodBloc>().add(
-                              FoodLoadMoreRequested(),
-                            ),
-                          );
-                        }
-
-                        if (foods.isEmpty) {
-                          final query = state.query;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 40),
-                            child: Center(
-                              child: Text(
-                                query == null
-                                    ? 'ยังไม่มีเมนูในหมวดนี้'
-                                    : 'ไม่พบเมนูที่ชื่อ "$query"',
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          );
-                        }
-                        // กรองหมวดอยู่ = การ์ดแสดงชื่อหมวดนั้น (สูตรมีได้หลายหมวด)
-                        // ไม่กรอง = ปล่อยให้การ์ดใช้หมวดแรกของสูตรเอง
-                        final categoryState = context
-                            .read<CategoryBloc>()
-                            .state;
-                        final selectedCategoryName =
-                            categoryState is CategoryLoaded
-                            ? categoryState.categories
-                                  .where(
-                                    (category) =>
-                                        category.id == categoryState.selectedId,
-                                  )
-                                  .map((category) => category.name)
-                                  .firstOrNull
-                            : null;
-
-                        return LayoutBuilder(
-                          builder: (context, constraints) {
-                            final width = constraints.maxWidth;
-                            // < 600 มือถือ = 2 คอลัมน์, >= 600 iPad = 3 คอลัมน์
-                            final crossAxisCount = width >= 900
-                                ? 4
-                                : (width >= 600 ? 3 : 2);
-
-                            final grid = GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: foods.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: crossAxisCount,
-                                    childAspectRatio: .68,
-                                    crossAxisSpacing: 15,
-                                    mainAxisSpacing: 15,
-                                  ),
-                              itemBuilder: (_, index) {
-                                final food = foods[index];
-                                return FoodCard(
-                                  food: food,
-                                  categoryLabel: selectedCategoryName,
-                                  onTap: () async {
-                                    final foodBloc = context.read<FoodBloc>();
-                                    // หน้ารายละเอียดคืน true = ลบสูตรไปแล้ว
-                                    final deleted = await Navigator.push<bool>(
-                                      context,
-                                      MaterialPageRoute<bool>(
-                                        builder: (_) => FoodDetailPage(
-                                          foodsId: food.idfoods,
-                                        ),
-                                      ),
-                                    );
-                                    if (deleted == true) {
-                                      foodBloc.add(FoodRemoved(food.idfoods));
-                                    }
-                                  },
-                                );
-                              },
-                            );
-
-                            return Column(
-                              children: [
-                                grid,
-                                _LoadMoreFooter(
-                                  state: state,
-                                  onRetry: () => context.read<FoodBloc>().add(
-                                    FoodLoadMoreRequested(),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-                      // handle error state
-                      if (state is FoodError) {
-                        return Center(child: Text(state.message));
-                      }
-                      // return empty widget
-                      return const SizedBox.shrink();
-                    },
-                  ),
+                  const FoodGridSection(maxItems: _maxRecommended),
                 ],
               ),
             ),
@@ -260,36 +152,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-}
-
-/// ท้ายรายการ: ตัวหมุนตอนโหลดหน้าถัดไป หรือปุ่มลองใหม่ถ้าโหลดพลาด
-class _LoadMoreFooter extends StatelessWidget {
-  const _LoadMoreFooter({required this.state, required this.onRetry});
-
-  final FoodLoaded state;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.loadMoreError != null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: TextButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('โหลดเมนูเพิ่มไม่สำเร็จ ลองอีกครั้ง'),
-          ),
-        ),
-      );
-    }
-    if (state.hasMore || state.isLoadingMore) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    return const SizedBox(height: 8);
   }
 }

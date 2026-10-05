@@ -24,11 +24,14 @@ import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
+import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
+import 'package:flutter_application_1/widgets/food_detail/food_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_button.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_section.dart';
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class FoodDetailPage extends StatefulWidget {
   const FoodDetailPage({
@@ -37,9 +40,14 @@ class FoodDetailPage extends StatefulWidget {
     this.showComments = false,
     this.scrollToComments = false,
     this.onCommentCountChanged,
+    this.heroImageUrl,
   });
 
   final String foodsId;
+
+  /// รูปจากการ์ดที่กดเข้ามา (มี Hero tag = foodsId)
+  /// ระหว่างโหลดสูตรครั้งแรกจะโชว์รูปนี้เป็นหัวหน้าไว้ก่อน รูปจะได้บินจากการ์ดมาได้
+  final String? heroImageUrl;
   final bool showComments;
   final bool scrollToComments;
   final ValueChanged<int>? onCommentCountChanged;
@@ -48,7 +56,8 @@ class FoodDetailPage extends StatefulWidget {
   State<FoodDetailPage> createState() => _FoodDetailPageState();
 }
 
-class _FoodDetailPageState extends State<FoodDetailPage> {
+class _FoodDetailPageState extends State<FoodDetailPage>
+    with RouteTransitionAware {
   final GlobalKey _commentsTitleKey = GlobalKey();
 
   // จุดเริ่มกับปลายทางของรูปที่ลอยลงตะกร้า
@@ -84,7 +93,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       _foodFuture = Future.value(cached);
       _refresh(silent: true);
     } else {
-      _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+      // ยิง API ทันที แต่เอาเนื้อหาขึ้นจอหลังเลื่อนหน้าเสร็จ ไม่ให้ build ก้อนใหญ่ระหว่างแอนิเมชัน
+      _foodFuture = afterRouteTransition(
+        FoodRepository().fetchFoodById(widget.foodsId),
+      );
     }
     _loadLoginState();
   }
@@ -108,7 +120,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   // silent = อัปเดตเบื้องหลังตอนเปิดหน้าจาก RAM: ไม่โหลดรีวิว/คอมเมนต์ซ้ำ และไม่เด้ง error
   Future<void> _refresh({bool silent = false}) async {
     try {
-      final food = await FoodRepository().fetchFoodById(widget.foodsId);
+      final food = await afterRouteTransition(
+        FoodRepository().fetchFoodById(widget.foodsId),
+      );
       if (!mounted) return;
       setState(() {
         _foodFuture = Future.value(food);
@@ -176,7 +190,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     isLoading: isPending,
                     onCartPressed: () =>
                         Navigator.pushNamed(context, AppRoutes.cart),
-                    buyLabel: inCart ? 'Checkout now' : 'Buy Now',
+                    buyLabel: inCart
+                        ? context.l10n.checkoutNow
+                        : context.l10n.buyNow,
                     onBuyPressed: inCart
                         ? () => Navigator.pushNamed(context, AppRoutes.cart)
                         : food == null || isPending
@@ -192,12 +208,20 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
             // มีข้อมูลเดิมอยู่แล้ว (เช่นหลังแก้ไขสูตร) ให้โชว์ของเดิมไว้ระหว่างโหลด
             if (state.connectionState == ConnectionState.waiting &&
                 !state.hasData) {
-              return const LoadingView();
+              final heroImageUrl = widget.heroImageUrl;
+              return LoadingView(
+                header: heroImageUrl == null
+                    ? null
+                    : FoodImage(
+                        heroTag: widget.foodsId,
+                        imageUrl: heroImageUrl,
+                      ),
+              );
             }
 
             if (state.hasError || !state.hasData) {
               return ErrorView(
-                message: state.error?.toString() ?? 'ไม่พบข้อมูลเมนูนี้',
+                message: state.error?.toString() ?? context.l10n.recipeNotFound,
                 onRetry: _reload,
               );
             }
@@ -245,7 +269,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      food.name,
+                      food.displayName(context),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -286,9 +310,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                                   ),
                                 )
                               : const Icon(Icons.restaurant_menu_rounded),
-                          label: const Text(
-                            'เริ่มทำอาหาร',
-                            style: TextStyle(
+                          label: Text(
+                            context.l10n.startCooking,
+                            style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                             ),
@@ -309,7 +333,13 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                     const SizedBox(height: 28),
 
-                    if (widget.showComments ||
+                    // เปิดจาก RAM เนื้อหาขึ้นตั้งแต่เฟรมแรก รอเลื่อนหน้าเสร็จก่อนค่อยโหลด/วาดรีวิวกับคอมเมนต์
+                    if (!isRouteTransitionDone)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (widget.showComments ||
                         widget.scrollToComments ||
                         _isCommunity(food))
                       BlocProvider(
@@ -375,19 +405,19 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('ลบสูตรอาหาร'),
-          content: const Text(
-            'คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\n'
-            'ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
-          ),
+          title: Text(context.l10n.deleteRecipe),
+          content: Text(context.l10n.deleteRecipeConfirm),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('ยกเลิก'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('ลบ', style: TextStyle(color: Colors.red)),
+              child: Text(
+                context.l10n.delete,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
@@ -434,7 +464,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
       showAppSnackBar(
         context,
-        'บันทึกการแก้ไขแล้ว',
+        context.l10n.changesSaved,
         type: AppSnackType.success,
       );
 

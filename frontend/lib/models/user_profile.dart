@@ -1,3 +1,5 @@
+import 'package:flutter_application_1/l10n/l10n.dart';
+
 class UserProfile {
   const UserProfile({
     required this.id,
@@ -28,9 +30,9 @@ class UserProfile {
   final double rating;
 
   factory UserProfile.guest() {
-    return const UserProfile(
+    return UserProfile(
       id: '',
-      displayName: 'Guest',
+      displayName: appL10n.guest,
       email: '-',
       avatarUrl: null,
       role: 'guest',
@@ -44,9 +46,9 @@ class UserProfile {
   }
 
   String get roleLabel => switch (role) {
-    'creator' => 'Recipe creator',
-    'admin' => 'Administrator',
-    _ => 'Food lover',
+    'creator' => appL10n.roleCreator,
+    'admin' => appL10n.roleAdmin,
+    _ => appL10n.roleFoodLover,
   };
 
   factory UserProfile.fromJson(

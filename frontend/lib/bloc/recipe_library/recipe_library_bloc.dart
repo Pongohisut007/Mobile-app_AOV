@@ -5,6 +5,7 @@ import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// อ่าน userId + token จาก secure storage เองแบบเดียวกับ ProfileBloc
 class RecipeLibraryBloc extends Bloc<RecipeLibraryEvent, RecipeLibraryState> {
@@ -61,7 +62,7 @@ class RecipeLibraryBloc extends Bloc<RecipeLibraryEvent, RecipeLibraryState> {
     final userId = await _tokenStorage.readUserId();
 
     if (accessToken == null || userId == null) {
-      emit(const RecipeLibraryFailure('Please sign in to see your recipes.'));
+      emit(RecipeLibraryFailure(appL10n.librarySignInRequired));
       return;
     }
 
