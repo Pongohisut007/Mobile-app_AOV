@@ -11,7 +11,9 @@ import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
+import 'package:flutter_application_1/models/auth_response.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/views/pages/forgot_password_page.dart';
 import 'package:flutter_application_1/widgets/login/login_form.dart';
 import 'package:flutter_application_1/widgets/login/login_logo.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -62,6 +64,18 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  /// ตั้งรหัสผ่านใหม่สำเร็จ = ได้ session กลับมา เข้าสู่ระบบต่อให้เลย
+  Future<void> _openForgotPassword() async {
+    _clearError();
+    final response = await Navigator.of(context).push<AuthResponse>(
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordPage(initialEmail: _emailController.text),
+      ),
+    );
+    if (response == null || !mounted) return;
+    context.read<AuthBloc>().add(AuthSessionStarted(response));
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -110,6 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                       _obscurePassword = !_obscurePassword;
                     }),
                     onSubmit: _submit,
+                    onForgotPassword: _openForgotPassword,
                     onSignUp: () {
                       Navigator.pushReplacementNamed(
                         context,

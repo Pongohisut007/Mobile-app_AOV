@@ -13,6 +13,7 @@ class LoginForm extends StatelessWidget {
     required this.onTogglePassword,
     required this.onSubmit,
     this.onSignUp,
+    this.onForgotPassword,
     this.errorMessage,
     super.key,
   });
@@ -24,6 +25,7 @@ class LoginForm extends StatelessWidget {
   final VoidCallback onTogglePassword;
   final VoidCallback onSubmit;
   final VoidCallback? onSignUp;
+  final VoidCallback? onForgotPassword;
 
   /// error จาก server (เช่น รหัสผ่านผิด) แสดงเหนือปุ่ม จนกว่าจะแก้ข้อมูล
   final String? errorMessage;
@@ -50,6 +52,7 @@ class LoginForm extends StatelessWidget {
                 obscurePassword: obscurePassword,
                 onTogglePassword: onTogglePassword,
                 onSubmitted: onSubmit,
+                onForgotPassword: onForgotPassword,
               ),
               if (errorMessage case final message?) ...[
                 const SizedBox(height: 14),

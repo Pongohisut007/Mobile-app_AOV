@@ -9,6 +9,7 @@ class LoginFormFields extends StatelessWidget {
     required this.obscurePassword,
     required this.onTogglePassword,
     required this.onSubmitted,
+    this.onForgotPassword,
     super.key,
   });
 
@@ -17,6 +18,7 @@ class LoginFormFields extends StatelessWidget {
   final bool obscurePassword;
   final VoidCallback onTogglePassword;
   final VoidCallback onSubmitted;
+  final VoidCallback? onForgotPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -82,8 +84,7 @@ class LoginFormFields extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            // ยังไม่มีระบบรีเซ็ตรหัสผ่าน (ปุ่มไว้ก่อน)
-            onPressed: () {},
+            onPressed: onForgotPassword,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF777777),
               padding: const EdgeInsets.only(top: 4),

@@ -120,72 +120,77 @@ class AuthErrorBanner extends StatelessWidget {
 
 /// ปุ่มหลัก (เข้าสู่ระบบ / สมัครสมาชิก): ไล่สีแดง→ส้ม มีเงาส้ม
 /// กำลังส่งข้อมูล (AuthLoading) = ตัวหมุนและกดซ้ำไม่ได้
+/// หน้าที่ไม่ได้ใช้ AuthBloc (เช่น ลืมรหัสผ่าน) ส่ง [isLoading] มาเอง
 class AuthPrimaryButton extends StatelessWidget {
   const AuthPrimaryButton({
     super.key,
     required this.label,
     required this.onPressed,
+    this.isLoading,
   });
 
   final String label;
   final VoidCallback onPressed;
+  final bool? isLoading;
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading case final loading?) return _build(loading);
     return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        final isLoading = state is AuthLoading;
-        return AnimatedOpacity(
-          duration: const Duration(milliseconds: 150),
-          opacity: isLoading ? 0.7 : 1,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: AuthStyle.gradient,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: AuthStyle.accent.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+      builder: (context, state) => _build(state is AuthLoading),
+    );
+  }
+
+  Widget _build(bool isLoading) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 150),
+      opacity: isLoading ? 0.7 : 1,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: AuthStyle.gradient,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: AuthStyle.accent.withValues(alpha: 0.35),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: FilledButton(
-                onPressed: isLoading ? null : onPressed,
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  disabledBackgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                ),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        label,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+          ],
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: FilledButton(
+            onPressed: isLoading ? null : onPressed,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              disabledBackgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
               ),
             ),
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

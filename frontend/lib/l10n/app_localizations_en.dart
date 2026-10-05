@@ -1657,7 +1657,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get faqForgotBody =>
-      'Password reset by email isn\'t available yet. If you\'re still signed in, change it in Settings → Change password. If you can\'t sign in, please contact the team';
+      'Tap \"Forgot password?\" on the sign-in screen, enter your email, then use the 6-digit code we email you to set a new password. If you don\'t see the email, check your spam folder';
 
   @override
   String get faqLostTitle =>
@@ -1851,4 +1851,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordSet => 'Password set';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot password';
+
+  @override
+  String get forgotPasswordIntro =>
+      'Enter the email you signed up with and we\'ll send you a 6-digit code';
+
+  @override
+  String get resetPasswordTitle => 'Set a new password';
+
+  @override
+  String get sendResetCode => 'Send code';
+
+  @override
+  String resetCodeSentTo(String email) {
+    return 'If $email has an account, we\'ve sent it a 6-digit code. Check your inbox (and spam)';
+  }
+
+  @override
+  String get changeEmail => 'Change email';
+
+  @override
+  String get resetCode => 'Code';
+
+  @override
+  String get resetCodeHint => '6-digit code';
+
+  @override
+  String get resetCodeInvalid => 'Enter the 6-digit code';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'Resend code in ${seconds}s';
+  }
+
+  @override
+  String get resetCodeResent => 'New code sent';
+
+  @override
+  String get resetPasswordSubmit => 'Reset password';
 }

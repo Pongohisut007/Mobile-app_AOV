@@ -1576,7 +1576,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get faqForgotBody =>
-      'ตอนนี้ยังไม่มีระบบรีเซ็ตรหัสผ่านผ่านอีเมล ถ้ายังเข้าสู่ระบบอยู่ เปลี่ยนรหัสได้ที่ ตั้งค่า → เปลี่ยนรหัสผ่าน ถ้าเข้าไม่ได้แล้วโปรดติดต่อทีมงาน';
+      'กด \"ลืมรหัสผ่าน?\" ในหน้าเข้าสู่ระบบ กรอกอีเมล แล้วใส่รหัส 6 หลักที่ได้ทางอีเมลเพื่อตั้งรหัสผ่านใหม่ ถ้าไม่เห็นอีเมลให้ดูในจดหมายขยะ';
 
   @override
   String get faqLostTitle => 'มือถือหาย หรือสงสัยว่ามีคนใช้บัญชีของฉัน';
@@ -1755,4 +1755,48 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get passwordSet => 'ตั้งรหัสผ่านแล้ว';
+
+  @override
+  String get forgotPasswordTitle => 'ลืมรหัสผ่าน';
+
+  @override
+  String get forgotPasswordIntro =>
+      'กรอกอีเมลที่ใช้สมัคร เราจะส่งรหัสยืนยัน 6 หลักไปให้';
+
+  @override
+  String get resetPasswordTitle => 'ตั้งรหัสผ่านใหม่';
+
+  @override
+  String get sendResetCode => 'ส่งรหัสยืนยัน';
+
+  @override
+  String resetCodeSentTo(String email) {
+    return 'ถ้า $email มีบัญชีอยู่ เราส่งรหัส 6 หลักไปแล้ว ดูในกล่องจดหมาย (และจดหมายขยะ)';
+  }
+
+  @override
+  String get changeEmail => 'เปลี่ยนอีเมล';
+
+  @override
+  String get resetCode => 'รหัสยืนยัน';
+
+  @override
+  String get resetCodeHint => 'ตัวเลข 6 หลัก';
+
+  @override
+  String get resetCodeInvalid => 'กรอกรหัสตัวเลข 6 หลัก';
+
+  @override
+  String get resendCode => 'ส่งรหัสอีกครั้ง';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'ส่งรหัสอีกครั้งได้ใน $seconds วินาที';
+  }
+
+  @override
+  String get resetCodeResent => 'ส่งรหัสใหม่แล้ว';
+
+  @override
+  String get resetPasswordSubmit => 'ตั้งรหัสผ่านใหม่';
 }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { PasswordResetCode } from '../auth/entities/password-reset-code.entity';
 import { Banner } from '../banner/entities/banner.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Cart } from '../cart/entities/cart.entity';
@@ -23,6 +24,7 @@ import { User } from '../users/entities/user.entity';
 const entities = [
   User,
   UserIdentity,
+  PasswordResetCode,
   Recipe,
   RecipeSection,
   RecipeContent,

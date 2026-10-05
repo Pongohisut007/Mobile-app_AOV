@@ -477,7 +477,7 @@
   "faqProfileTitle": "Change my profile photo or name",
   "faqProfileBody": "Go to Profile → Edit profile to change your photo and display name. Your email is used to sign in, so it can't be changed",
   "faqForgotTitle": "I forgot my password",
-  "faqForgotBody": "Password reset by email isn't available yet. If you're still signed in, change it in Settings → Change password. If you can't sign in, please contact the team",
+  "faqForgotBody": "Tap \"Forgot password?\" on the sign-in screen, enter your email, then use the 6-digit code we email you to set a new password. If you don't see the email, check your spam folder",
   "faqLostTitle": "My phone was lost, or someone may be using my account",
   "faqLostBody": "Go to Settings → Sign out of all devices, then change your password. Every signed-in device is signed out immediately",
   "privacyCollectTitle": "Information we collect",
@@ -530,5 +530,18 @@
   "googleSignInFailed": "Couldn't sign in with Google. Please try again",
   "setPassword": "Set password",
   "setPasswordHint": "Add a password so you can also sign in with your email",
-  "passwordSet": "Password set"
+  "passwordSet": "Password set",
+  "forgotPasswordTitle": "Forgot password",
+  "forgotPasswordIntro": "Enter the email you signed up with and we'll send you a 6-digit code",
+  "resetPasswordTitle": "Set a new password",
+  "sendResetCode": "Send code",
+  "resetCodeSentTo": "If {email} has an account, we've sent it a 6-digit code. Check your inbox (and spam)",
+  "changeEmail": "Change email",
+  "resetCode": "Code",
+  "resetCodeHint": "6-digit code",
+  "resetCodeInvalid": "Enter the 6-digit code",
+  "resendCode": "Resend code",
+  "resendCodeIn": "Resend code in {seconds}s",
+  "resetCodeResent": "New code sent",
+  "resetPasswordSubmit": "Reset password"
 }

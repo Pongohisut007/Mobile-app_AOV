@@ -18,6 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>(_login);
     on<AuthRegisterRequested>(_register);
     on<AuthGoogleRequested>(_signInWithGoogle);
+    on<AuthSessionStarted>(_startSession);
   }
 
   final AuthRepository _repository;
@@ -45,6 +46,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } on Exception catch (error) {
       emit(AuthFailure(error.toString().replaceFirst('Exception: ', '')));
     }
+  }
+
+  Future<void> _startSession(
+    AuthSessionStarted event,
+    Emitter<AuthState> emit,
+  ) async {
+    await _tokenStorage.saveSession(
+      accessToken: event.response.accessToken,
+      userId: event.response.user.id,
+    );
+    emit(AuthAuthenticated(event.response));
   }
 
   Future<void> _login(AuthLoginRequested event, Emitter<AuthState> emit) async {

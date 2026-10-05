@@ -2963,7 +2963,7 @@ abstract class AppLocalizations {
   /// No description provided for @faqForgotBody.
   ///
   /// In th, this message translates to:
-  /// **'ตอนนี้ยังไม่มีระบบรีเซ็ตรหัสผ่านผ่านอีเมล ถ้ายังเข้าสู่ระบบอยู่ เปลี่ยนรหัสได้ที่ ตั้งค่า → เปลี่ยนรหัสผ่าน ถ้าเข้าไม่ได้แล้วโปรดติดต่อทีมงาน'**
+  /// **'กด \"ลืมรหัสผ่าน?\" ในหน้าเข้าสู่ระบบ กรอกอีเมล แล้วใส่รหัส 6 หลักที่ได้ทางอีเมลเพื่อตั้งรหัสผ่านใหม่ ถ้าไม่เห็นอีเมลให้ดูในจดหมายขยะ'**
   String get faqForgotBody;
 
   /// No description provided for @faqLostTitle.
@@ -3283,6 +3283,84 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ตั้งรหัสผ่านแล้ว'**
   String get passwordSet;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ลืมรหัสผ่าน'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordIntro.
+  ///
+  /// In th, this message translates to:
+  /// **'กรอกอีเมลที่ใช้สมัคร เราจะส่งรหัสยืนยัน 6 หลักไปให้'**
+  String get forgotPasswordIntro;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านใหม่'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @sendResetCode.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสยืนยัน'**
+  String get sendResetCode;
+
+  /// No description provided for @resetCodeSentTo.
+  ///
+  /// In th, this message translates to:
+  /// **'ถ้า {email} มีบัญชีอยู่ เราส่งรหัส 6 หลักไปแล้ว ดูในกล่องจดหมาย (และจดหมายขยะ)'**
+  String resetCodeSentTo(String email);
+
+  /// No description provided for @changeEmail.
+  ///
+  /// In th, this message translates to:
+  /// **'เปลี่ยนอีเมล'**
+  String get changeEmail;
+
+  /// No description provided for @resetCode.
+  ///
+  /// In th, this message translates to:
+  /// **'รหัสยืนยัน'**
+  String get resetCode;
+
+  /// No description provided for @resetCodeHint.
+  ///
+  /// In th, this message translates to:
+  /// **'ตัวเลข 6 หลัก'**
+  String get resetCodeHint;
+
+  /// No description provided for @resetCodeInvalid.
+  ///
+  /// In th, this message translates to:
+  /// **'กรอกรหัสตัวเลข 6 หลัก'**
+  String get resetCodeInvalid;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสอีกครั้ง'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสอีกครั้งได้ใน {seconds} วินาที'**
+  String resendCodeIn(int seconds);
+
+  /// No description provided for @resetCodeResent.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสใหม่แล้ว'**
+  String get resetCodeResent;
+
+  /// No description provided for @resetPasswordSubmit.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านใหม่'**
+  String get resetPasswordSubmit;
 }
 
 class _AppLocalizationsDelegate
