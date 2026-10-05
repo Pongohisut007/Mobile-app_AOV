@@ -133,6 +133,7 @@ export class Recipe extends BaseEntity {
 
   favoriteCount?: number;
   reviewCount?: number;
+  averageRating?: number | null;
   commentCount?: number;
 
   // เฉพาะ GET /recipes/:id: ผู้ชมคนนี้เห็นขั้นตอนครบไหม (community / เจ้าของ / ซื้อแล้ว)

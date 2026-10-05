@@ -83,7 +83,9 @@ describe('RecipesService', () => {
     const recipes = [{ id: 'a' }, { id: 'b' }] as Recipe[];
     recipeQuery.getMany.mockResolvedValue(recipes);
     favoriteQuery.getRawMany.mockResolvedValue([{ recipeId: 'a', count: '2' }]);
-    reviewQuery.getRawMany.mockResolvedValue([{ recipeId: 'a', count: '3' }]);
+    reviewQuery.getRawMany.mockResolvedValue([
+      { recipeId: 'a', count: '3', average: '4.3333333333333333' },
+    ]);
     commentQuery.getRawMany.mockResolvedValue([{ recipeId: 'b', count: '4' }]);
 
     const result = await service.findAll({
@@ -130,12 +132,14 @@ describe('RecipesService', () => {
         id: 'a',
         favoriteCount: 2,
         reviewCount: 3,
+        averageRating: 4.3,
         commentCount: 0,
       }),
       expect.objectContaining({
         id: 'b',
         favoriteCount: 0,
         reviewCount: 0,
+        averageRating: null,
         commentCount: 4,
       }),
     ]);

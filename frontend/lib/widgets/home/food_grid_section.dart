@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/bloc/category/category_bloc.dart';
-import 'package:flutter_application_1/bloc/category/category_state.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
 import 'package:flutter_application_1/bloc/food/food_state.dart';
@@ -42,8 +40,7 @@ class FoodGridSection extends StatelessWidget {
   ) {
     if (state is! FoodLoaded || !state.hasMore) return false;
     if (state.loadMoreError != null) return false;
-    return visibleFoods(state, purchased, maxItems: maxItems).length <
-        maxItems;
+    return visibleFoods(state, purchased, maxItems: maxItems).length < maxItems;
   }
 
   @override
@@ -92,16 +89,6 @@ class FoodGridSection extends StatelessWidget {
           );
         }
 
-        // กรองหมวดอยู่ = การ์ดแสดงชื่อหมวดนั้น (สูตรมีได้หลายหมวด)
-        // ไม่กรอง = ปล่อยให้การ์ดใช้หมวดแรกของสูตรเอง
-        final categoryState = context.read<CategoryBloc>().state;
-        final selectedCategoryName = categoryState is CategoryLoaded
-            ? categoryState.categories
-                  .where((category) => category.id == categoryState.selectedId)
-                  .map((category) => category.name)
-                  .firstOrNull
-            : null;
-
         return LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
@@ -122,7 +109,6 @@ class FoodGridSection extends StatelessWidget {
                 final food = foods[index];
                 return FoodCard(
                   food: food,
-                  categoryLabel: selectedCategoryName,
                   onTap: () async {
                     final foodBloc = context.read<FoodBloc>();
                     // หน้ารายละเอียดคืน true = ลบสูตรไปแล้ว

@@ -15,6 +15,8 @@ class Food {
   final double price;
   final int favoriteCount;
   final int reviewCount;
+  // ค่าเฉลี่ยดาวจริงจากรีวิวที่เผยแพร่ (ทศนิยม 1 ตำแหน่ง) null = ยังไม่มีรีวิว
+  final double? averageRating;
   final int commentCount;
 
   final int? preparationMinutes;
@@ -49,6 +51,7 @@ class Food {
     this.price = 0,
     this.favoriteCount = 0,
     this.reviewCount = 0,
+    this.averageRating,
     this.commentCount = 0,
     this.preparationMinutes,
     this.cookingMinutes,
@@ -114,6 +117,9 @@ class Food {
       price: _toDouble(json['price']),
       favoriteCount: _toInt(json['favoriteCount']) ?? 0,
       reviewCount: _toInt(json['reviewCount']) ?? 0,
+      averageRating: json['averageRating'] == null
+          ? null
+          : _toDouble(json['averageRating']),
       commentCount: _toInt(json['commentCount']) ?? 0,
       preparationMinutes: _toInt(json['preparationMinutes']),
       cookingMinutes: _toInt(json['cookingMinutes']),

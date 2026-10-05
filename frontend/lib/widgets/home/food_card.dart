@@ -15,16 +15,7 @@ class FoodCard extends StatelessWidget {
   final Food food;
   final VoidCallback? onTap;
 
-  /// ชื่อหมวดที่แสดงข้างปุ่มตะกร้า ถ้าไม่ส่งมาใช้หมวดแรกของสูตร
-  /// (หน้า Home ส่งหมวดที่กำลังกรองอยู่มา สูตรที่มีหลายหมวดจะได้แสดงหมวดที่ตรงกับ filter)
-  final String? categoryLabel;
-
-  const FoodCard({
-    super.key,
-    required this.food,
-    this.onTap,
-    this.categoryLabel,
-  });
+  const FoodCard({super.key, required this.food, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -39,23 +30,31 @@ class FoodCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: _FavoriteButton(recipeId: food.idfoods), //หัวใจ
-            ),
+            // หัวใจลอยทับมุมขวาบนของรูป รูปจะได้ใช้พื้นที่เต็มความสูง
             Expanded(
-              child: Center(
-                child: AppNetworkImage(
-                  food.filePathImage,
-                  fit: BoxFit.contain,
-                  // การ์ดพื้นขาว ไม่ต้องมีกรอบเทาตอนกำลังโหลด
-                  placeholder: const SizedBox.shrink(),
-                  errorBuilder: (context) => Icon(
-                    Icons.fastfood,
-                    size: 48,
-                    color: Colors.grey.shade400,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Center(
+                      child: AppNetworkImage(
+                        food.filePathImage,
+                        fit: BoxFit.contain,
+                        // การ์ดพื้นขาว ไม่ต้องมีกรอบเทาตอนกำลังโหลด
+                        placeholder: const SizedBox.shrink(),
+                        errorBuilder: (context) => Icon(
+                          Icons.fastfood,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: _FavoriteButton(recipeId: food.idfoods), //หัวใจ
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 10),
@@ -76,23 +75,59 @@ class FoodCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
-                  child: Text(
-                    categoryLabel ?? food.category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
+                Flexible(child: _RatingLabel(food: food)),
                 _AddToCartButton(food: food), // add
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ★ 4.5 (12) จากรีวิวที่เผยแพร่ ยังไม่มีรีวิว = ☆ ใหม่ (ไม่ใช่ได้ 0 ดาว)
+class _RatingLabel extends StatelessWidget {
+  const _RatingLabel({required this.food});
+
+  final Food food;
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = food.averageRating;
+    final hasReviews = rating != null && food.reviewCount > 0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          hasReviews ? Icons.star_rounded : Icons.star_outline_rounded,
+          size: 18,
+          color: Colors.amber,
+        ),
+        const SizedBox(width: 3),
+        Flexible(
+          child: Text.rich(
+            hasReviews
+                ? TextSpan(
+                    text: rating.toStringAsFixed(1),
+                    children: [
+                      TextSpan(
+                        text: ' (${food.reviewCount})',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  )
+                : const TextSpan(text: 'ใหม่'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -124,8 +159,7 @@ class _FavoriteButton extends StatelessWidget {
           },
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          tooltip: isFavorite ? 'เอาออกจากรายการโปรด' : 'บันทึกลงรายการโปรด',
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),          tooltip: isFavorite ? 'เอาออกจากรายการโปรด' : 'บันทึกลงรายการโปรด',
           icon: Icon(
             isFavorite ? Icons.favorite : Icons.favorite_border,
             color: isFavorite ? Colors.redAccent : Colors.grey.shade400,

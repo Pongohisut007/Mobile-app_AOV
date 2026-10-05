@@ -371,10 +371,11 @@ export class RecipesService {
         .createQueryBuilder('review')
         .select('review.recipeId', 'recipeId')
         .addSelect('COUNT(*)', 'count')
+        .addSelect('AVG(review.rating)', 'average')
         .where('review.recipeId IN (:...recipeIds)', { recipeIds })
         .andWhere('review.status = :status', { status: ReviewStatus.PUBLISHED })
         .groupBy('review.recipeId')
-        .getRawMany<{ recipeId: string; count: string }>(),
+        .getRawMany<{ recipeId: string; count: string; average: string }>(),
       this.commentRepository
         .createQueryBuilder('comment')
         .select('comment.recipeId', 'recipeId')
@@ -390,6 +391,13 @@ export class RecipesService {
     const reviewCounts = new Map(
       reviewRows.map((row) => [row.recipeId, Number(row.count)]),
     );
+    // ค่าเฉลี่ยดาวจริง (ไม่ถ่วงน้ำหนัก) ปัดทศนิยม 1 ตำแหน่งไว้โชว์บนการ์ด
+    const reviewAverages = new Map(
+      reviewRows.map((row) => [
+        row.recipeId,
+        Math.round(Number(row.average) * 10) / 10,
+      ]),
+    );
     const commentCounts = new Map(
       commentRows.map((row) => [row.recipeId, Number(row.count)]),
     );
@@ -397,6 +405,8 @@ export class RecipesService {
     for (const recipe of recipes) {
       recipe.favoriteCount = favoriteCounts.get(recipe.id) ?? 0;
       recipe.reviewCount = reviewCounts.get(recipe.id) ?? 0;
+      // ยังไม่มีรีวิว = null แยกจากได้คะแนนต่ำ
+      recipe.averageRating = reviewAverages.get(recipe.id) ?? null;
       recipe.commentCount = commentCounts.get(recipe.id) ?? 0;
     }
 
