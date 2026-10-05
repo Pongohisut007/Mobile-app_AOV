@@ -53,9 +53,6 @@
   "favoritesDetail": "{count} saved",
   "drafts": "Drafts",
   "draftsDetail": "{count} unfinished",
-  "statRecipes": "Recipes",
-  "statSaved": "Saved",
-  "statRating": "Rating",
   "guest": "Guest",
   "fieldName": "Name",
   "fieldEmail": "Email",
@@ -515,5 +512,13 @@
   "language": "Language",
   "chooseLanguage": "Choose language",
   "englishNameHint": "e.g. Spicy basil chicken",
-  "englishNameHelper": "Optional. Shown when the app is in English"
+  "englishNameHelper": "Optional. Shown when the app is in English",
+  "statRecipeRating": "Recipe rating",
+  "reviewsCountShort": "{count, plural, =1{1 review} other{{count} reviews}}",
+  "statSales": "Sold",
+  "statOfficialSaves": "Official saves",
+  "statCommunitySaves": "Community saves",
+  "statSavesReceived": "Saves",
+  "statCommentsReceived": "Comments",
+  "statReviewsWritten": "Reviews written"
 }

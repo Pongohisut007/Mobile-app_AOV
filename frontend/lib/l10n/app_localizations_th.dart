@@ -200,15 +200,6 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String get statRecipes => 'สูตร';
-
-  @override
-  String get statSaved => 'บันทึก';
-
-  @override
-  String get statRating => 'คะแนน';
-
-  @override
   String get guest => 'ผู้เยี่ยมชม';
 
   @override
@@ -1703,4 +1694,30 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get englishNameHelper => 'ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ';
+
+  @override
+  String get statRecipeRating => 'คะแนนสูตร';
+
+  @override
+  String reviewsCountShort(int count) {
+    return '$count รีวิว';
+  }
+
+  @override
+  String get statSales => 'ขายได้';
+
+  @override
+  String get statOfficialSaves => 'บันทึกสูตร Official';
+
+  @override
+  String get statCommunitySaves => 'บันทึกสูตรคอมมูนิตี้';
+
+  @override
+  String get statSavesReceived => 'ถูกบันทึก';
+
+  @override
+  String get statCommentsReceived => 'ความคิดเห็นที่ได้รับ';
+
+  @override
+  String get statReviewsWritten => 'รีวิวที่เขียน';
 }

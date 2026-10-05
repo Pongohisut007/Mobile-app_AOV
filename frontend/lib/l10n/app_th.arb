@@ -168,9 +168,6 @@
       }
     }
   },
-  "statRecipes": "สูตร",
-  "statSaved": "บันทึก",
-  "statRating": "คะแนน",
   "guest": "ผู้เยี่ยมชม",
   "fieldName": "ชื่อ",
   "fieldEmail": "อีเมล",
@@ -914,5 +911,20 @@
   "language": "ภาษา",
   "chooseLanguage": "เลือกภาษา",
   "englishNameHint": "เช่น Spicy basil chicken",
-  "englishNameHelper": "ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ"
+  "englishNameHelper": "ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ",
+  "statRecipeRating": "คะแนนสูตร",
+  "reviewsCountShort": "{count} รีวิว",
+  "@reviewsCountShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statSales": "ขายได้",
+  "statOfficialSaves": "บันทึกสูตร Official",
+  "statCommunitySaves": "บันทึกสูตรคอมมูนิตี้",
+  "statSavesReceived": "ถูกบันทึก",
+  "statCommentsReceived": "ความคิดเห็น",
+  "statReviewsWritten": "รีวิวที่เขียน"
 }

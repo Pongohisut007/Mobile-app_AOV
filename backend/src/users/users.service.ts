@@ -10,10 +10,22 @@ import {
   RecipeAccess,
   RecipeAccessType,
 } from '../recipe-access/entities/recipe-access.entity';
-import { Recipe, RecipeStatus } from '../recipes/entities/recipe.entity';
+import {
+  Recipe,
+  RecipeStatus,
+  RecipeType,
+} from '../recipes/entities/recipe.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import type { UserProfileResponse } from './dto/user-profile-response.dto';
 import { User, UserRole, UserStatus } from './entities/user.entity';
+
+type ActivityCountKey =
+  | 'reviewCount'
+  | 'salesCount'
+  | 'officialSavedCount'
+  | 'communitySavedCount'
+  | 'commentsReceivedCount'
+  | 'reviewsWrittenCount';
 
 export interface CreateUserInput {
   email: string;
@@ -158,39 +170,46 @@ export class UsersService {
   async findProfile(id: string): Promise<UserProfileResponse> {
     const user = await this.findOne(id);
 
-    const [recipeCount, draftCount, savedCount, purchasedCount, ratingRow] =
-      await Promise.all([
-        this.recipeRepository.count({
-          where: { creatorId: id, status: RecipeStatus.PUBLISHED },
-        }),
-        this.recipeRepository.count({
-          where: { creatorId: id, status: RecipeStatus.DRAFT },
-        }),
-        this.favoriteRepository.count({ where: { userId: id } }),
-        this.accessRepository
-          .createQueryBuilder('access')
-          .where('access.user_id = :userId', { userId: id })
-          .andWhere('access.access_type = :accessType', {
-            accessType: RecipeAccessType.PURCHASE,
-          })
-          .andWhere('access.revoked_at IS NULL')
-          .andWhere(
-            '(access.expires_at IS NULL OR access.expires_at > CURRENT_TIMESTAMP)',
-          )
-          .getCount(),
-        this.reviewRepository
-          .createQueryBuilder('review')
-          .innerJoin('review.recipe', 'recipe')
-          .select('COALESCE(AVG(review.rating), 0)', 'rating')
-          .where('recipe.creator_id = :creatorId', { creatorId: id })
-          .andWhere('recipe.status = :recipeStatus', {
-            recipeStatus: RecipeStatus.PUBLISHED,
-          })
-          .andWhere('review.status = :reviewStatus', {
-            reviewStatus: ReviewStatus.PUBLISHED,
-          })
-          .getRawOne<{ rating: string | number | null }>(),
-      ]);
+    const [
+      recipeCount,
+      draftCount,
+      savedCount,
+      purchasedCount,
+      ratingRow,
+      activity,
+    ] = await Promise.all([
+      this.recipeRepository.count({
+        where: { creatorId: id, status: RecipeStatus.PUBLISHED },
+      }),
+      this.recipeRepository.count({
+        where: { creatorId: id, status: RecipeStatus.DRAFT },
+      }),
+      this.favoriteRepository.count({ where: { userId: id } }),
+      this.accessRepository
+        .createQueryBuilder('access')
+        .where('access.user_id = :userId', { userId: id })
+        .andWhere('access.access_type = :accessType', {
+          accessType: RecipeAccessType.PURCHASE,
+        })
+        .andWhere('access.revoked_at IS NULL')
+        .andWhere(
+          '(access.expires_at IS NULL OR access.expires_at > CURRENT_TIMESTAMP)',
+        )
+        .getCount(),
+      this.reviewRepository
+        .createQueryBuilder('review')
+        .innerJoin('review.recipe', 'recipe')
+        .select('COALESCE(AVG(review.rating), 0)', 'rating')
+        .where('recipe.creator_id = :creatorId', { creatorId: id })
+        .andWhere('recipe.status = :recipeStatus', {
+          recipeStatus: RecipeStatus.PUBLISHED,
+        })
+        .andWhere('review.status = :reviewStatus', {
+          reviewStatus: ReviewStatus.PUBLISHED,
+        })
+        .getRawOne<{ rating: string | number | null }>(),
+      this.loadActivityCounts(id),
+    ]);
 
     const rating = Number(ratingRow?.rating ?? 0);
 
@@ -206,6 +225,53 @@ export class UsersService {
       savedCount,
       draftCount,
       rating: Number.isFinite(rating) ? Number(rating.toFixed(1)) : 0,
+      ...activity,
+    };
+  }
+
+  /**
+   * ตัวเลขผลงานบนหน้าโปรไฟล์ นับเฉพาะสูตรที่เผยแพร่แล้ว
+   * หัวใจ/ความคิดเห็น/การซื้อของเจ้าของสูตรเองไม่นับ (นับเฉพาะจากคนอื่น)
+   */
+  private async loadActivityCounts(id: string) {
+    const ownPublished = `JOIN recipes r ON r.id = t.recipe_id
+      WHERE r.creator_id = $1 AND r.status = $2`;
+    const rows: Partial<Record<ActivityCountKey, string | number>>[] =
+      await this.userRepository.query(
+        `SELECT
+          (SELECT COUNT(*) FROM reviews t ${ownPublished}
+            AND t.status = $3) AS "reviewCount",
+          (SELECT COUNT(*) FROM recipe_access t JOIN recipes r ON r.id = t.recipe_id
+            WHERE r.creator_id = $1 AND t.access_type = $4
+            AND t.revoked_at IS NULL AND t.user_id <> $1) AS "salesCount",
+          (SELECT COUNT(*) FROM favorites t ${ownPublished}
+            AND r.type = $5 AND t.user_id <> $1) AS "officialSavedCount",
+          (SELECT COUNT(*) FROM favorites t ${ownPublished}
+            AND r.type = $6 AND t.user_id <> $1) AS "communitySavedCount",
+          (SELECT COUNT(*) FROM recipe_comments t ${ownPublished}
+            AND r.type = $6 AND t.user_id <> $1) AS "commentsReceivedCount",
+          (SELECT COUNT(*) FROM reviews t
+            WHERE t.user_id = $1 AND t.status = $3) AS "reviewsWrittenCount"`,
+        [
+          id,
+          RecipeStatus.PUBLISHED,
+          ReviewStatus.PUBLISHED,
+          RecipeAccessType.PURCHASE,
+          RecipeType.OFFICIAL,
+          RecipeType.COMMUNITY,
+        ],
+      );
+    const row = rows[0] ?? {};
+    // COUNT ของ postgres กลับมาเป็น string
+    const count = (value: string | number | undefined) =>
+      Number(value ?? 0) || 0;
+    return {
+      reviewCount: count(row.reviewCount),
+      salesCount: count(row.salesCount),
+      officialSavedCount: count(row.officialSavedCount),
+      communitySavedCount: count(row.communitySavedCount),
+      commentsReceivedCount: count(row.commentsReceivedCount),
+      reviewsWrittenCount: count(row.reviewsWrittenCount),
     };
   }
 

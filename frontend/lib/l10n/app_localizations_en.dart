@@ -236,15 +236,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get statRecipes => 'Recipes';
-
-  @override
-  String get statSaved => 'Saved';
-
-  @override
-  String get statRating => 'Rating';
-
-  @override
   String get guest => 'Guest';
 
   @override
@@ -1786,4 +1777,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get englishNameHelper => 'Optional. Shown when the app is in English';
+
+  @override
+  String get statRecipeRating => 'Recipe rating';
+
+  @override
+  String reviewsCountShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reviews',
+      one: '1 review',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statSales => 'Sold';
+
+  @override
+  String get statOfficialSaves => 'Official saves';
+
+  @override
+  String get statCommunitySaves => 'Community saves';
+
+  @override
+  String get statSavesReceived => 'Saves';
+
+  @override
+  String get statCommentsReceived => 'Comments';
+
+  @override
+  String get statReviewsWritten => 'Reviews written';
 }

@@ -416,24 +416,6 @@ abstract class AppLocalizations {
   /// **'ยังไม่เสร็จ {count} สูตร'**
   String draftsDetail(int count);
 
-  /// No description provided for @statRecipes.
-  ///
-  /// In th, this message translates to:
-  /// **'สูตร'**
-  String get statRecipes;
-
-  /// No description provided for @statSaved.
-  ///
-  /// In th, this message translates to:
-  /// **'บันทึก'**
-  String get statSaved;
-
-  /// No description provided for @statRating.
-  ///
-  /// In th, this message translates to:
-  /// **'คะแนน'**
-  String get statRating;
-
   /// No description provided for @guest.
   ///
   /// In th, this message translates to:
@@ -3193,6 +3175,54 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ'**
   String get englishNameHelper;
+
+  /// No description provided for @statRecipeRating.
+  ///
+  /// In th, this message translates to:
+  /// **'คะแนนสูตร'**
+  String get statRecipeRating;
+
+  /// No description provided for @reviewsCountShort.
+  ///
+  /// In th, this message translates to:
+  /// **'{count} รีวิว'**
+  String reviewsCountShort(int count);
+
+  /// No description provided for @statSales.
+  ///
+  /// In th, this message translates to:
+  /// **'ขายได้'**
+  String get statSales;
+
+  /// No description provided for @statOfficialSaves.
+  ///
+  /// In th, this message translates to:
+  /// **'บันทึกสูตร Official'**
+  String get statOfficialSaves;
+
+  /// No description provided for @statCommunitySaves.
+  ///
+  /// In th, this message translates to:
+  /// **'บันทึกสูตรคอมมูนิตี้'**
+  String get statCommunitySaves;
+
+  /// No description provided for @statSavesReceived.
+  ///
+  /// In th, this message translates to:
+  /// **'ถูกบันทึก'**
+  String get statSavesReceived;
+
+  /// No description provided for @statCommentsReceived.
+  ///
+  /// In th, this message translates to:
+  /// **'ความคิดเห็นที่ได้รับ'**
+  String get statCommentsReceived;
+
+  /// No description provided for @statReviewsWritten.
+  ///
+  /// In th, this message translates to:
+  /// **'รีวิวที่เขียน'**
+  String get statReviewsWritten;
 }
 
 class _AppLocalizationsDelegate

@@ -63,6 +63,17 @@ describe('UsersService', () => {
       save: jest.fn((value: User) => Promise.resolve({ ...value, id: 'u1' })),
       create: jest.fn((value: Partial<User>) => value),
       remove: jest.fn(),
+      // COUNT จาก postgres กลับมาเป็น string
+      query: jest.fn().mockResolvedValue([
+        {
+          reviewCount: '12',
+          salesCount: '58',
+          officialSavedCount: '40',
+          communitySavedCount: '7',
+          commentsReceivedCount: '3',
+          reviewsWrittenCount: '5',
+        },
+      ]),
       manager: {
         transaction: jest.fn((run: (m: typeof manager) => Promise<void>) =>
           run(manager),
@@ -168,6 +179,39 @@ describe('UsersService', () => {
     expect(recipeRepository.count).toHaveBeenCalledWith({
       where: { creatorId: 'u1', status: RecipeStatus.DRAFT },
     });
+  });
+
+  it('includes activity counts as numbers', async () => {
+    const profile = await service.findProfile('u1');
+
+    expect(profile).toEqual(
+      expect.objectContaining({
+        reviewCount: 12,
+        salesCount: 58,
+        officialSavedCount: 40,
+        communitySavedCount: 7,
+        commentsReceivedCount: 3,
+        reviewsWrittenCount: 5,
+      }),
+    );
+    const [sql, params] = (userRepository.query as jest.Mock).mock.calls[0];
+    // นับเฉพาะจากคนอื่น ไม่นับเจ้าของสูตรเอง
+    expect(sql).toContain('t.user_id <> $1');
+    expect(params).toEqual([
+      'u1',
+      'published',
+      'published',
+      'purchase',
+      'official',
+      'community',
+    ]);
+  });
+
+  it('treats missing activity rows as zero', async () => {
+    (userRepository.query as jest.Mock).mockResolvedValue([]);
+    await expect(service.findProfile('u1')).resolves.toEqual(
+      expect.objectContaining({ salesCount: 0, reviewsWrittenCount: 0 }),
+    );
   });
 
   it('reports a zero rating when there are no reviews', async () => {

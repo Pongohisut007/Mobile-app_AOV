@@ -7,7 +7,6 @@ import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/edit_profile_page.dart';
 import 'package:flutter_application_1/views/pages/settings_page.dart';
-import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
@@ -165,8 +164,11 @@ class _ProfileContent extends StatelessWidget {
                       ? Icons.login_rounded
                       : Icons.edit_outlined,
                 ),
-                const SizedBox(height: 16),
-                ProfileStatsRow(profile: profile),
+                // ผู้เยี่ยมชมยังไม่มีผลงานให้แสดง
+                if (!isGuest) ...[
+                  const SizedBox(height: 16),
+                  ProfileStatsRow(profile: profile),
+                ],
                 const SizedBox(height: 30),
                 ProfileSectionTitle(
                   title: context.l10n.yourKitchenTitle,

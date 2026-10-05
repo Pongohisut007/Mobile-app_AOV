@@ -11,5 +11,20 @@ export interface UserProfileResponse {
   purchasedCount: number;
   savedCount: number;
   draftCount: number;
+  /** ค่าเฉลี่ยรีวิวที่สูตรของคนนี้ได้รับ */
   rating: number;
+
+  // ตัวเลขผลงาน (แอปเลือกแสดงตามบทบาท creator / user)
+  /** จำนวนรีวิวที่สูตรของคนนี้ได้รับ */
+  reviewCount: number;
+  /** จำนวนครั้งที่สูตรของคนนี้ถูกซื้อ */
+  salesCount: number;
+  /** หัวใจจากคนอื่นบนสูตร official ของคนนี้ */
+  officialSavedCount: number;
+  /** หัวใจจากคนอื่นบนสูตร community ของคนนี้ */
+  communitySavedCount: number;
+  /** ความคิดเห็นจากคนอื่นบนสูตร community ของคนนี้ */
+  commentsReceivedCount: number;
+  /** รีวิวที่คนนี้เขียนให้สูตรที่ซื้อมา */
+  reviewsWrittenCount: number;
 }
