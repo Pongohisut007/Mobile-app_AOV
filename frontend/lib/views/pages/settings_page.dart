@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/content/app_texts.dart';
@@ -250,17 +251,21 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
+    return ShadowBox(
       borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (final (index, child) in children.indexed) ...[
-            if (index > 0) const Divider(height: 1, indent: 70, endIndent: 16),
-            child,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            for (final (index, child) in children.indexed) ...[
+              if (index > 0)
+                const Divider(height: 1, indent: 70, endIndent: 16),
+              child,
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

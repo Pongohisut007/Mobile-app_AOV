@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/widgets/home/category_list.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
@@ -34,10 +35,13 @@ class _CategorySelectorState extends State<CategorySelector> {
 
   @override
   Widget build(BuildContext context) {
+    // ListView ตัดทุกอย่างที่ล้นกรอบ เผื่อที่ด้านล่าง/ข้าง ๆ ให้เงาของชิปไม่ขาด
+    // (ชิปยังสูง 42 เท่าเดิม)
     return SizedBox(
-      height: 42,
+      height: 42 + 8,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
         itemCount: widget.categories.length + 1,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (_, index) {
@@ -87,6 +91,7 @@ class _CategoryChip extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
           decoration: ShapeDecoration(
             color: isSelected ? ProfileColors.ink : Colors.white,
+            shadows: AppShadows.chip,
             shape: StadiumBorder(
               side: BorderSide(
                 color: isSelected ? ProfileColors.ink : Colors.grey.shade300,

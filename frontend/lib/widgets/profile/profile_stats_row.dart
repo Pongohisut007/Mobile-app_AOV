@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
@@ -49,6 +50,7 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [

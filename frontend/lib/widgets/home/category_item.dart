@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/category/category_event.dart';
@@ -58,11 +59,7 @@ class CategoryItem extends StatelessWidget {
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   )
-                : BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
+                : AppShadows.chip.first,
           ],
         ),
         child: Column(

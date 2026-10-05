@@ -313,7 +313,8 @@ class _CommunityPageState extends State<CommunityPage> {
                           onCategorySelected: _selectCategory,
                         ),
 
-                        const SizedBox(height: 20),
+                        // แถบหมวดเผื่อที่ให้เงาไว้ข้างล่างแล้ว 8
+                        const SizedBox(height: 12),
 
                         CommunityPostList(
                           foodState: foodState,

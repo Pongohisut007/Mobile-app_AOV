@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 
 class EmptySteps extends StatelessWidget {
   const EmptySteps({super.key});
@@ -12,6 +13,7 @@ class EmptySteps extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
+          boxShadow: AppShadows.card,
         ),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
