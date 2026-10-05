@@ -8,9 +8,7 @@ import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:http/http.dart' as http;
 
 abstract interface class RecipeLibraryRepository {
-  /// สูตรในคลังทีละหน้า
-  /// ทุกคลังแนบ accessToken: favorites/purchased รู้ว่าเป็นของใครจาก token
-  /// myRecipes/drafts กรองด้วย userId (draft ดูได้เฉพาะเจ้าของที่แนบ token มา)
+
   Future<PagedResult<RecipeSummary>> fetchCollectionPage(
     RecipeCollectionType type, {
     required String userId,
