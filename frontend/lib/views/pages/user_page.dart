@@ -177,21 +177,6 @@ class _ProfileContent extends StatelessWidget {
                   profile: profile,
                   onPressed: onRecipeCollectionPressed,
                 ),
-                // บัญชี/ความช่วยเหลือ/Sign out อยู่ในหน้า Settings (ไอคอนมุมขวาบน)
-                const SizedBox(height: 24),
-                Center(
-                  child: Text(
-                    context.l10n.appVersionFooter(
-                      AppInfo.name,
-                      AppInfo.version,
-                    ),
-                    style: TextStyle(
-                      color: ProfileColors.muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
