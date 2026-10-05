@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// หน้าแสดง error พร้อมปุ่มย้อนกลับ / ลองอีกครั้ง
 class ErrorView extends StatelessWidget {
@@ -37,7 +38,7 @@ class ErrorView extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.grey.shade700,
                     ),
-                    child: const Text("ย้อนกลับ"),
+                    child: Text(context.l10n.goBack),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -46,7 +47,7 @@ class ErrorView extends StatelessWidget {
                       backgroundColor: FoodDetailColors.primaryRed,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text("ลองอีกครั้ง"),
+                    child: Text(context.l10n.tryAgain),
                   ),
                 ],
               ),

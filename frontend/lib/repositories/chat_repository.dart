@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// รูปที่แนบไปถาม AI
 class ChatImage {
@@ -78,7 +79,7 @@ class ChatRepository {
       return _sendWithImage(accessToken, recipeId, text, image);
     });
     if (decoded is! Map<String, dynamic> || decoded['message'] is! String) {
-      throw const ChatException('AI ตอบกลับมาในรูปแบบที่ไม่ถูกต้อง');
+      throw ChatException(appL10n.chatInvalidResponse);
     }
     return decoded['message'] as String;
   }
@@ -152,28 +153,28 @@ class ChatRepository {
     try {
       final response = await request().timeout(requestTimeout);
       if (response.statusCode == 401) {
-        throw const ChatException('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+        throw ChatException(appL10n.sessionExpired);
       }
       if (response.statusCode == 403) {
-        throw const ChatException('ต้องซื้อสูตรนี้ก่อนจึงจะถาม AI ได้');
+        throw ChatException(appL10n.chatBuyFirst);
       }
       if (response.statusCode == 413) {
-        throw const ChatException('รูปใหญ่เกินไป (ไม่เกิน 5MB)');
+        throw ChatException(appL10n.chatImageTooLarge);
       }
       if (response.statusCode == 503) {
-        throw const ChatException('AI ไม่พร้อมใช้งานชั่วคราว ลองใหม่อีกครั้ง');
+        throw ChatException(appL10n.chatUnavailable);
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ChatException('เกิดข้อผิดพลาด (HTTP ${response.statusCode})');
+        throw ChatException(appL10n.errorHttp(response.statusCode));
       }
       if (response.bodyBytes.isEmpty) return null;
       return jsonDecode(utf8.decode(response.bodyBytes));
     } on TimeoutException {
-      throw const ChatException('AI ตอบช้าเกินไป ลองใหม่อีกครั้ง');
+      throw ChatException(appL10n.chatTimeout);
     } on FormatException {
-      throw const ChatException('ข้อมูลจาก server ไม่ถูกต้อง');
+      throw ChatException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw ChatException('เชื่อมต่อ server ไม่ได้: ${error.message}');
+      throw ChatException(appL10n.errorConnection(error.message));
     }
   }
 }

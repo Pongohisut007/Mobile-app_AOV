@@ -4,6 +4,7 @@ import 'package:flutter_application_1/views/pages/create_section_steps_page.dart
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/section_editor_card.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CreateCookingStepsPage extends StatefulWidget {
   const CreateCookingStepsPage({super.key, this.initialDraft});
@@ -66,7 +67,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
 
   String? _required(String? value, String label) {
     if (value == null || value.trim().isEmpty) {
-      return 'กรอก$label';
+      return context.l10n.fieldRequired(label);
     }
 
     return null;
@@ -76,7 +77,7 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
     final sectionTitle = section.title.text.trim();
 
     if (sectionTitle.isEmpty) {
-      _showMessage('กรอกหัวข้อขั้นตอนก่อนเพิ่มขั้นตอน');
+      _showMessage(context.l10n.enterGroupTitleFirst);
       return;
     }
 
@@ -138,10 +139,10 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
       child: Scaffold(
         backgroundColor: RecipeFormStyle.background,
         appBar: RecipeFormStyle.appBar(
-          title: 'ขั้นตอนการทำอาหาร',
+          title: context.l10n.cookingSteps,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
-            tooltip: 'กลับ (บันทึกอัตโนมัติ)',
+            tooltip: context.l10n.backAutoSave,
             onPressed: _autoSaveAndPop,
           ),
         ),
@@ -171,11 +172,12 @@ class _CreateCookingStepsPageState extends State<CreateCookingStepsPage> {
                   onTitleChanged: (_) {
                     setState(() {});
                   },
-                  titleValidator: (value) => _required(value, 'หัวข้อขั้นตอน'),
+                  titleValidator: (value) =>
+                      _required(value, context.l10n.stepGroupTitle),
                 ),
 
               RecipeAddButton(
-                label: 'เพิ่มหัวข้อขั้นตอน',
+                label: context.l10n.addStepGroups,
                 onPressed: _addSection,
               ),
             ],
@@ -199,7 +201,7 @@ class _IntroBanner extends StatelessWidget {
         color: RecipeFormStyle.accentSoft,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
@@ -210,8 +212,7 @@ class _IntroBanner extends StatelessWidget {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'แบ่งขั้นตอนเป็นชุด เช่น "เตรียมวัตถุดิบ" "ปรุง" "จัดเสิร์ฟ" '
-              'แล้วแตะการ์ดเพื่อเพิ่มขั้นตอนย่อย กดย้อนกลับได้เลย ระบบบันทึกให้อัตโนมัติ',
+              context.l10n.stepGroupsHelp,
               style: TextStyle(
                 color: Color(0xFF5D4037),
                 fontSize: 12.5,
@@ -230,7 +231,7 @@ class _EmptySections extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 36),
       child: Column(
         children: [
@@ -241,7 +242,7 @@ class _EmptySections extends StatelessWidget {
           ),
           SizedBox(height: 12),
           Text(
-            'ยังไม่มีหัวข้อขั้นตอน',
+            context.l10n.noStepGroupsTitle,
             style: TextStyle(
               color: RecipeFormStyle.ink,
               fontSize: 16,
@@ -250,7 +251,7 @@ class _EmptySections extends StatelessWidget {
           ),
           SizedBox(height: 4),
           Text(
-            'เริ่มจากเพิ่มหัวข้อชุดแรกด้านล่าง',
+            context.l10n.noStepGroupsHint,
             style: TextStyle(color: RecipeFormStyle.muted, fontSize: 13),
           ),
         ],

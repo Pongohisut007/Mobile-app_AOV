@@ -12,6 +12,7 @@ import 'package:flutter_application_1/views/pages/text_sections_page.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ตั้งค่า: บัญชี / ความช่วยเหลือ / เกี่ยวกับแอป / ออกจากระบบ / ลบบัญชี
 /// (ปุ่ม Sign out มีที่นี่ที่เดียว)
@@ -33,14 +34,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _openChangePassword() async {
     final messenger = ScaffoldMessenger.of(context);
+    final message = context.l10n.passwordChangedOthersSignedOut;
     final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(builder: (_) => const ChangePasswordPage()),
     );
     if (changed != true) return;
-    messenger.showAppSnackBar(
-      'เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ',
-      type: AppSnackType.success,
-    );
+    messenger.showAppSnackBar(message, type: AppSnackType.success);
   }
 
   Future<bool> _confirm({
@@ -57,7 +56,7 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
@@ -74,9 +73,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _signOut() async {
     final confirmed = await _confirm(
-      title: 'Sign out?',
-      message: 'You can sign back in at any time to access your recipes.',
-      action: 'Sign out',
+      title: context.l10n.signOutConfirmTitle,
+      message: context.l10n.signOutConfirmMessage,
+      action: context.l10n.signOut,
     );
     if (!confirmed || !mounted) return;
     await signOutLocally(context);
@@ -85,10 +84,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _logoutAllDevices() async {
     if (_isLoggingOutAll) return;
     final confirmed = await _confirm(
-      title: 'ออกจากระบบทุกอุปกรณ์?',
-      message:
-          'ทุกเครื่องที่เข้าสู่ระบบด้วยบัญชีนี้ รวมถึงเครื่องนี้ จะถูกออกจากระบบทันที',
-      action: 'ออกจากระบบทั้งหมด',
+      title: context.l10n.signOutAllTitle,
+      message: context.l10n.signOutAllMessage,
+      action: context.l10n.signOutAllAction,
       danger: true,
     );
     if (!confirmed || !mounted) return;
@@ -110,11 +108,51 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _chooseLanguage() async {
+    final selected = await showModalBottomSheet<Locale>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(
+                sheetContext.l10n.chooseLanguage,
+                style: const TextStyle(
+                  color: ProfileColors.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            for (final locale in AppLanguage.supported)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                title: Text(AppLanguage.nativeName(locale)),
+                trailing: locale == AppLanguage.current
+                    ? const Icon(Icons.check_rounded, color: ProfileColors.ink)
+                    : null,
+                onTap: () => Navigator.pop(sheetContext, locale),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (selected == null || selected == AppLanguage.current) return;
+    // ทั้งแอปวาดใหม่เป็นภาษาที่เลือก รวมถึงหน้านี้
+    await AppLanguage.change(selected);
+  }
+
   void _openAbout() {
     showAboutDialog(
       context: context,
       applicationName: AppInfo.name,
-      applicationVersion: 'Version ${AppInfo.version}',
+      applicationVersion: context.l10n.versionLabel(AppInfo.version),
       applicationLegalese: '© ${DateTime.now().year} ${AppInfo.name}',
     );
   }
@@ -123,60 +161,72 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ProfileColors.background,
-      appBar: RecipeFormStyle.appBar(title: 'Settings'),
+      appBar: RecipeFormStyle.appBar(title: context.l10n.settingsTitle),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          const _SectionLabel('บัญชี'),
+          _SectionLabel(context.l10n.settingsGeneral),
+          _SettingsGroup(
+            children: [
+              _SettingsTile(
+                icon: Icons.translate_rounded,
+                label: context.l10n.language,
+                subtitle: AppLanguage.nativeName(AppLanguage.current),
+                onTap: _chooseLanguage,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _SectionLabel(context.l10n.settingsAccount),
           _SettingsGroup(
             children: [
               _SettingsTile(
                 icon: Icons.lock_reset_rounded,
-                label: 'เปลี่ยนรหัสผ่าน',
+                label: context.l10n.changePassword,
                 onTap: _openChangePassword,
               ),
               _SettingsTile(
                 icon: Icons.devices_other_rounded,
-                label: 'ออกจากระบบทุกอุปกรณ์',
-                subtitle: 'ใช้เมื่อมือถือหาย หรือสงสัยว่ามีคนใช้บัญชี',
+                label: context.l10n.signOutAllDevices,
+                subtitle: context.l10n.signOutAllDevicesHint,
                 isLoading: _isLoggingOutAll,
                 onTap: _logoutAllDevices,
               ),
             ],
           ),
           const SizedBox(height: 20),
-          const _SectionLabel('ความช่วยเหลือและข้อกำหนด'),
+          _SectionLabel(context.l10n.settingsHelpAndTerms),
           _SettingsGroup(
             children: [
               _SettingsTile(
                 icon: Icons.help_outline_rounded,
-                label: 'Help & support',
+                label: context.l10n.helpAndSupport,
                 onTap: () => _push(const HelpSupportPage()),
               ),
               _SettingsTile(
                 icon: Icons.privacy_tip_outlined,
-                label: 'นโยบายความเป็นส่วนตัว',
+                label: context.l10n.privacyPolicy,
                 onTap: () => _push(
-                  const TextSectionsPage(
-                    title: 'นโยบายความเป็นส่วนตัว',
-                    sections: privacySections,
+                  TextSectionsPage(
+                    title: context.l10n.privacyPolicy,
+                    sections: privacySections(context.l10n),
                   ),
                 ),
               ),
               _SettingsTile(
                 icon: Icons.description_outlined,
-                label: 'ข้อกำหนดการใช้งาน',
+                label: context.l10n.termsOfUse,
                 onTap: () => _push(
-                  const TextSectionsPage(
-                    title: 'ข้อกำหนดการใช้งาน',
-                    sections: termsSections,
+                  TextSectionsPage(
+                    title: context.l10n.termsOfUse,
+                    sections: termsSections(context.l10n),
                   ),
                 ),
               ),
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
-                label: 'เกี่ยวกับแอป',
-                subtitle: 'เวอร์ชัน ${AppInfo.version} · ไลเซนส์โอเพนซอร์ส',
+                label: context.l10n.aboutApp,
+                subtitle: context.l10n.aboutAppSubtitle(AppInfo.version),
                 onTap: _openAbout,
               ),
             ],
@@ -186,7 +236,7 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               _SettingsTile(
                 icon: Icons.logout_rounded,
-                label: 'Sign out',
+                label: context.l10n.signOut,
                 foregroundColor: _danger,
                 showChevron: false,
                 onTap: _signOut,
@@ -194,22 +244,22 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           ),
           const SizedBox(height: 20),
-          const _SectionLabel('โซนอันตราย'),
+          _SectionLabel(context.l10n.dangerZone),
           _SettingsGroup(
             children: [
               _SettingsTile(
                 icon: Icons.delete_forever_outlined,
-                label: 'ลบบัญชี',
-                subtitle: 'ปิดบัญชีและลบข้อมูลส่วนตัว กู้คืนไม่ได้',
+                label: context.l10n.deleteAccount,
+                subtitle: context.l10n.deleteAccountHint,
                 foregroundColor: _danger,
                 onTap: () => _push(const DeleteAccountPage()),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          const Center(
+          Center(
             child: Text(
-              '${AppInfo.name} · Version ${AppInfo.version}',
+              context.l10n.appVersionFooter(AppInfo.name, AppInfo.version),
               style: TextStyle(
                 color: ProfileColors.muted,
                 fontSize: 12,

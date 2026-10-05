@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_application_1/models/category.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CategoryRepository {
   // Base URL for the API
@@ -41,7 +42,7 @@ class CategoryRepository {
       return categories;
     } else {
       debugPrint('Failed to load categories: ${response.statusCode}');
-      throw Exception('Failed to load categories');
+      throw Exception(appL10n.loadCategoriesFailed);
     }
   }
 }

@@ -8,6 +8,7 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_application_1/widgets/home/food_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// grid การ์ดสูตรจาก FoodBloc ใช้ร่วมกันระหว่างหน้า home กับหน้า See More
 /// maxItems = แสดงไม่เกินจำนวนนี้ (null = ทั้งหมดที่โหลดมาแล้ว)
@@ -48,7 +49,7 @@ class FoodGridSection extends StatelessWidget {
     return BlocBuilder<FoodBloc, FoodState>(
       builder: (context, state) {
         if (state is FoodInitial) {
-          return const Center(child: Text("Initial Loading..."));
+          return Center(child: Text(context.l10n.loading));
         }
         if (state is FoodLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -81,8 +82,8 @@ class FoodGridSection extends StatelessWidget {
             child: Center(
               child: Text(
                 query == null
-                    ? 'ยังไม่มีเมนูในหมวดนี้'
-                    : 'ไม่พบเมนูที่ชื่อ "$query"',
+                    ? context.l10n.noRecipesInCategory
+                    : context.l10n.noRecipesNamed(query),
                 style: const TextStyle(color: Colors.grey),
               ),
             ),
@@ -155,7 +156,7 @@ class _LoadMoreFooter extends StatelessWidget {
           child: TextButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('โหลดเมนูเพิ่มไม่สำเร็จ ลองอีกครั้ง'),
+            label: Text(context.l10n.loadMoreRecipesFailed),
           ),
         ),
       );

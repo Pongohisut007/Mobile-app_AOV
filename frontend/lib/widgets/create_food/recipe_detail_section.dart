@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeDetailSection extends StatelessWidget {
   const RecipeDetailSection({
@@ -30,9 +31,9 @@ class RecipeDetailSection extends StatelessWidget {
   final ValueChanged<String?> onDifficultyChanged;
 
   static const _difficulties = [
-    ('easy', 'ง่าย', Icons.sentiment_satisfied_alt_rounded),
-    ('medium', 'ปานกลาง', Icons.local_fire_department_outlined),
-    ('hard', 'ยาก', Icons.whatshot_rounded),
+    ('easy', Icons.sentiment_satisfied_alt_rounded),
+    ('medium', Icons.local_fire_department_outlined),
+    ('hard', Icons.whatshot_rounded),
   ];
 
   @override
@@ -41,9 +42,9 @@ class RecipeDetailSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const RecipeFormSectionHeading(
-            title: 'รายละเอียดสูตร',
-            subtitle: 'เวลา จำนวนที่เสิร์ฟ และความยาก',
+          RecipeFormSectionHeading(
+            title: context.l10n.recipeDetails,
+            subtitle: context.l10n.recipeDetailsSubtitle,
             icon: Icons.tune_rounded,
           ),
 
@@ -53,19 +54,19 @@ class RecipeDetailSection extends StatelessWidget {
             TextFormField(
               controller: priceController,
               decoration: RecipeFormStyle.input(
-                label: 'ราคา',
+                label: context.l10n.price,
                 prefixText: '฿ ',
-                suffixText: 'บาท',
+                suffixText: context.l10n.baht,
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'กรอกราคา';
+                  return context.l10n.priceRequired;
                 }
 
-                return nonNegativeNumber(value, 'ราคา');
+                return nonNegativeNumber(value, context.l10n.price);
               },
             ),
 
@@ -79,12 +80,12 @@ class RecipeDetailSection extends StatelessWidget {
                 child: TextFormField(
                   controller: preparationController,
                   decoration: RecipeFormStyle.input(
-                    label: 'เตรียม',
-                    suffixText: 'นาที',
+                    label: context.l10n.prepLabel,
+                    suffixText: context.l10n.minutesUnit,
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
-                      requiredWholeNumber(value, 'เวลาเตรียม'),
+                      requiredWholeNumber(value, context.l10n.prepTimeField),
                 ),
               ),
 
@@ -94,11 +95,12 @@ class RecipeDetailSection extends StatelessWidget {
                 child: TextFormField(
                   controller: cookingController,
                   decoration: RecipeFormStyle.input(
-                    label: 'ปรุง',
-                    suffixText: 'นาที',
+                    label: context.l10n.cookLabel,
+                    suffixText: context.l10n.minutesUnit,
                   ),
                   keyboardType: TextInputType.number,
-                  validator: (value) => requiredWholeNumber(value, 'เวลาปรุง'),
+                  validator: (value) =>
+                      requiredWholeNumber(value, context.l10n.cookTimeField),
                 ),
               ),
             ],
@@ -109,8 +111,8 @@ class RecipeDetailSection extends StatelessWidget {
           TextFormField(
             controller: servingsController,
             decoration: RecipeFormStyle.input(
-              label: 'จำนวนที่รับประทาน',
-              suffixText: 'ที่',
+              label: context.l10n.servings,
+              suffixText: context.l10n.servingsUnit,
               prefixIcon: const Icon(
                 Icons.people_alt_outlined,
                 color: RecipeFormStyle.muted,
@@ -118,14 +120,14 @@ class RecipeDetailSection extends StatelessWidget {
             ),
             keyboardType: TextInputType.number,
             validator: (value) =>
-                requiredWholeNumber(value, 'จำนวนที่รับประทาน'),
+                requiredWholeNumber(value, context.l10n.servings),
           ),
 
           const SizedBox(height: 16),
 
-          const Text(
-            'ระดับความยาก',
-            style: TextStyle(
+          Text(
+            context.l10n.difficulty,
+            style: const TextStyle(
               color: RecipeFormStyle.ink,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -139,7 +141,8 @@ class RecipeDetailSection extends StatelessWidget {
             // ค่าเปลี่ยนจากข้างนอก (เช่นโหลดสูตรเดิม) ให้ FormField รับค่าใหม่
             key: ValueKey(difficulty),
             initialValue: difficulty,
-            validator: (value) => value == null ? 'เลือกระดับความยาก' : null,
+            validator: (value) =>
+                value == null ? context.l10n.difficultyRequired : null,
             builder: (field) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -147,9 +150,9 @@ class RecipeDetailSection extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final (value, label, icon) in _difficulties)
+                    for (final (value, icon) in _difficulties)
                       RecipeChoiceChip(
-                        label: label,
+                        label: context.l10n.difficultyLabel(value),
                         icon: icon,
                         selected: field.value == value,
                         onSelected: () {

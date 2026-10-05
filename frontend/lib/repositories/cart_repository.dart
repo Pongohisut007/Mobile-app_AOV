@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// เรียก REST ของตะกร้า: carts เก็บว่าเป็นของใคร, cart_items เก็บว่ามีสูตรอะไรบ้าง
 /// backend อ่านว่าเป็นตะกร้าของใครจาก accessToken ไม่ได้รับ userId ทาง query
@@ -41,17 +42,17 @@ class HttpCartRepository implements CartRepository {
         Uri.parse('$_baseUrl/carts'),
         headers: _headers(accessToken),
       ),
-      'load your cart',
+      appL10n.actionLoadCart,
     );
     if (decoded is! List) {
-      throw const CartException('Backend returned an invalid cart list.');
+      throw CartException(appL10n.errorInvalidResponse);
     }
     // ยังไม่เคยกดเพิ่มของ = ยังไม่มีตะกร้า ไม่ถือว่าผิดพลาด
     if (decoded.isEmpty) return null;
 
     final cart = decoded.first;
     if (cart is! Map<String, dynamic> || cart['id'] is! String) {
-      throw const CartException('Backend returned an invalid cart.');
+      throw CartException(appL10n.errorInvalidResponse);
     }
     return cart['id'] as String;
   }
@@ -63,11 +64,11 @@ class HttpCartRepository implements CartRepository {
         Uri.parse('$_baseUrl/carts'),
         headers: _headers(accessToken),
       ),
-      'open your cart',
+      appL10n.actionOpenCart,
     );
 
     if (decoded is! Map<String, dynamic> || decoded['id'] is! String) {
-      throw const CartException('Backend returned an invalid cart.');
+      throw CartException(appL10n.errorInvalidResponse);
     }
     return decoded['id'] as String;
   }
@@ -79,17 +80,17 @@ class HttpCartRepository implements CartRepository {
         Uri.parse('$_baseUrl/carts/$cartId/items'),
         headers: _headers(accessToken),
       ),
-      'load your cart',
+      appL10n.actionLoadCart,
     );
 
     if (decoded is! List) {
-      throw const CartException('Backend returned an invalid cart item list.');
+      throw CartException(appL10n.errorInvalidResponse);
     }
 
     return decoded
         .map((item) {
           if (item is! Map<String, dynamic>) {
-            throw const CartException('Backend returned an invalid cart item.');
+            throw CartException(appL10n.errorInvalidResponse);
           }
           return CartItem.fromJson(item, apiBaseUrl: _baseUrl);
         })
@@ -108,11 +109,11 @@ class HttpCartRepository implements CartRepository {
         headers: _headers(accessToken),
         body: jsonEncode({'recipeId': recipeId}),
       ),
-      'add this recipe to your cart',
+      appL10n.actionAddToCart,
     );
 
     if (decoded is! Map<String, dynamic>) {
-      throw const CartException('Backend returned an invalid cart item.');
+      throw CartException(appL10n.errorInvalidResponse);
     }
     return CartItem.fromJson(decoded, apiBaseUrl: _baseUrl);
   }
@@ -124,7 +125,7 @@ class HttpCartRepository implements CartRepository {
         Uri.parse('$_baseUrl/carts/$cartId/items/$itemId'),
         headers: _headers(accessToken),
       ),
-      'remove this recipe from your cart',
+      appL10n.actionRemoveFromCart,
     );
   }
 
@@ -135,14 +136,14 @@ class HttpCartRepository implements CartRepository {
         Uri.parse('$_baseUrl/carts/$cartId/items'),
         headers: _headers(accessToken),
       ),
-      'clear your cart',
+      appL10n.actionClearCart,
     );
   }
 
   Map<String, String> _headers(String accessToken) {
     final token = accessToken.trim();
     if (token.isEmpty) {
-      throw const CartException('Please sign in to use your cart.');
+      throw CartException(appL10n.cartSignInRequired);
     }
     return {
       'Content-Type': 'application/json',
@@ -158,25 +159,23 @@ class HttpCartRepository implements CartRepository {
       final response = await request().timeout(requestTimeout);
 
       if (response.statusCode == 401) {
-        throw const CartException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw CartException(appL10n.sessionExpired);
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw CartException('Could not $action (HTTP ${response.statusCode}).');
+        throw CartException(
+          appL10n.errorActionFailed(action, response.statusCode),
+        );
       }
       // DELETE ตอบ 204 ไม่มี body ให้ decode
       if (response.bodyBytes.isEmpty) return null;
 
       return jsonDecode(utf8.decode(response.bodyBytes));
     } on TimeoutException {
-      throw const CartException(
-        'The request timed out. Check the backend connection.',
-      );
+      throw CartException(appL10n.errorTimeout);
     } on FormatException {
-      throw const CartException('Backend returned malformed JSON.');
+      throw CartException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw CartException('Could not connect to the backend: ${error.message}');
+      throw CartException(appL10n.errorConnection(error.message));
     }
   }
 }

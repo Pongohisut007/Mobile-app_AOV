@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 enum UploadKind { images, videos }
 
@@ -42,7 +43,7 @@ class HttpUploadRepository {
   }) async {
     final token = await _tokenStorage.readAccessToken();
     if (token == null || token.trim().isEmpty) {
-      throw const UploadException('Please sign in before uploading.');
+      throw UploadException(appL10n.uploadSignInRequired);
     }
 
     final size = await file.length();
@@ -57,7 +58,7 @@ class HttpUploadRepository {
     );
     final presign = _decodeResponse(
       presignResponse,
-      'Could not prepare upload',
+      appL10n.uploadPrepareFailed,
     );
     final filename = presign['filename'] as String;
     final uploadUrl = presign['uploadUrl'] as String;
@@ -70,9 +71,7 @@ class HttpUploadRepository {
     await request.sink.close();
     final putResponse = await http.Response.fromStream(await sending);
     if (putResponse.statusCode < 200 || putResponse.statusCode >= 300) {
-      throw UploadException(
-        'R2 upload failed (HTTP ${putResponse.statusCode}).',
-      );
+      throw UploadException(appL10n.uploadFailedHttp(putResponse.statusCode));
     }
 
     final completeResponse = await _client.post(
@@ -82,7 +81,7 @@ class HttpUploadRepository {
     );
     final completed = _decodeResponse(
       completeResponse,
-      'Could not verify uploaded file',
+      appL10n.uploadVerifyFailed,
     );
     return UploadedFile(
       filename: completed['filename'] as String,
@@ -98,7 +97,7 @@ class HttpUploadRepository {
     }
     final value = jsonDecode(utf8.decode(response.bodyBytes));
     if (value is! Map<String, dynamic>) {
-      throw UploadException('$message: invalid backend response.');
+      throw UploadException('$message: ${appL10n.errorInvalidResponse}');
     }
     return value;
   }

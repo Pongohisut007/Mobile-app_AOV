@@ -6,6 +6,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_sheet.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ปุ่ม "ถาม AI" แสดงเฉพาะคนที่ login และมีสิทธิ์ใช้สูตรนี้
 class RecipeChatButton extends StatefulWidget {
@@ -104,9 +105,9 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
           ),
         ),
         icon: const Icon(Icons.auto_awesome_rounded),
-        label: const Text(
-          'ถาม AI เกี่ยวกับสูตรนี้',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        label: Text(
+          context.l10n.askAiAboutRecipe,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
       ),
     );

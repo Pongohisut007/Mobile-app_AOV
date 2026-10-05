@@ -15,6 +15,7 @@ import 'package:flutter_application_1/views/pages/user_page.dart';
 import 'package:flutter_application_1/widgets/bottom_navbar.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/common/fade_indexed_stack.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class MainTreeWidget extends StatefulWidget {
   const MainTreeWidget({super.key, required this.title});
@@ -105,12 +106,13 @@ class _MainTreeWidgetState extends State<MainTreeWidget> {
   }
 
   void _showCartFeedback(BuildContext context, CartState state) {
-    final title = state.feedbackTitle ?? 'เมนูนี้';
+    final l10n = context.l10n;
+    final title = state.feedbackTitle ?? l10n.cartFallbackTitle;
 
     final message = switch (state.feedback) {
-      CartFeedback.added => 'เพิ่ม $title ลงตะกร้าแล้ว',
-      CartFeedback.alreadyInCart => '$title อยู่ในตะกร้าแล้ว',
-      CartFeedback.failed => state.error ?? 'เพิ่ม $title ลงตะกร้าไม่สำเร็จ',
+      CartFeedback.added => l10n.cartAdded(title),
+      CartFeedback.alreadyInCart => l10n.cartAlreadyIn(title),
+      CartFeedback.failed => state.error ?? l10n.cartAddFailed(title),
       CartFeedback.none => null,
     };
     if (message == null) return;

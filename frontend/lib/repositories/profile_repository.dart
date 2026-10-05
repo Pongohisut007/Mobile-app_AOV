@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 abstract interface class ProfileRepository {
   Future<UserProfile> fetchProfile(String accessToken);
@@ -33,7 +34,7 @@ class HttpProfileRepository implements ProfileRepository {
     return _send(
       accessToken,
       (uri, headers) => _client.get(uri, headers: headers),
-      failureLabel: 'load profile',
+      failureLabel: appL10n.actionLoadProfile,
     );
   }
 
@@ -53,7 +54,7 @@ class HttpProfileRepository implements ProfileRepository {
           'avatarUrl': ?avatarPath,
         }),
       ),
-      failureLabel: 'save profile',
+      failureLabel: appL10n.actionSaveProfile,
     );
   }
 
@@ -65,7 +66,7 @@ class HttpProfileRepository implements ProfileRepository {
   }) async {
     final normalizedAccessToken = accessToken.trim();
     if (normalizedAccessToken.isEmpty) {
-      throw const ProfileRepositoryException('Access token is missing.');
+      throw ProfileRepositoryException(appL10n.signInRequired);
     }
     final uri = Uri.parse('$_baseUrl/auth/profile');
 
@@ -77,16 +78,14 @@ class HttpProfileRepository implements ProfileRepository {
       if (response.statusCode != 200) {
         throw ProfileRepositoryException(
           response.statusCode == 401
-              ? 'Your session has expired. Please sign in again.'
-              : 'Could not $failureLabel (HTTP ${response.statusCode}).',
+              ? appL10n.sessionExpired
+              : appL10n.errorActionFailed(failureLabel, response.statusCode),
         );
       }
 
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is! Map<String, dynamic>) {
-        throw const ProfileRepositoryException(
-          'Backend returned an invalid profile response.',
-        );
+        throw ProfileRepositoryException(appL10n.errorInvalidResponse);
       }
 
       try {
@@ -95,17 +94,11 @@ class HttpProfileRepository implements ProfileRepository {
         throw ProfileRepositoryException(error.message);
       }
     } on TimeoutException {
-      throw const ProfileRepositoryException(
-        'Profile request timed out. Check the backend connection.',
-      );
+      throw ProfileRepositoryException(appL10n.errorTimeout);
     } on FormatException {
-      throw const ProfileRepositoryException(
-        'Backend returned malformed JSON.',
-      );
+      throw ProfileRepositoryException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw ProfileRepositoryException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw ProfileRepositoryException(appL10n.errorConnection(error.message));
     }
   }
 }

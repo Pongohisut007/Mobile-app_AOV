@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// App bar ของหน้า community: หัวข้อ "Community" + ปุ่มค้นหา + ปุ่มสร้างสูตร
 /// ติดอยู่ด้านบน ไม่เลื่อนตามรายการโพสต์
@@ -84,7 +85,7 @@ class _CommunityHeaderState extends State<CommunityHeader> {
                     duration: _duration,
                     opacity: expanded ? 0 : 1,
                     child: Text(
-                      'Community',
+                      context.l10n.navCommunity,
                       style: TextStyle(
                         color: ProfileColors.ink,
                         fontSize: widget.isIpad ? 34 : 30,
@@ -130,7 +131,7 @@ class _CommunityHeaderState extends State<CommunityHeader> {
             fixedSize: const Size(_buttonSize, _buttonSize),
           ),
           icon: const Icon(Icons.add_rounded),
-          tooltip: 'Create recipe',
+          tooltip: context.l10n.createRecipeTooltip,
         ),
         const SizedBox(width: 16),
       ],
@@ -142,7 +143,7 @@ class _CommunityHeaderState extends State<CommunityHeader> {
       onPressed: widget.isSearchExpanded ? null : widget.onSearchPressed,
       color: ProfileColors.ink,
       icon: const Icon(Icons.search_rounded),
-      tooltip: 'Search',
+      tooltip: context.l10n.searchTooltip,
     );
   }
 
@@ -160,8 +161,8 @@ class _CommunityHeaderState extends State<CommunityHeader> {
             onChanged: widget.onSearchChanged,
             onSubmitted: widget.onSearchSubmitted,
             style: const TextStyle(fontSize: 15),
-            decoration: const InputDecoration(
-              hintText: 'search for a recipe',
+            decoration: InputDecoration(
+              hintText: context.l10n.searchRecipeHint,
               hintStyle: TextStyle(color: Colors.grey),
               border: InputBorder.none,
               isCollapsed: true,
@@ -173,7 +174,7 @@ class _CommunityHeaderState extends State<CommunityHeader> {
           onPressed: widget.onSearchClosed,
           color: ProfileColors.muted,
           icon: const Icon(Icons.close_rounded),
-          tooltip: 'Close search',
+          tooltip: context.l10n.closeSearchTooltip,
         ),
       ],
     );

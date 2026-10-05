@@ -5,6 +5,7 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_image.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class FoodDetailHeader extends StatefulWidget {
   const FoodDetailHeader({
@@ -115,25 +116,25 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
                       },
                       itemBuilder: (context) => [
                         if (_canEdit)
-                          const PopupMenuItem<String>(
+                          PopupMenuItem<String>(
                             value: 'edit',
                             child: Row(
                               children: [
                                 Icon(Icons.edit_outlined),
                                 SizedBox(width: 12),
-                                Text('แก้ไข'),
+                                Text(context.l10n.edit),
                               ],
                             ),
                           ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'delete',
                           child: Row(
                             children: [
                               Icon(Icons.delete_outline, color: Colors.red),
                               SizedBox(width: 12),
                               Text(
-                                'ลบสูตรอาหาร',
-                                style: TextStyle(color: Colors.red),
+                                context.l10n.deleteRecipe,
+                                style: const TextStyle(color: Colors.red),
                               ),
                             ],
                           ),

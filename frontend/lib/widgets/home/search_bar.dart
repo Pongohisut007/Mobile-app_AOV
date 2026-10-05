@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class SearchBarWidget extends StatefulWidget {
   const SearchBarWidget({
@@ -103,8 +104,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     textInputAction: TextInputAction.search,
                     onChanged: _onChanged,
                     onSubmitted: _onSubmitted,
-                    decoration: const InputDecoration(
-                      hintText: "search for a recipe",
+                    decoration: InputDecoration(
+                      hintText: context.l10n.searchRecipeHint,
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                       isCollapsed: true,

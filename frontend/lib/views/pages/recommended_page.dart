@@ -9,6 +9,7 @@ import 'package:flutter_application_1/widgets/home/category_list.dart';
 import 'package:flutter_application_1/widgets/home/food_grid_section.dart';
 import 'package:flutter_application_1/widgets/home/search_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// หน้า See More ของ Recommended: สูตร official ทั้งหมด เรียงตามคะแนนรีวิว
 /// เหมือนหน้า home แต่ไม่มีแบนเนอร์ และเลื่อนโหลดเพิ่มทีละหน้าได้เรื่อย ๆ
@@ -95,9 +96,9 @@ class _RecommendedViewState extends State<_RecommendedView>
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text(
-          'All Recipes',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.allRecipesTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.grey.shade100,
         surfaceTintColor: Colors.transparent,

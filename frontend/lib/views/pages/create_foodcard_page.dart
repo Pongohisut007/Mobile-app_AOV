@@ -21,6 +21,7 @@ import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart
 import 'package:flutter_application_1/widgets/create_food/recipe_category_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_steps_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_type_section.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CreateFoodcardPage extends StatefulWidget {
   const CreateFoodcardPage({
@@ -172,18 +173,18 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     if (_isBusy || _isSaving) return;
     if (!_formKey.currentState!.validate()) return;
     if (_coverSelection == null && _existingCoverUrl == null) {
-      _showMessage('เลือกรูปตัวอย่างอาหารก่อนเผยแพร่สูตร');
+      _showMessage(context.l10n.pickCoverBeforePublish);
       return;
     }
     if (_selectedCategoryIds.isEmpty) {
-      _showMessage('เลือกหมวดหมู่อย่างน้อย 1 หมวด');
+      _showMessage(context.l10n.pickAtLeastOneCategory);
       return;
     }
     final sectionDraft = _sectionDraft;
     if (sectionDraft == null ||
         sectionDraft.sections.isEmpty ||
         sectionDraft.sections.any((section) => section.contents.isEmpty)) {
-      _showMessage('เพิ่มขั้นตอนการทำอาหารก่อนเผยแพร่สูตร');
+      _showMessage(context.l10n.addStepsBeforePublish);
       return;
     }
     if (sectionDraft.sections.any(
@@ -194,7 +195,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 step.title.trim().isEmpty || step.textContent.trim().isEmpty,
           ),
     )) {
-      _showMessage('กรอกชื่อและรายละเอียดให้ครบทุกขั้นตอน');
+      _showMessage(context.l10n.completeAllSteps);
       return;
     }
     if (!await _persistRecipe(asDraft: false) || !mounted) return;
@@ -211,7 +212,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final creatorId = await TokenStorage().readUserId();
       if (!mounted) return false;
       if (creatorId == null || creatorId.trim().isEmpty) {
-        throw Exception('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+        throw Exception(appL10n.sessionExpired);
       }
 
       final sectionDraft = _sectionDraft;
@@ -266,7 +267,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         }
         recipeSections.add({
           'title': section.title.trim().isEmpty
-              ? 'หัวข้อชุดขั้นตอน ${sectionIndex + 1}'
+              ? appL10n.defaultSectionTitle(sectionIndex + 1)
               : section.title.trim(),
           'description': null,
           'sortOrder': sectionIndex++,
@@ -290,7 +291,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
 
       final recipe = <String, dynamic>{
         if (!_isEditing) 'creatorId': creatorId,
-        'title': title.isEmpty && asDraft ? 'สูตรอาหารฉบับร่าง' : title,
+        'title': title.isEmpty && asDraft ? appL10n.draftRecipeTitle : title,
         'slug': slug.isEmpty && asDraft ? generatedDraftSlug : slug,
         'shortDescription': _optionalText(_descriptionController.text),
         'coverImageUrl': coverUpload?.url ?? _existingCoverUrl,
@@ -315,7 +316,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       }
       if (!mounted) return false;
       if (asDraft) {
-        _showMessage('บันทึกฉบับร่างแล้ว', type: AppSnackType.success);
+        _showMessage(context.l10n.draftSaved, type: AppSnackType.success);
       }
       return true;
     } catch (error) {
@@ -350,24 +351,22 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final decision = await showDialog<_ExitDecision>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('บันทึกฉบับร่างก่อนออกไหม?'),
-          content: const Text(
-            'ข้อมูลที่กรอกไว้จะถูกเก็บใน Drafts บนหน้า Profile',
-          ),
+          title: Text(context.l10n.saveDraftBeforeLeaving),
+          content: Text(context.l10n.saveDraftBeforeLeavingMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(null),
-              child: const Text('อยู่ต่อ'),
+              child: Text(context.l10n.stay),
             ),
             TextButton(
               onPressed: () =>
                   Navigator.of(dialogContext).pop(_ExitDecision.discard),
-              child: const Text('ออกโดยไม่บันทึก'),
+              child: Text(context.l10n.leaveWithoutSaving),
             ),
             FilledButton(
               onPressed: () =>
                   Navigator.of(dialogContext).pop(_ExitDecision.saveDraft),
-              child: const Text('บันทึกฉบับร่าง'),
+              child: Text(context.l10n.saveDraft),
             ),
           ],
         ),
@@ -390,16 +389,16 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     final discard = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('ยกเลิกการแก้ไขไหม?'),
-        content: const Text('การแก้ไขที่ยังไม่ได้บันทึกจะหายไป'),
+        title: Text(context.l10n.discardEditsTitle),
+        content: Text(context.l10n.discardEditsMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('แก้ไขต่อ'),
+            child: Text(context.l10n.keepEditing),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('ออกโดยไม่บันทึก'),
+            child: Text(context.l10n.leaveWithoutSaving),
           ),
         ],
       ),
@@ -445,7 +444,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     if (!mounted || selection == null) return;
     setState(() => _coverSelection = selection);
     _showMessage(
-      'เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร',
+      context.l10n.fileSelectedWillUpload,
       type: AppSnackType.success,
     );
   }
@@ -466,7 +465,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final selectedFile = result.files.single;
       final path = selectedFile.path;
       if (path == null) {
-        throw Exception('ไม่สามารถเปิดไฟล์ที่เลือกได้');
+        throw Exception(appL10n.cannotOpenSelectedFile);
       }
 
       var file = File(path);
@@ -491,7 +490,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
           : 100 * 1024 * 1024;
       if (size < 1 || size > maximumSize) {
         final maximumMb = maximumSize ~/ (1024 * 1024);
-        throw Exception('ไฟล์ต้องมีขนาดไม่เกิน $maximumMb MB');
+        throw Exception(appL10n.fileTooLarge(maximumMb));
       }
 
       return _PendingUpload(
@@ -536,14 +535,14 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         'png' => 'image/png',
         'webp' => 'image/webp',
         'gif' => 'image/gif',
-        _ => throw Exception('รองรับไฟล์ JPG, PNG, WEBP หรือ GIF เท่านั้น'),
+        _ => throw Exception(appL10n.imageTypesOnly),
       };
     }
     return switch (normalizedExtension) {
       'mp4' => 'video/mp4',
       'webm' => 'video/webm',
       'mov' => 'video/quicktime',
-      _ => throw Exception('รองรับไฟล์ MP4, WEBM หรือ MOV เท่านั้น'),
+      _ => throw Exception(appL10n.videoTypesOnly),
     };
   }
 
@@ -553,7 +552,9 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   }
 
   String? _requiredText(String? value, String label) {
-    if (value == null || value.trim().isEmpty) return 'กรอก$label';
+    if (value == null || value.trim().isEmpty) {
+      return context.l10n.fieldRequired(label);
+    }
     return null;
   }
 
@@ -561,7 +562,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     if (value == null || value.trim().isEmpty) return null;
     final number = double.tryParse(value.trim());
     if (number == null || number < 0) {
-      return '$labelต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป';
+      return context.l10n.fieldMustBeNonNegative(label);
     }
     return null;
   }
@@ -571,11 +572,13 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     String label, {
     bool mustBePositive = false,
   }) {
-    if (value == null || value.trim().isEmpty) return 'กรอก$label';
+    if (value == null || value.trim().isEmpty) {
+      return context.l10n.fieldRequired(label);
+    }
     final number = int.tryParse(value.trim());
     final minimum = mustBePositive ? 1 : 0;
     if (number == null || number < minimum) {
-      return '$labelต้องเป็นจำนวนเต็มตั้งแต่ $minimum ขึ้นไป';
+      return context.l10n.fieldMustBeWholeNumber(label, minimum);
     }
     return null;
   }
@@ -592,7 +595,9 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       child: Scaffold(
         backgroundColor: RecipeFormStyle.background,
         appBar: RecipeFormStyle.appBar(
-          title: _isEditing ? 'แก้ไขสูตรอาหาร' : 'สร้างสูตรอาหาร',
+          title: _isEditing
+              ? context.l10n.editRecipe
+              : context.l10n.createRecipe,
         ),
         // ปุ่มเผยแพร่/บันทึกติดล่างจอเสมอ ไม่ต้องเลื่อนลงไปหา
         bottomNavigationBar: _buildBottomActions(),
@@ -717,10 +722,14 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                         ),
                   label: Text(
                     _isUploading
-                        ? 'กำลังอัปโหลดไฟล์...'
+                        ? context.l10n.uploadingFiles
                         : _isSaving
-                        ? (_isEditing ? 'กำลังบันทึก...' : 'กำลังเผยแพร่...')
-                        : (_isEditing ? 'บันทึกการแก้ไข' : 'เผยแพร่สูตรอาหาร'),
+                        ? (_isEditing
+                              ? context.l10n.saving
+                              : context.l10n.publishing)
+                        : (_isEditing
+                              ? context.l10n.saveChanges
+                              : context.l10n.publishRecipe),
                   ),
                   style: RecipeFormStyle.primaryButton(),
                 ),
@@ -744,8 +753,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 : const Icon(Icons.save_outlined),
             label: Text(
               savingDraft
-                  ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังบันทึก...')
-                  : 'บันทึกการแก้ไข',
+                  ? (_isUploading
+                        ? context.l10n.uploading
+                        : context.l10n.saving)
+                  : context.l10n.saveChanges,
             ),
             style: RecipeFormStyle.secondaryButton(),
           ),
@@ -759,8 +770,10 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                 : const Icon(Icons.publish_rounded),
             label: Text(
               publishing
-                  ? (_isUploading ? 'กำลังอัปโหลด...' : 'กำลังเผยแพร่...')
-                  : 'เผยแพร่',
+                  ? (_isUploading
+                        ? context.l10n.uploading
+                        : context.l10n.publishing)
+                  : context.l10n.publish,
             ),
             style: RecipeFormStyle.primaryButton(),
           ),

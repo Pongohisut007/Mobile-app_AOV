@@ -1,17 +1,19 @@
+import 'package:flutter_application_1/l10n/l10n.dart';
+
 enum RecipeCollectionType { myRecipes, purchased, favorites, drafts }
 
 extension RecipeCollectionTypeText on RecipeCollectionType {
-  String get title => switch (this) {
-    RecipeCollectionType.myRecipes => 'My recipes',
-    RecipeCollectionType.purchased => 'Purchased',
-    RecipeCollectionType.favorites => 'Favorites',
-    RecipeCollectionType.drafts => 'Drafts',
+  String title(AppLocalizations l10n) => switch (this) {
+    RecipeCollectionType.myRecipes => l10n.myRecipes,
+    RecipeCollectionType.purchased => l10n.purchasedRecipes,
+    RecipeCollectionType.favorites => l10n.favorites,
+    RecipeCollectionType.drafts => l10n.drafts,
   };
 
-  String get emptyMessage => switch (this) {
-    RecipeCollectionType.myRecipes => 'You have not published a recipe yet.',
-    RecipeCollectionType.purchased => 'You have not purchased a recipe yet.',
-    RecipeCollectionType.favorites => 'Your saved recipes will appear here.',
-    RecipeCollectionType.drafts => 'You have no unfinished recipes.',
+  String emptyMessage(AppLocalizations l10n) => switch (this) {
+    RecipeCollectionType.myRecipes => l10n.collectionEmptyMyRecipes,
+    RecipeCollectionType.purchased => l10n.collectionEmptyPurchased,
+    RecipeCollectionType.favorites => l10n.collectionEmptyFavorites,
+    RecipeCollectionType.drafts => l10n.collectionEmptyDrafts,
   };
 }

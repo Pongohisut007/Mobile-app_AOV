@@ -12,6 +12,7 @@ import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/common/recipe_hero.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class FoodCard extends StatelessWidget {
   final Food food;
@@ -149,7 +150,7 @@ class _RatingLabel extends StatelessWidget {
                       ),
                     ],
                   )
-                : const TextSpan(text: 'ใหม่'),
+                : TextSpan(text: context.l10n.ratingNew),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -192,7 +193,9 @@ class _FavoriteButton extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          tooltip: isFavorite ? 'เอาออกจากรายการโปรด' : 'บันทึกลงรายการโปรด',
+          tooltip: isFavorite
+              ? context.l10n.favoriteRemoveTooltip
+              : context.l10n.favoriteAddTooltip,
           // หัวใจลอยอยู่บนรูป ยังไม่กด = หัวใจทึบสีขาว
           // กดแล้ว = หัวใจแดงซ้อนบนหัวใจขาวที่ใหญ่กว่านิด ได้ขอบขาวรอบหัวใจ
           // เงาจาง ๆ ใต้หัวใจขาว กันกลืนกับรูปสีอ่อน

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_application_1/models/auth_response.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 abstract interface class AuthRepository {
   Future<AuthResponse> login({required String email, required String password});
@@ -62,24 +63,18 @@ class HttpAuthRepository implements AuthRepository {
         throw AuthRepositoryException(_errorMessage(decoded));
       }
       if (decoded is! Map<String, dynamic>) {
-        throw const AuthRepositoryException(
-          'Backend returned an invalid login response.',
-        );
+        throw AuthRepositoryException(appL10n.errorInvalidResponse);
       }
 
       return AuthResponse.fromJson(decoded);
     } on AuthRepositoryException {
       rethrow;
     } on TimeoutException {
-      throw const AuthRepositoryException(
-        'Login request timed out. Check the backend connection.',
-      );
+      throw AuthRepositoryException(appL10n.errorTimeout);
     } on FormatException {
-      throw const AuthRepositoryException('Backend returned malformed JSON.');
+      throw AuthRepositoryException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw AuthRepositoryException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw AuthRepositoryException(appL10n.errorConnection(error.message));
     }
   }
 
@@ -111,9 +106,7 @@ class HttpAuthRepository implements AuthRepository {
       body: {'currentPassword': currentPassword, 'newPassword': newPassword},
     );
     if (decoded is! Map<String, dynamic>) {
-      throw const AuthRepositoryException(
-        'Backend returned an invalid authentication response.',
-      );
+      throw AuthRepositoryException(appL10n.errorInvalidResponse);
     }
     return AuthResponse.fromJson(decoded);
   }
@@ -154,9 +147,7 @@ class HttpAuthRepository implements AuthRepository {
           .timeout(requestTimeout);
 
       if (response.statusCode == 401) {
-        throw const AuthRepositoryException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw AuthRepositoryException(appL10n.sessionExpired);
       }
       final decoded = response.bodyBytes.isEmpty
           ? null
@@ -169,15 +160,11 @@ class HttpAuthRepository implements AuthRepository {
     } on AuthRepositoryException {
       rethrow;
     } on TimeoutException {
-      throw const AuthRepositoryException(
-        'Request timed out. Check the backend connection.',
-      );
+      throw AuthRepositoryException(appL10n.errorTimeout);
     } on FormatException {
-      throw const AuthRepositoryException('Backend returned malformed JSON.');
+      throw AuthRepositoryException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw AuthRepositoryException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw AuthRepositoryException(appL10n.errorConnection(error.message));
     }
   }
 
@@ -199,23 +186,17 @@ class HttpAuthRepository implements AuthRepository {
         throw AuthRepositoryException(_errorMessage(decoded));
       }
       if (decoded is! Map<String, dynamic>) {
-        throw const AuthRepositoryException(
-          'Backend returned an invalid authentication response.',
-        );
+        throw AuthRepositoryException(appL10n.errorInvalidResponse);
       }
       return AuthResponse.fromJson(decoded);
     } on AuthRepositoryException {
       rethrow;
     } on TimeoutException {
-      throw const AuthRepositoryException(
-        'Request timed out. Check the backend connection.',
-      );
+      throw AuthRepositoryException(appL10n.errorTimeout);
     } on FormatException {
-      throw const AuthRepositoryException('Backend returned malformed JSON.');
+      throw AuthRepositoryException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw AuthRepositoryException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw AuthRepositoryException(appL10n.errorConnection(error.message));
     }
   }
 
@@ -225,7 +206,7 @@ class HttpAuthRepository implements AuthRepository {
       if (message is String) return message;
       if (message is List) return message.join('\n');
     }
-    return 'Login failed. Please check your email and password.';
+    return appL10n.loginFailed;
   }
 }
 

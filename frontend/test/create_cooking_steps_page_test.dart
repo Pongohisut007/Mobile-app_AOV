@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/views/pages/create_cooking_steps_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/localized_app.dart';
+
 void main() {
   testWidgets('section cards open a separate page for their steps', (
     tester,
@@ -11,7 +13,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MaterialApp(home: CreateCookingStepsPage()));
+    await tester.pumpWidget(localizedApp(home: const CreateCookingStepsPage()));
     expect(find.text('ขั้นตอนที่ 1'), findsNothing);
 
     await tester.tap(find.text('เพิ่มหัวข้อขั้นตอน'));

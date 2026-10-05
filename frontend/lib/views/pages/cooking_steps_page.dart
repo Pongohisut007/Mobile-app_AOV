@@ -4,6 +4,7 @@ import 'package:flutter_application_1/widgets/cooking_steps/cooking_step_card.da
 import 'package:flutter_application_1/widgets/cooking_steps/cooking_steps_header.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/cooking_step_controls.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/empty_steps.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CookingStepsPage extends StatefulWidget {
   const CookingStepsPage({super.key, required this.food});
@@ -74,12 +75,15 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
                 color: Color(0xFFFF6847),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'ทำอาหารเสร็จแล้ว!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+              Text(
+                context.l10n.cookingDone,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 8),
-              Text('คุณทำ ${widget.food.name} ครบทุกขั้นตอนแล้ว'),
+              Text(context.l10n.cookingDoneMessage(widget.food.name)),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -88,7 +92,7 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
                     Navigator.pop(context);
                     Navigator.pop(context);
                   },
-                  child: const Text('กลับไปหน้าสูตรอาหาร'),
+                  child: Text(context.l10n.backToRecipePage),
                 ),
               ),
             ],

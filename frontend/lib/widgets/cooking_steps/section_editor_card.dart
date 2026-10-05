@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class SectionEditorCard extends StatelessWidget {
   const SectionEditorCard({
@@ -59,7 +60,7 @@ class SectionEditorCard extends StatelessWidget {
                           shape: StadiumBorder(),
                         ),
                         child: Text(
-                          'ชุดที่ ${index + 1}',
+                          context.l10n.groupNumber(index + 1),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -69,7 +70,7 @@ class SectionEditorCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '$stepCount ขั้นตอน',
+                        context.l10n.stepsCount(stepCount),
                         style: const TextStyle(
                           color: RecipeFormStyle.muted,
                           fontSize: 12.5,
@@ -82,8 +83,8 @@ class SectionEditorCard extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                         color: RecipeFormStyle.muted,
                         tooltip: section.isExpanded
-                            ? 'พับขั้นตอน'
-                            : 'แสดงขั้นตอน',
+                            ? context.l10n.collapseSteps
+                            : context.l10n.showSteps,
                         icon: Icon(
                           section.isExpanded
                               ? Icons.keyboard_arrow_up_rounded
@@ -94,7 +95,7 @@ class SectionEditorCard extends StatelessWidget {
                         onPressed: onDelete,
                         visualDensity: VisualDensity.compact,
                         color: RecipeFormStyle.muted,
-                        tooltip: 'ลบหัวข้อขั้นตอน',
+                        tooltip: context.l10n.deleteStepGroup,
                         icon: const Icon(Icons.delete_outline_rounded),
                       ),
                     ],
@@ -107,7 +108,7 @@ class SectionEditorCard extends StatelessWidget {
                     child: TextFormField(
                       controller: section.title,
                       decoration: RecipeFormStyle.input(
-                        hint: 'หัวข้อขั้นตอน',
+                        hint: context.l10n.stepGroupTitle,
                         isDense: true,
                       ),
                       style: const TextStyle(
@@ -121,7 +122,7 @@ class SectionEditorCard extends StatelessWidget {
                   ),
 
                   if (section.isExpanded && section.contents.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.fromLTRB(4, 14, 8, 0),
                       child: Row(
                         children: [
@@ -133,7 +134,7 @@ class SectionEditorCard extends StatelessWidget {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'ยังไม่มีขั้นตอนย่อย แตะการ์ดเพื่อเพิ่ม',
+                              context.l10n.noSubStepsHint,
                               style: TextStyle(
                                 color: RecipeFormStyle.muted,
                                 fontSize: 13,
@@ -204,7 +205,7 @@ class _StepRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Text(
-              'ขั้นตอนที่ $number',
+              context.l10n.stepNumber(number),
               style: const TextStyle(
                 color: RecipeFormStyle.ink,
                 fontSize: 13,
@@ -214,7 +215,7 @@ class _StepRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                title.isEmpty ? 'ยังไม่มีชื่อขั้นตอนย่อย' : title,
+                title.isEmpty ? context.l10n.untitledStep : title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

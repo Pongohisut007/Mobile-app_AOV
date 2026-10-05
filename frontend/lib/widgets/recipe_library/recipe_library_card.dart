@@ -3,6 +3,7 @@ import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/recipe_summary.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeLibraryCard extends StatelessWidget {
   const RecipeLibraryCard({
@@ -90,7 +91,7 @@ class RecipeLibraryCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       recipe.price == 0
-                          ? 'Free'
+                          ? context.l10n.priceFree
                           : '฿${recipe.price.toStringAsFixed(0)}',
                       style: const TextStyle(
                         color: ProfileColors.ink,

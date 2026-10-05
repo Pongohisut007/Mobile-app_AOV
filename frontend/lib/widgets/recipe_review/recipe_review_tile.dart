@@ -4,6 +4,7 @@ import 'package:flutter_application_1/models/recipe_review.dart';
 import 'package:flutter_application_1/models/review_tag.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_review/star_rating.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// รีวิวหนึ่งรายการ: รูปโปรไฟล์ ชื่อ ดาว และข้อความ
 class RecipeReviewTile extends StatelessWidget {
@@ -86,7 +87,7 @@ class RecipeReviewTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            ReviewTag.labelOf(tag),
+                            ReviewTag.labelOf(context.l10n, tag),
                             style: const TextStyle(
                               fontSize: 12,
                               color: FoodDetailColors.purple,

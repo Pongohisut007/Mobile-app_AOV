@@ -10,6 +10,7 @@ import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_library/recipe_library_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeCollectionPage extends StatelessWidget {
   const RecipeCollectionPage({super.key, required this.collectionType});
@@ -34,7 +35,7 @@ class RecipeCollectionPage extends StatelessWidget {
         foregroundColor: ProfileColors.ink,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          collectionType.title,
+          collectionType.title(context.l10n),
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
         actions: [
@@ -45,7 +46,7 @@ class RecipeCollectionPage extends StatelessWidget {
       body: BlocBuilder<RecipeLibraryBloc, RecipeLibraryState>(
         builder: (context, state) => RecipeCollectionBody(
           state: state,
-          emptyMessage: collectionType.emptyMessage,
+          emptyMessage: collectionType.emptyMessage(context.l10n),
           onRefresh: () => _refresh(context),
           onRetry: () => context.read<RecipeLibraryBloc>().add(
             const RecipeLibraryRequested(),
@@ -104,7 +105,7 @@ class _AddRecipeButtonState extends State<_AddRecipeButton> {
       setState(() => _isOpening = false);
       showAppSnackBar(
         context,
-        'Could not open recipe editor: $error',
+        context.l10n.openEditorFailed('$error'),
         type: AppSnackType.error,
       );
     }
@@ -113,7 +114,7 @@ class _AddRecipeButtonState extends State<_AddRecipeButton> {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      tooltip: 'Create recipe',
+      tooltip: context.l10n.createRecipeTooltip,
       onPressed: _isOpening ? null : _createRecipe,
       icon: _isOpening
           ? const SizedBox(
@@ -247,7 +248,7 @@ class _LoadMoreFooter extends StatelessWidget {
           onPressed: onRetry,
           style: TextButton.styleFrom(foregroundColor: ProfileColors.ink),
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Could not load more. Try again'),
+          label: Text(context.l10n.loadFailedTryAgain),
         ),
       );
     }
@@ -332,7 +333,7 @@ class _ErrorView extends StatelessWidget {
               onPressed: onRetry,
               style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(context.l10n.tryAgain),
             ),
           ],
         ),

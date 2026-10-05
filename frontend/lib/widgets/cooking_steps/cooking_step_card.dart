@@ -3,6 +3,7 @@ import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_step.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/recipe_video_player.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CookingStepCard extends StatelessWidget {
   const CookingStepCard({
@@ -47,8 +48,8 @@ class CookingStepCard extends StatelessWidget {
               Center(
                 child: Text(
                   isCompleted
-                      ? 'เสร็จแล้ว'
-                      : 'ขั้นตอน $stepNumber จาก $totalSteps',
+                      ? context.l10n.stepDone
+                      : context.l10n.stepOfTotal(stepNumber, totalSteps),
                   style: TextStyle(
                     color: isCompleted
                         ? const Color(0xFF24BDB8)
@@ -175,23 +176,28 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final (icon, label, color) = switch (contentType) {
       'tip' => (
         Icons.lightbulb_outline_rounded,
-        'เคล็ดลับ',
+        l10n.stepTypeTip,
         const Color(0xFFFFA726),
       ),
       'warning' => (
         Icons.warning_amber_rounded,
-        'ข้อควรระวัง',
+        l10n.stepTypeWarning,
         const Color(0xFFE95757),
       ),
       'video' => (
         Icons.play_circle_outline_rounded,
-        'วิดีโอ',
+        l10n.stepTypeVideoShort,
         const Color(0xFF7B61C8),
       ),
-      _ => (Icons.menu_book_rounded, 'วิธีทำ', const Color(0xFF24BDB8)),
+      _ => (
+        Icons.menu_book_rounded,
+        l10n.instructions,
+        const Color(0xFF24BDB8),
+      ),
     };
 
     return Container(
@@ -224,9 +230,12 @@ class _DurationChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final minutes = seconds ~/ 60;
     final remainingSeconds = seconds % 60;
+    final l10n = context.l10n;
     final label = minutes > 0
-        ? '$minutes นาที${remainingSeconds > 0 ? ' $remainingSeconds วินาที' : ''}'
-        : '$remainingSeconds วินาที';
+        ? (remainingSeconds > 0
+              ? l10n.durationMinutesSeconds(minutes, remainingSeconds)
+              : l10n.durationMinutes(minutes))
+        : l10n.durationSeconds(remainingSeconds);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -269,7 +278,7 @@ class _MissingVideo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AspectRatio(
+    return AspectRatio(
       aspectRatio: 16 / 9,
       child: ColoredBox(
         color: Color(0xFF242230),
@@ -284,7 +293,7 @@ class _MissingVideo extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'ขั้นตอนนี้ยังไม่มีวิดีโอ',
+                context.l10n.stepHasNoVideo,
                 style: TextStyle(color: Colors.white70),
               ),
             ],

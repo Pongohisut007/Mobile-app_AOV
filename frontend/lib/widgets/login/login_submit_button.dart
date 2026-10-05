@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class LoginSubmitButton extends StatelessWidget {
-  const LoginSubmitButton({
-    required this.onPressed,
-    this.label = 'Sign In',
-    super.key,
-  });
+  const LoginSubmitButton({required this.onPressed, this.label, super.key});
 
   final VoidCallback onPressed;
-  final String label;
+
+  /// ไม่ส่ง = "เข้าสู่ระบบ"
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +39,7 @@ class LoginSubmitButton extends StatelessWidget {
                     ),
                   )
                 : Text(
-                    label,
+                    label ?? context.l10n.signIn,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
           ),

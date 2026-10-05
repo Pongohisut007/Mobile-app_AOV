@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class ProfileStatsRow extends StatelessWidget {
   const ProfileStatsRow({super.key, required this.profile});
@@ -15,21 +16,21 @@ class ProfileStatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             value: profile.recipeCount.toString(),
-            label: 'Recipes',
+            label: context.l10n.statRecipes,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
             value: profile.savedCount.toString(),
-            label: 'Saved',
+            label: context.l10n.statSaved,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
             value: profile.rating.toStringAsFixed(1),
-            label: 'Rating',
+            label: context.l10n.statRating,
           ),
         ),
       ],

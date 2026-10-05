@@ -5,6 +5,7 @@ import 'package:flutter_application_1/models/recipe_review.dart';
 import 'package:flutter_application_1/repositories/recipe_review_repository.dart';
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_section.dart';
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_tile.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// หน้ารีวิวทั้งหมดของสูตร เลื่อนลงสุดแล้วโหลดหน้าถัดไปเอง
 class RecipeReviewsPage extends StatefulWidget {
@@ -136,8 +137,8 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'รีวิวทั้งหมด',
+        title: Text(
+          context.l10n.allReviews,
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -166,7 +167,7 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage>
               if (index == 0) {
                 return RecipeReviewSummaryCard(
                   summary: _summary,
-                  title: 'คะแนนเฉลี่ย',
+                  title: context.l10n.averageRating,
                 );
               }
               if (index <= _reviews.length) {
@@ -199,7 +200,7 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage>
             TextButton.icon(
               onPressed: _loadMore,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('ลองใหม่'),
+              label: Text(context.l10n.retry),
             ),
           ],
         ),
@@ -210,7 +211,7 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage>
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Center(
           child: Text(
-            'ยังไม่มีรีวิว',
+            context.l10n.noReviewsYet,
             style: TextStyle(color: Colors.grey.shade600),
           ),
         ),

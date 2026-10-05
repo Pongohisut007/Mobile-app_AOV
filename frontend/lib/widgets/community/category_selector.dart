@@ -3,6 +3,7 @@ import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/widgets/home/category_list.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// แถบหมวดหมู่ของหน้า community เป็นชิปแคปซูล (ต่างจากไทล์ของหน้า Home)
 /// ใช้สี ink/accent แบบหน้า Profile และไอคอนชุดเดียวกับหน้า Home
@@ -48,7 +49,7 @@ class _CategorySelectorState extends State<CategorySelector> {
           if (index == 0) {
             return _CategoryChip(
               icon: Icons.apps_rounded,
-              label: 'ทั้งหมด',
+              label: context.l10n.categoryAll,
               isSelected: _selectedId == null,
               onTap: () => _select(null),
             );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeTypeSection extends StatelessWidget {
   const RecipeTypeSection({
@@ -18,9 +19,9 @@ class RecipeTypeSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const RecipeFormSectionHeading(
-            title: 'ประเภทสูตร',
-            subtitle: 'เปลี่ยนได้จนกว่าจะเผยแพร่',
+          RecipeFormSectionHeading(
+            title: context.l10n.recipeType,
+            subtitle: context.l10n.recipeTypeSubtitle,
             icon: Icons.storefront_rounded,
           ),
 
@@ -31,13 +32,13 @@ class RecipeTypeSection extends StatelessWidget {
             runSpacing: 8,
             children: [
               RecipeChoiceChip(
-                label: 'Official (ขาย)',
+                label: context.l10n.recipeTypeOfficial,
                 icon: Icons.sell_outlined,
                 selected: type == 'official',
                 onSelected: () => onTypeChanged('official'),
               ),
               RecipeChoiceChip(
-                label: 'Community (ฟรี)',
+                label: context.l10n.recipeTypeCommunity,
                 icon: Icons.groups_2_outlined,
                 selected: type == 'community',
                 onSelected: () => onTypeChanged('community'),

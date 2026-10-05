@@ -9,6 +9,7 @@ import 'package:flutter_application_1/repositories/image_compressor.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CreateSectionStepsPage extends StatefulWidget {
   const CreateSectionStepsPage({
@@ -79,11 +80,11 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
 
       final file = result.files.single;
       final path = file.path;
-      if (path == null) throw Exception('ไม่สามารถเปิดไฟล์ที่เลือกได้');
+      if (path == null) throw Exception(appL10n.cannotOpenSelectedFile);
       final extension = file.extension?.toLowerCase();
       final isVideo = videoExtensions.contains(extension);
       if (!isVideo && !imageExtensions.contains(extension)) {
-        throw Exception('รองรับไฟล์รูปภาพหรือวิดีโอเท่านั้น');
+        throw Exception(appL10n.mediaTypesOnly);
       }
 
       final kind = isVideo ? RecipeMediaKind.video : RecipeMediaKind.image;
@@ -106,7 +107,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
 
       final maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
       if (size < 1 || size > maxSize) {
-        throw Exception('ไฟล์ต้องมีขนาดไม่เกิน ${maxSize ~/ (1024 * 1024)} MB');
+        throw Exception(appL10n.fileTooLarge(maxSize ~/ (1024 * 1024)));
       }
 
       if (!mounted) return;
@@ -120,7 +121,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
         );
       });
       _showMessage(
-        'เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร',
+        context.l10n.fileSelectedWillUpload,
         type: AppSnackType.success,
       );
     } catch (error) {
@@ -139,14 +140,14 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
         'png' => 'image/png',
         'webp' => 'image/webp',
         'gif' => 'image/gif',
-        _ => throw Exception('รองรับไฟล์ JPG, PNG, WEBP หรือ GIF เท่านั้น'),
+        _ => throw Exception(appL10n.imageTypesOnly),
       };
     }
     return switch (extension?.toLowerCase()) {
       'mp4' => 'video/mp4',
       'webm' => 'video/webm',
       'mov' => 'video/quicktime',
-      _ => throw Exception('รองรับไฟล์ MP4, WEBM หรือ MOV เท่านั้น'),
+      _ => throw Exception(appL10n.videoTypesOnly),
     };
   }
 
@@ -156,14 +157,16 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
   }
 
   String? _required(String? value, String label) {
-    if (value == null || value.trim().isEmpty) return 'กรอก$label';
+    if (value == null || value.trim().isEmpty) {
+      return context.l10n.fieldRequired(label);
+    }
     return null;
   }
 
   String? _minutes(String? value) {
     if (value == null || value.trim().isEmpty) return null;
     final parsed = int.tryParse(value.trim());
-    if (parsed == null || parsed < 0) return 'ใส่เวลาเป็นจำนวนนาทีตั้งแต่ 0';
+    if (parsed == null || parsed < 0) return context.l10n.minutesNonNegative;
     return null;
   }
 
@@ -181,7 +184,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
           title: widget.sectionTitle,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
-            tooltip: 'กลับ (บันทึกอัตโนมัติ)',
+            tooltip: context.l10n.backAutoSave,
             onPressed: _autoSaveAndPop,
           ),
         ),
@@ -193,7 +196,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
               for (var index = 0; index < _steps.length; index++)
                 _buildStepCard(index),
               RecipeAddButton(
-                label: 'เพิ่มขั้นตอน',
+                label: context.l10n.addStep,
                 onPressed: _isPickingFile
                     ? null
                     : () => setState(() => _steps.add(_StepEditor())),
@@ -246,7 +249,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ขั้นตอนที่ $number',
+                      context.l10n.stepNumber(number),
                       style: const TextStyle(
                         color: RecipeFormStyle.ink,
                         fontSize: 15,
@@ -274,7 +277,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                       : () => setState(() => _steps.removeAt(index).dispose()),
                   visualDensity: VisualDensity.compact,
                   color: RecipeFormStyle.muted,
-                  tooltip: 'ลบขั้นตอน',
+                  tooltip: context.l10n.deleteStep,
                   icon: const Icon(Icons.delete_outline_rounded),
                 ),
               IconButton(
@@ -282,7 +285,9 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                     setState(() => step.isExpanded = !step.isExpanded),
                 visualDensity: VisualDensity.compact,
                 color: RecipeFormStyle.muted,
-                tooltip: step.isExpanded ? 'พับรายละเอียด' : 'ขยายรายละเอียด',
+                tooltip: step.isExpanded
+                    ? context.l10n.collapseDetails
+                    : context.l10n.expandDetails,
                 icon: Icon(
                   step.isExpanded
                       ? Icons.keyboard_arrow_up_rounded
@@ -309,22 +314,22 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
         TextFormField(
           controller: step.title,
           decoration: RecipeFormStyle.input(
-            label: 'ชื่อขั้นตอนย่อย',
-            hint: 'เช่น เตรียมหมูและเครื่องปรุง',
+            label: context.l10n.subStepTitle,
+            hint: context.l10n.subStepTitleHint,
           ),
-          validator: (value) => _required(value, 'ชื่อขั้นตอนย่อย'),
+          validator: (value) => _required(value, context.l10n.subStepTitle),
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: step.description,
           decoration: RecipeFormStyle.input(
-            label: 'วิธีทำ',
-            hint: 'อธิบายสิ่งที่ต้องทำในขั้นตอนนี้',
+            label: context.l10n.instructions,
+            hint: context.l10n.instructionsHint,
             alignLabelWithHint: true,
           ),
           minLines: 3,
           maxLines: 6,
-          validator: (value) => _required(value, 'วิธีทำ'),
+          validator: (value) => _required(value, context.l10n.instructions),
         ),
         const SizedBox(height: 12),
         Row(
@@ -340,21 +345,33 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                   Icons.keyboard_arrow_down_rounded,
                   color: RecipeFormStyle.muted,
                 ),
-                decoration: RecipeFormStyle.input(label: 'ชนิดขั้นตอน'),
-                items: const [
-                  DropdownMenuItem(value: 'text', child: Text('วิธีทำ')),
-                  DropdownMenuItem(value: 'tip', child: Text('เคล็ดลับ')),
+                decoration: RecipeFormStyle.input(label: context.l10n.stepType),
+                items: [
+                  DropdownMenuItem(
+                    value: 'text',
+                    child: Text(context.l10n.instructions),
+                  ),
+                  DropdownMenuItem(
+                    value: 'tip',
+                    child: Text(context.l10n.stepTypeTip),
+                  ),
                   DropdownMenuItem(
                     value: 'warning',
-                    child: Text('ข้อควรระวัง'),
+                    child: Text(context.l10n.stepTypeWarning),
                   ),
-                  DropdownMenuItem(value: 'image', child: Text('รูปภาพ')),
-                  DropdownMenuItem(value: 'video', child: Text('คลิปวิดีโอ')),
+                  DropdownMenuItem(
+                    value: 'image',
+                    child: Text(context.l10n.stepTypeImage),
+                  ),
+                  DropdownMenuItem(
+                    value: 'video',
+                    child: Text(context.l10n.stepTypeVideo),
+                  ),
                 ],
                 validator: (value) {
                   if ((value == 'image' || value == 'video') &&
                       !step.hasMedia) {
-                    return 'เลือกไฟล์รูปภาพหรือวิดีโอ';
+                    return context.l10n.chooseMediaFile;
                   }
                   return null;
                 },
@@ -386,8 +403,8 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
               child: TextFormField(
                 controller: step.durationMinutes,
                 decoration: RecipeFormStyle.input(
-                  label: 'เวลา',
-                  suffixText: 'นาที',
+                  label: context.l10n.timeLabel,
+                  suffixText: context.l10n.minutesUnit,
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -416,13 +433,13 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
         ] else if (step.existingMediaUrl case final mediaUrl?) ...[
           const SizedBox(height: 10),
           if (step.contentType == 'video')
-            const Row(
+            Row(
               children: [
                 Icon(Icons.videocam_outlined, color: RecipeFormStyle.muted),
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'ใช้คลิปวิดีโอเดิม',
+                    context.l10n.useExistingVideo,
                     style: TextStyle(color: RecipeFormStyle.muted),
                   ),
                 ),
@@ -477,16 +494,18 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      hasMedia ? 'เปลี่ยนไฟล์' : 'เลือกรูปภาพหรือวิดีโอ',
+                      hasMedia
+                          ? context.l10n.changeFile
+                          : context.l10n.chooseImageOrVideo,
                       style: const TextStyle(
                         color: RecipeFormStyle.ink,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Text(
-                      'รูปไม่เกิน 10 MB · วิดีโอไม่เกิน 100 MB',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.mediaRequirements,
+                      style: const TextStyle(
                         color: RecipeFormStyle.muted,
                         fontSize: 12,
                       ),

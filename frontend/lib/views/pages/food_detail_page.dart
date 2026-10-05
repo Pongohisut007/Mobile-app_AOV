@@ -31,6 +31,7 @@ import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_button.dar
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_section.dart';
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class FoodDetailPage extends StatefulWidget {
   const FoodDetailPage({
@@ -189,7 +190,9 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                     isLoading: isPending,
                     onCartPressed: () =>
                         Navigator.pushNamed(context, AppRoutes.cart),
-                    buyLabel: inCart ? 'Checkout now' : 'Buy Now',
+                    buyLabel: inCart
+                        ? context.l10n.checkoutNow
+                        : context.l10n.buyNow,
                     onBuyPressed: inCart
                         ? () => Navigator.pushNamed(context, AppRoutes.cart)
                         : food == null || isPending
@@ -218,7 +221,7 @@ class _FoodDetailPageState extends State<FoodDetailPage>
 
             if (state.hasError || !state.hasData) {
               return ErrorView(
-                message: state.error?.toString() ?? 'ไม่พบข้อมูลเมนูนี้',
+                message: state.error?.toString() ?? context.l10n.recipeNotFound,
                 onRetry: _reload,
               );
             }
@@ -307,9 +310,9 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                                   ),
                                 )
                               : const Icon(Icons.restaurant_menu_rounded),
-                          label: const Text(
-                            'เริ่มทำอาหาร',
-                            style: TextStyle(
+                          label: Text(
+                            context.l10n.startCooking,
+                            style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                             ),
@@ -402,19 +405,19 @@ class _FoodDetailPageState extends State<FoodDetailPage>
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('ลบสูตรอาหาร'),
-          content: const Text(
-            'คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\n'
-            'ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
-          ),
+          title: Text(context.l10n.deleteRecipe),
+          content: Text(context.l10n.deleteRecipeConfirm),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('ยกเลิก'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('ลบ', style: TextStyle(color: Colors.red)),
+              child: Text(
+                context.l10n.delete,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
@@ -461,7 +464,7 @@ class _FoodDetailPageState extends State<FoodDetailPage>
 
       showAppSnackBar(
         context,
-        'บันทึกการแก้ไขแล้ว',
+        context.l10n.changesSaved,
         type: AppSnackType.success,
       );
 

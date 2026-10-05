@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class LoginFormFields extends StatelessWidget {
   const LoginFormFields({
@@ -21,33 +22,35 @@ class LoginFormFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FieldLabel(label: 'Email Address'),
+        _FieldLabel(label: context.l10n.emailAddress),
         const SizedBox(height: 9),
         TextFormField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
-          decoration: _inputDecoration('Enter your email address'),
+          decoration: _inputDecoration(context.l10n.emailHint),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Please enter your email address';
+              return context.l10n.emailRequired;
             }
             if (!value.contains('@')) {
-              return 'Enter a valid email address';
+              return context.l10n.emailInvalid;
             }
             return null;
           },
         ),
         const SizedBox(height: 22),
-        const _FieldLabel(label: 'Password'),
+        _FieldLabel(label: context.l10n.password),
         const SizedBox(height: 9),
         TextFormField(
           controller: passwordController,
           obscureText: obscurePassword,
           textInputAction: TextInputAction.done,
-          decoration: _inputDecoration('Enter your password').copyWith(
+          decoration: _inputDecoration(context.l10n.passwordHint).copyWith(
             suffixIcon: IconButton(
-              tooltip: obscurePassword ? 'Show password' : 'Hide password',
+              tooltip: obscurePassword
+                  ? context.l10n.showPassword
+                  : context.l10n.hidePassword,
               onPressed: onTogglePassword,
               icon: Icon(
                 obscurePassword
@@ -59,10 +62,10 @@ class LoginFormFields extends StatelessWidget {
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter your password';
+              return context.l10n.passwordRequired;
             }
             if (value.length < 8) {
-              return 'Password must be at least 8 characters';
+              return context.l10n.passwordTooShort;
             }
             return null;
           },
@@ -76,7 +79,7 @@ class LoginFormFields extends StatelessWidget {
               foregroundColor: const Color(0xFF777777),
               padding: const EdgeInsets.only(top: 4),
             ),
-            child: const Text('Forgot password?'),
+            child: Text(context.l10n.forgotPassword),
           ),
         ),
       ],

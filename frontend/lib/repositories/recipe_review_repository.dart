@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_application_1/models/recipe_review.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ให้คะแนนดาวสูตรอาหาร ผูกกับตาราง reviews
 /// ดูคะแนนได้ทุกคน แต่ให้คะแนนต้องล็อกอินและซื้อสูตรแล้ว
@@ -48,7 +49,7 @@ class HttpRecipeReviewRepository implements RecipeReviewRepository {
   Future<RecipeReviewSummary> fetchSummary(String recipeId) async {
     final decoded = await _send(
       () => _client.get(_reviewsUri(recipeId)),
-      'load reviews',
+      appL10n.actionLoadReviews,
     );
     if (decoded is! Map<String, dynamic>) return const RecipeReviewSummary();
     return RecipeReviewSummary.fromJson(decoded);
@@ -64,9 +65,12 @@ class HttpRecipeReviewRepository implements RecipeReviewRepository {
       recipeId,
       '/list',
     ).replace(queryParameters: {'page': '$page', 'limit': '$limit'});
-    final decoded = await _send(() => _client.get(uri), 'load reviews');
+    final decoded = await _send(
+      () => _client.get(uri),
+      appL10n.actionLoadReviews,
+    );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeReviewException('Backend returned an invalid list.');
+      throw RecipeReviewException(appL10n.errorInvalidResponse);
     }
     return RecipeReviewPage.fromJson(decoded);
   }
@@ -81,7 +85,7 @@ class HttpRecipeReviewRepository implements RecipeReviewRepository {
         _reviewsUri(recipeId, '/me'),
         headers: _headers(accessToken),
       ),
-      'load your review',
+      appL10n.actionLoadYourReview,
     );
     if (decoded is! Map<String, dynamic>) {
       return const MyRecipeReview(canReview: false);
@@ -107,10 +111,10 @@ class HttpRecipeReviewRepository implements RecipeReviewRepository {
           'tags': tags,
         }),
       ),
-      'save your review',
+      appL10n.actionSaveYourReview,
     );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeReviewException('Backend returned an invalid review.');
+      throw RecipeReviewException(appL10n.errorInvalidResponse);
     }
     return RecipeReview.fromJson(decoded);
   }
@@ -118,7 +122,7 @@ class HttpRecipeReviewRepository implements RecipeReviewRepository {
   Map<String, String> _headers(String accessToken) {
     final token = accessToken.trim();
     if (token.isEmpty) {
-      throw const RecipeReviewException('Please sign in to review recipes.');
+      throw RecipeReviewException(appL10n.reviewSignInRequired);
     }
     return {
       'Content-Type': 'application/json',
@@ -134,33 +138,25 @@ class HttpRecipeReviewRepository implements RecipeReviewRepository {
       final response = await request().timeout(requestTimeout);
 
       if (response.statusCode == 401) {
-        throw const RecipeReviewException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw RecipeReviewException(appL10n.sessionExpired);
       }
       if (response.statusCode == 403) {
-        throw const RecipeReviewException(
-          'ต้องซื้อสูตรนี้ก่อนจึงจะให้คะแนนได้',
-        );
+        throw RecipeReviewException(appL10n.buyToRate);
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw RecipeReviewException(
-          'Could not $action (HTTP ${response.statusCode}).',
+          appL10n.errorActionFailed(action, response.statusCode),
         );
       }
       if (response.bodyBytes.isEmpty) return null;
 
       return jsonDecode(utf8.decode(response.bodyBytes));
     } on TimeoutException {
-      throw const RecipeReviewException(
-        'The request timed out. Check the backend connection.',
-      );
+      throw RecipeReviewException(appL10n.errorTimeout);
     } on FormatException {
-      throw const RecipeReviewException('Backend returned malformed JSON.');
+      throw RecipeReviewException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw RecipeReviewException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw RecipeReviewException(appL10n.errorConnection(error.message));
     }
   }
 }

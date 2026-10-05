@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_bloc.dart';
 import 'package:flutter_application_1/bloc/page/page_event.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class BottomNavbar extends StatelessWidget {
   const BottomNavbar({super.key});
@@ -24,21 +25,21 @@ class BottomNavbar extends StatelessWidget {
         pageBloc.add(PageChangeEvent(index));
       },
 
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home_rounded),
-          label: "Home",
+          icon: const Icon(Icons.home_outlined),
+          activeIcon: const Icon(Icons.home_rounded),
+          label: context.l10n.navHome,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.groups_outlined),
-          activeIcon: Icon(Icons.groups),
-          label: 'Community',
+          icon: const Icon(Icons.groups_outlined),
+          activeIcon: const Icon(Icons.groups),
+          label: context.l10n.navCommunity,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person_rounded),
-          label: "Profile",
+          icon: const Icon(Icons.person_outline),
+          activeIcon: const Icon(Icons.person_rounded),
+          label: context.l10n.navProfile,
         ),
       ],
     );

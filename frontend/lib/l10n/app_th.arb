@@ -1,0 +1,918 @@
+{
+  "@@locale": "th",
+  "navHome": "หน้าหลัก",
+  "navCommunity": "คอมมูนิตี้",
+  "navProfile": "โปรไฟล์",
+  "recommendedTitle": "เมนูแนะนำ",
+  "seeMore": "ดูทั้งหมด",
+  "allRecipesTitle": "สูตรทั้งหมด",
+  "searchRecipeHint": "ค้นหาสูตรอาหาร",
+  "ratingNew": "ใหม่",
+  "favoriteRemoveTooltip": "เอาออกจากรายการโปรด",
+  "favoriteAddTooltip": "บันทึกลงรายการโปรด",
+  "loading": "กำลังโหลด...",
+  "noRecipesInCategory": "ยังไม่มีเมนูในหมวดนี้",
+  "noRecipesNamed": "ไม่พบเมนูที่ชื่อ \"{query}\"",
+  "@noRecipesNamed": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "loadMoreRecipesFailed": "โหลดเมนูเพิ่มไม่สำเร็จ ลองอีกครั้ง",
+  "cartFallbackTitle": "เมนูนี้",
+  "cartAdded": "เพิ่ม {title} ลงตะกร้าแล้ว",
+  "@cartAdded": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "cartAlreadyIn": "{title} อยู่ในตะกร้าแล้ว",
+  "@cartAlreadyIn": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "cartAddFailed": "เพิ่ม {title} ลงตะกร้าไม่สำเร็จ",
+  "@cartAddFailed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "routeNotFound": "ไม่พบหน้านี้",
+  "categoryAll": "ทั้งหมด",
+  "createRecipeTooltip": "สร้างสูตร",
+  "searchTooltip": "ค้นหา",
+  "closeSearchTooltip": "ปิดการค้นหา",
+  "errorWithMessage": "เกิดข้อผิดพลาด: {message}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "noPostsInCategory": "ยังไม่มีโพสต์ในหมวดนี้",
+  "noPostsNamed": "ไม่พบโพสต์ที่ชื่อ \"{query}\"",
+  "@noPostsNamed": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "loadFailedTryAgain": "โหลดไม่สำเร็จ ลองอีกครั้ง",
+  "showMore": "แสดงเพิ่ม",
+  "noData": "ไม่มีข้อมูล",
+  "timeJustNow": "เมื่อกี้",
+  "timeMinutesAgo": "{count} นาทีที่แล้ว",
+  "@timeMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHoursAgo": "{count} ชั่วโมงที่แล้ว",
+  "@timeHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDaysAgo": "{count} วันที่แล้ว",
+  "@timeDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeMonthsAgo": "{count} เดือนที่แล้ว",
+  "@timeMonthsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeYearsAgo": "{count} ปีที่แล้ว",
+  "@timeYearsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "anonymousUser": "ผู้ใช้งาน",
+  "viewCommentsTooltip": "ดูความคิดเห็น",
+  "signIn": "เข้าสู่ระบบ",
+  "editProfile": "แก้ไขโปรไฟล์",
+  "yourKitchenTitle": "ครัวของคุณ",
+  "yourKitchenSubtitle": "ทุกเมนูที่คุณทำและสะสมไว้",
+  "appVersionFooter": "{appName} · เวอร์ชัน {version}",
+  "@appVersionFooter": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "profileHeaderSubtitle": "สูตร คำสั่งซื้อ และการตั้งค่าของคุณ",
+  "settingsTitle": "ตั้งค่า",
+  "cartTooltip": "ตะกร้า",
+  "myRecipes": "สูตรของฉัน",
+  "myRecipesDetail": "เผยแพร่ {count} สูตร",
+  "@myRecipesDetail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "purchasedRecipes": "ซื้อแล้ว",
+  "purchasedDetail": "{count} สูตร",
+  "@purchasedDetail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "favorites": "รายการโปรด",
+  "favoritesDetail": "บันทึกไว้ {count} สูตร",
+  "@favoritesDetail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "drafts": "ฉบับร่าง",
+  "draftsDetail": "ยังไม่เสร็จ {count} สูตร",
+  "@draftsDetail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statRecipes": "สูตร",
+  "statSaved": "บันทึก",
+  "statRating": "คะแนน",
+  "guest": "ผู้เยี่ยมชม",
+  "fieldName": "ชื่อ",
+  "fieldEmail": "อีเมล",
+  "profileLoadFailed": "โหลดโปรไฟล์ไม่สำเร็จ",
+  "tryAgain": "ลองอีกครั้ง",
+  "cancel": "ยกเลิก",
+  "passwordChangedOthersSignedOut": "เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ",
+  "signOut": "ออกจากระบบ",
+  "signOutConfirmTitle": "ออกจากระบบ?",
+  "signOutConfirmMessage": "คุณเข้าสู่ระบบใหม่เพื่อดูสูตรของคุณได้ทุกเมื่อ",
+  "signOutAllTitle": "ออกจากระบบทุกอุปกรณ์?",
+  "signOutAllMessage": "ทุกเครื่องที่เข้าสู่ระบบด้วยบัญชีนี้ รวมถึงเครื่องนี้ จะถูกออกจากระบบทันที",
+  "signOutAllAction": "ออกจากระบบทั้งหมด",
+  "signOutAllDevices": "ออกจากระบบทุกอุปกรณ์",
+  "signOutAllDevicesHint": "ใช้เมื่อมือถือหาย หรือสงสัยว่ามีคนใช้บัญชี",
+  "versionLabel": "เวอร์ชัน {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAccount": "บัญชี",
+  "changePassword": "เปลี่ยนรหัสผ่าน",
+  "settingsHelpAndTerms": "ความช่วยเหลือและข้อกำหนด",
+  "helpAndSupport": "ช่วยเหลือและติดต่อ",
+  "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+  "termsOfUse": "ข้อกำหนดการใช้งาน",
+  "aboutApp": "เกี่ยวกับแอป",
+  "aboutAppSubtitle": "เวอร์ชัน {version} · ไลเซนส์โอเพนซอร์ส",
+  "@aboutAppSubtitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "dangerZone": "โซนอันตราย",
+  "deleteAccount": "ลบบัญชี",
+  "deleteAccountHint": "ปิดบัญชีและลบข้อมูลส่วนตัว กู้คืนไม่ได้",
+  "faqTitle": "คำถามที่พบบ่อย",
+  "contactTeam": "ติดต่อทีมงาน",
+  "emailCopied": "คัดลอกอีเมลแล้ว",
+  "noAccountPrompt": "ยังไม่มีบัญชี? ",
+  "signUp": "สมัครสมาชิก",
+  "haveAccountPrompt": "มีบัญชีอยู่แล้ว? ",
+  "emailAddress": "อีเมล",
+  "emailHint": "กรอกอีเมลของคุณ",
+  "emailRequired": "กรุณากรอกอีเมล",
+  "emailInvalid": "กรอกอีเมลให้ถูกต้อง",
+  "password": "รหัสผ่าน",
+  "passwordHint": "กรอกรหัสผ่าน",
+  "passwordRequired": "กรุณากรอกรหัสผ่าน",
+  "passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+  "passwordTooLong": "รหัสผ่านต้องไม่เกิน 72 ตัวอักษร",
+  "showPassword": "แสดงรหัสผ่าน",
+  "hidePassword": "ซ่อนรหัสผ่าน",
+  "forgotPassword": "ลืมรหัสผ่าน?",
+  "orSignInWith": "หรือเข้าสู่ระบบด้วย",
+  "orSignUpWith": "หรือสมัครด้วย",
+  "acceptTermsRequired": "กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว",
+  "displayName": "ชื่อที่แสดง",
+  "displayNameHint": "กรอกชื่อที่แสดง",
+  "displayNameRequired": "กรุณากรอกชื่อที่แสดง",
+  "displayNameTooLong": "ชื่อที่แสดงต้องไม่เกิน 150 ตัวอักษร",
+  "confirmPassword": "ยืนยันรหัสผ่าน",
+  "confirmPasswordHint": "กรอกรหัสผ่านอีกครั้ง",
+  "confirmPasswordRequired": "กรุณายืนยันรหัสผ่าน",
+  "passwordsDoNotMatch": "รหัสผ่านไม่ตรงกัน",
+  "termsAgreePrefix": "ฉันยอมรับ",
+  "termsAgreeUserAgreement": "ข้อกำหนดการใช้งาน",
+  "termsAgreeAnd": " และ",
+  "termsAgreePrivacy": "นโยบายความเป็นส่วนตัว",
+  "sessionExpired": "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่",
+  "saving": "กำลังบันทึก...",
+  "currentPassword": "รหัสผ่านปัจจุบัน",
+  "currentPasswordRequired": "กรอกรหัสผ่านปัจจุบัน",
+  "newPassword": "รหัสผ่านใหม่",
+  "passwordLengthHelper": "8-72 ตัวอักษร",
+  "newPasswordSameAsOld": "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม",
+  "confirmNewPassword": "ยืนยันรหัสผ่านใหม่",
+  "newPasswordsDoNotMatch": "รหัสผ่านใหม่ไม่ตรงกัน",
+  "deletingAccount": "กำลังลบบัญชี...",
+  "deleteAccountPermanently": "ลบบัญชีถาวร",
+  "deleteIrreversible": "ลบแล้วกู้คืนไม่ได้",
+  "deleteBulletSignOut": "ออกจากระบบทุกอุปกรณ์ และเข้าสู่ระบบด้วยบัญชีนี้ไม่ได้อีก",
+  "deleteBulletPersonalData": "ชื่อ รูปโปรไฟล์ และอีเมลถูกลบ กลับมาสมัครใหม่ด้วยอีเมลเดิมได้ แต่จะเป็นบัญชีใหม่",
+  "deleteBulletRecipes": "สูตรที่คุณสร้างจะไม่แสดงให้ใครเห็นอีก ยกเว้นคนที่ซื้อไปแล้วยังเปิดดูได้",
+  "deleteBulletLibrary": "รายการโปรด ตะกร้า และสูตรที่คุณซื้อไว้จะหายไป",
+  "deleteBulletComments": "คอมเมนต์และรีวิวยังอยู่ แต่จะแสดงเป็น \"ผู้ใช้ที่ลบบัญชีแล้ว\"",
+  "confirmWithPassword": "ยืนยันด้วยรหัสผ่าน",
+  "passwordEnter": "กรอกรหัสผ่าน",
+  "deleteUnderstand": "ฉันเข้าใจว่าการลบบัญชีกู้คืนไม่ได้",
+  "imageOpenFailed": "เปิดรูปไม่ได้: {error}",
+  "@imageOpenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "save": "บันทึก",
+  "changeProfilePhoto": "เปลี่ยนรูปโปรไฟล์",
+  "emailCannotChange": "อีเมลใช้สำหรับเข้าสู่ระบบ แก้ไขไม่ได้",
+  "difficultyEasy": "ง่าย",
+  "difficultyMedium": "ปานกลาง",
+  "difficultyHard": "ยาก",
+  "priceFree": "ฟรี",
+  "mockIapDisabled": "โหมดซื้อจำลองถูกปิดอยู่ กรุณาเชื่อม Google Play Billing",
+  "mockPaymentCancelled": "จำลองการยกเลิกการชำระเงินแล้ว",
+  "mockPaymentFailed": "จำลองการชำระเงินไม่สำเร็จ",
+  "mockBillingTitle": "Google Play Billing — โหมดจำลอง",
+  "mockBillingSubtitle": "เลือกผลลัพธ์ที่ต้องการทดสอบ ระบบนี้ไม่ตัดเงินจริง",
+  "mockPaySuccess": "จำลองชำระสำเร็จ",
+  "mockPayFail": "จำลองชำระไม่สำเร็จ",
+  "mockUserCancel": "จำลองผู้ใช้ยกเลิก",
+  "clearCartTitle": "ล้างตะกร้า?",
+  "clearCartMessage": "สูตรทั้งหมดในตะกร้าจะถูกเอาออก",
+  "clear": "ล้าง",
+  "cartTitle": "ตะกร้า",
+  "clearCartTooltip": "ล้างตะกร้า",
+  "cartLoadFailed": "โหลดตะกร้าไม่สำเร็จ",
+  "selectAll": "เลือกทั้งหมด",
+  "selectedOfTotal": "เลือก {selected} จาก {total} รายการ",
+  "@selectedOfTotal": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cartEmptyTitle": "ตะกร้าว่างเปล่า",
+  "cartEmptyMessage": "สูตรที่คุณเพิ่มจะแสดงที่นี่",
+  "browseRecipes": "ดูสูตรอาหาร",
+  "selectItemForCheckout": "เลือก {title} เพื่อชำระเงิน",
+  "@selectItemForCheckout": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "remove": "เอาออก",
+  "itemCount": "{count} รายการ",
+  "@itemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkout": "ชำระเงิน",
+  "paymentFailedTitle": "ชำระเงินไม่สำเร็จ",
+  "purchaseIncomplete": "ยังซื้อสูตรไม่ครบ",
+  "purchasePartialMessage": "ก่อนเกิดข้อผิดพลาด ซื้อสำเร็จแล้ว {count} สูตร สูตรที่เหลือยังอยู่ในตะกร้า",
+  "@purchasePartialMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "retry": "ลองใหม่",
+  "backToCart": "กลับไปตะกร้า",
+  "paymentSuccessTitle": "ชำระเงินสำเร็จ",
+  "purchaseSuccess": "ซื้อสูตรสำเร็จ!",
+  "purchaseUnlocked": "เปิดสิทธิ์เข้าถึง {count} สูตรแล้ว",
+  "@purchaseUnlocked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mockPaymentNotice": "รายการนี้เป็นการชำระเงินจำลอง ไม่มีการตัดเงินจริง",
+  "viewPurchasedRecipes": "ดูสูตรที่ซื้อแล้ว",
+  "backToHome": "กลับหน้าหลัก",
+  "checkoutNow": "ชำระเงินเลย",
+  "buyNow": "ซื้อเลย",
+  "recipeNotFound": "ไม่พบข้อมูลเมนูนี้",
+  "startCooking": "เริ่มทำอาหาร",
+  "deleteRecipe": "ลบสูตรอาหาร",
+  "deleteRecipeConfirm": "คุณต้องการลบสูตรอาหารนี้ใช่หรือไม่?\nข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย",
+  "delete": "ลบ",
+  "changesSaved": "บันทึกการแก้ไขแล้ว",
+  "goBack": "ย้อนกลับ",
+  "description": "รายละเอียด",
+  "edit": "แก้ไข",
+  "minutesShort": "{count} น.",
+  "@minutesShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "infoPrep": "เตรียม",
+  "infoCook": "ปรุง",
+  "infoServings": "เสิร์ฟ",
+  "infoLevel": "ระดับ",
+  "event": "กิจกรรม",
+  "details": "รายละเอียด",
+  "eventNoDetails": "ยังไม่มีรายละเอียดของกิจกรรมนี้",
+  "periodStarts": "เริ่ม {date}",
+  "@periodStarts": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "periodEnds": "ถึง {date}",
+  "@periodEnds": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "starLabel1": "แย่มาก",
+  "starLabel2": "พอใช้",
+  "starLabel3": "ดี",
+  "starLabel4": "ดีมาก",
+  "starLabel5": "ยอดเยี่ยม!",
+  "rateThisRecipe": "ให้คะแนนสูตรนี้",
+  "rateDialogSubtitle": "ความคิดเห็นของคุณช่วยให้เราพัฒนาสูตรอาหารให้ดียิ่งขึ้น",
+  "tapStarsToRate": "แตะดาวเพื่อให้คะแนน",
+  "whatDidYouLike": "ชอบอะไรในสูตรนี้",
+  "tellMore": "เล่าเพิ่มเติม ",
+  "optional": "(ไม่บังคับ)",
+  "reviewCommentHint": "เล่าว่าทำสูตรนี้แล้วเป็นยังไงบ้าง",
+  "submitRating": "ส่งคะแนน",
+  "updateRating": "อัปเดตคะแนน",
+  "thanksForRating": "ขอบคุณสำหรับคะแนน!",
+  "ratingAddedMessage": "รีวิวของคุณถูกเพิ่มในหน้าสูตรแล้ว\nแก้ไขได้ทุกเมื่อจากปุ่ม \"แก้ไขคะแนน\"",
+  "backToRecipe": "กลับไปที่สูตร",
+  "close": "ปิด",
+  "ratingLoadFailed": "โหลดคะแนนไม่สำเร็จ",
+  "rate": "ให้คะแนน",
+  "editRating": "แก้ไขคะแนน",
+  "latestReviews": "รีวิวล่าสุด",
+  "noReviewsYet": "ยังไม่มีรีวิว",
+  "ratingsAndReviews": "คะแนนและรีวิว",
+  "noRatingsYet": "ยังไม่มีคะแนน",
+  "fromReviewCount": "จาก {count} รีวิว",
+  "@fromReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "starCount": "{count} ดาว",
+  "@starCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allReviews": "รีวิวทั้งหมด",
+  "averageRating": "คะแนนเฉลี่ย",
+  "tagTasty": "รสชาติดี",
+  "tagEasy": "ทำง่าย",
+  "tagSpicyRight": "เผ็ดกำลังดี",
+  "tagEasyIngredients": "วัตถุดิบหาง่าย",
+  "commentMore": "...เพิ่มเติม",
+  "commentLess": "  ย่อ",
+  "actionFailed": "ทำรายการไม่สำเร็จ",
+  "buyToComment": "ซื้อสูตรนี้ก่อนจึงจะแสดงความคิดเห็นได้",
+  "comments": "ความคิดเห็น",
+  "commentsLoadFailed": "โหลดความคิดเห็นไม่สำเร็จ",
+  "noCommentsYet": "ยังไม่มีความคิดเห็น",
+  "viewMoreComments": "ดูความคิดเห็นเพิ่มเติม",
+  "loadMoreCommentsAgain": "โหลดความคิดเห็นเพิ่มอีกครั้ง",
+  "deleteComment": "ลบความคิดเห็น",
+  "deleteCommentConfirm": "ต้องการลบความคิดเห็นนี้ใช่ไหม",
+  "editComment": "แก้ไขความคิดเห็น",
+  "writeCommentHint": "เขียนความคิดเห็น",
+  "addCommentHint": "เพิ่มความคิดเห็น...",
+  "sendComment": "ส่งความคิดเห็น",
+  "manageComment": "จัดการความคิดเห็น",
+  "askAiAboutRecipe": "ถาม AI เกี่ยวกับสูตรนี้",
+  "pickFromGallery": "เลือกจากคลังรูป",
+  "takePhoto": "ถ่ายรูป",
+  "newChat": "เริ่มแชทใหม่",
+  "chatEmptyHint": "ถามอะไรก็ได้เกี่ยวกับสูตรนี้\nเช่น \"ใช้อะไรแทนน้ำปลาได้บ้าง\"",
+  "aiTyping": "AI กำลังพิมพ์...",
+  "attachImage": "แนบรูป",
+  "chatInputHint": "พิมพ์คำถาม...",
+  "chatImageHint": "ถามเกี่ยวกับรูปนี้ (ไม่พิมพ์ก็ได้)",
+  "openEditorFailed": "เปิดหน้าแก้ไขสูตรไม่ได้: {error}",
+  "@openEditorFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "collectionEmptyMyRecipes": "คุณยังไม่ได้เผยแพร่สูตรเลย",
+  "collectionEmptyPurchased": "คุณยังไม่ได้ซื้อสูตรเลย",
+  "collectionEmptyFavorites": "สูตรที่คุณบันทึกไว้จะแสดงที่นี่",
+  "collectionEmptyDrafts": "คุณไม่มีสูตรที่ยังทำไม่เสร็จ",
+  "pickCoverBeforePublish": "เลือกรูปตัวอย่างอาหารก่อนเผยแพร่สูตร",
+  "pickAtLeastOneCategory": "เลือกหมวดหมู่อย่างน้อย 1 หมวด",
+  "addStepsBeforePublish": "เพิ่มขั้นตอนการทำอาหารก่อนเผยแพร่สูตร",
+  "completeAllSteps": "กรอกชื่อและรายละเอียดให้ครบทุกขั้นตอน",
+  "defaultSectionTitle": "หัวข้อชุดขั้นตอน {number}",
+  "@defaultSectionTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "draftRecipeTitle": "สูตรอาหารฉบับร่าง",
+  "draftSaved": "บันทึกฉบับร่างแล้ว",
+  "saveDraftBeforeLeaving": "บันทึกฉบับร่างก่อนออกไหม?",
+  "saveDraftBeforeLeavingMessage": "ข้อมูลที่กรอกไว้จะถูกเก็บในฉบับร่างบนหน้าโปรไฟล์",
+  "stay": "อยู่ต่อ",
+  "leaveWithoutSaving": "ออกโดยไม่บันทึก",
+  "saveDraft": "บันทึกฉบับร่าง",
+  "discardEditsTitle": "ยกเลิกการแก้ไขไหม?",
+  "discardEditsMessage": "การแก้ไขที่ยังไม่ได้บันทึกจะหายไป",
+  "keepEditing": "แก้ไขต่อ",
+  "fileSelectedWillUpload": "เลือกไฟล์แล้ว จะอัปโหลดเมื่อเผยแพร่สูตร",
+  "cannotOpenSelectedFile": "ไม่สามารถเปิดไฟล์ที่เลือกได้",
+  "fileTooLarge": "ไฟล์ต้องมีขนาดไม่เกิน {maxMb} MB",
+  "@fileTooLarge": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "imageTypesOnly": "รองรับไฟล์ JPG, PNG, WEBP หรือ GIF เท่านั้น",
+  "videoTypesOnly": "รองรับไฟล์ MP4, WEBM หรือ MOV เท่านั้น",
+  "fieldRequired": "กรอก{field}",
+  "@fieldRequired": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldMustBeNonNegative": "{field}ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป",
+  "@fieldMustBeNonNegative": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldMustBeWholeNumber": "{field}ต้องเป็นจำนวนเต็มตั้งแต่ {minimum} ขึ้นไป",
+  "@fieldMustBeWholeNumber": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "minimum": {
+        "type": "int"
+      }
+    }
+  },
+  "editRecipe": "แก้ไขสูตรอาหาร",
+  "createRecipe": "สร้างสูตรอาหาร",
+  "uploadingFiles": "กำลังอัปโหลดไฟล์...",
+  "publishing": "กำลังเผยแพร่...",
+  "saveChanges": "บันทึกการแก้ไข",
+  "publishRecipe": "เผยแพร่สูตรอาหาร",
+  "uploading": "กำลังอัปโหลด...",
+  "publish": "เผยแพร่",
+  "yourRecipe": "สูตรของคุณ",
+  "yourRecipeSubtitle": "ชื่อเมนูและเรื่องราวสั้น ๆ",
+  "thaiName": "ชื่อภาษาไทย",
+  "thaiNameHint": "เช่น ผัดกะเพราไก่",
+  "recipeNameField": "ชื่อสูตรอาหาร",
+  "englishName": "ชื่อภาษาอังกฤษ",
+  "slugField": "ชื่อภาษาอังกฤษ",
+  "slugFormat": "ใช้ a-z, 0-9 และเครื่องหมาย - เท่านั้น",
+  "descriptionField": "คำอธิบาย",
+  "descriptionHint": "เล่าจุดเด่นหรือรสชาติของเมนูนี้",
+  "categories": "หมวดหมู่",
+  "categoriesPickMany": "เลือกได้มากกว่า 1 หมวด",
+  "categoriesSelected": "เลือกแล้ว {count} หมวด",
+  "@categoriesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noCategories": "ไม่มีหมวดหมู่ให้เลือก",
+  "searchCategoriesHint": "ค้นหาหมวดหมู่...",
+  "coverPhoto": "รูปตัวอย่างอาหาร",
+  "coverPhotoSubtitle": "รูปหน้าปกที่ทุกคนจะเห็นก่อน",
+  "currentImage": "รูปเดิม",
+  "showImageInCommunity": "แสดงรูปในชุมชน",
+  "showImageInCommunityHint": "โชว์รูปเล็กใต้โพสต์ในหน้าคอมมูนิตี้",
+  "chooseImage": "เลือกรูปภาพ",
+  "imageRequirements": "JPG, PNG, WEBP หรือ GIF ไม่เกิน 10 MB",
+  "changeImage": "เปลี่ยนรูปภาพ",
+  "removeImage": "ลบรูปภาพ",
+  "recipeDetails": "รายละเอียดสูตร",
+  "recipeDetailsSubtitle": "เวลา จำนวนที่เสิร์ฟ และความยาก",
+  "price": "ราคา",
+  "baht": "บาท",
+  "priceRequired": "กรอกราคา",
+  "prepLabel": "เตรียม",
+  "minutesUnit": "นาที",
+  "prepTimeField": "เวลาเตรียม",
+  "cookLabel": "ปรุง",
+  "cookTimeField": "เวลาปรุง",
+  "servings": "จำนวนที่รับประทาน",
+  "servingsUnit": "ที่",
+  "difficulty": "ระดับความยาก",
+  "difficultyRequired": "เลือกระดับความยาก",
+  "cookingSteps": "ขั้นตอนการทำอาหาร",
+  "tapToEditSteps": "แตะเพื่อแก้ไขหัวข้อและขั้นตอน",
+  "noStepGroupsYet": "ยังไม่ได้เพิ่มหัวข้อขั้นตอน",
+  "statGroups": "ชุด",
+  "statSteps": "ขั้นตอน",
+  "editStepGroups": "แก้ไขหัวข้อขั้นตอน",
+  "addStepGroups": "เพิ่มหัวข้อขั้นตอน",
+  "recipeType": "ประเภทสูตร",
+  "recipeTypeSubtitle": "เปลี่ยนได้จนกว่าจะเผยแพร่",
+  "recipeTypeOfficial": "Official (ขาย)",
+  "recipeTypeCommunity": "Community (ฟรี)",
+  "mediaTypesOnly": "รองรับไฟล์รูปภาพหรือวิดีโอเท่านั้น",
+  "minutesNonNegative": "ใส่เวลาเป็นจำนวนนาทีตั้งแต่ 0",
+  "backAutoSave": "กลับ (บันทึกอัตโนมัติ)",
+  "addStep": "เพิ่มขั้นตอน",
+  "stepNumber": "ขั้นตอนที่ {number}",
+  "@stepNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteStep": "ลบขั้นตอน",
+  "collapseDetails": "พับรายละเอียด",
+  "expandDetails": "ขยายรายละเอียด",
+  "subStepTitle": "ชื่อขั้นตอนย่อย",
+  "subStepTitleHint": "เช่น เตรียมหมูและเครื่องปรุง",
+  "instructions": "วิธีทำ",
+  "instructionsHint": "อธิบายสิ่งที่ต้องทำในขั้นตอนนี้",
+  "stepType": "ชนิดขั้นตอน",
+  "stepTypeTip": "เคล็ดลับ",
+  "stepTypeWarning": "ข้อควรระวัง",
+  "stepTypeImage": "รูปภาพ",
+  "stepTypeVideo": "คลิปวิดีโอ",
+  "chooseMediaFile": "เลือกไฟล์รูปภาพหรือวิดีโอ",
+  "timeLabel": "เวลา",
+  "useExistingVideo": "ใช้คลิปวิดีโอเดิม",
+  "changeFile": "เปลี่ยนไฟล์",
+  "chooseImageOrVideo": "เลือกรูปภาพหรือวิดีโอ",
+  "mediaRequirements": "รูปไม่เกิน 10 MB · วิดีโอไม่เกิน 100 MB",
+  "enterGroupTitleFirst": "กรอกหัวข้อขั้นตอนก่อนเพิ่มขั้นตอน",
+  "stepGroupTitle": "หัวข้อขั้นตอน",
+  "stepGroupsHelp": "แบ่งขั้นตอนเป็นชุด เช่น \"เตรียมวัตถุดิบ\" \"ปรุง\" \"จัดเสิร์ฟ\" แล้วแตะการ์ดเพื่อเพิ่มขั้นตอนย่อย กดย้อนกลับได้เลย ระบบบันทึกให้อัตโนมัติ",
+  "noStepGroupsTitle": "ยังไม่มีหัวข้อขั้นตอน",
+  "noStepGroupsHint": "เริ่มจากเพิ่มหัวข้อชุดแรกด้านล่าง",
+  "cookingDone": "ทำอาหารเสร็จแล้ว!",
+  "cookingDoneMessage": "คุณทำ {recipe} ครบทุกขั้นตอนแล้ว",
+  "@cookingDoneMessage": {
+    "placeholders": {
+      "recipe": {
+        "type": "String"
+      }
+    }
+  },
+  "backToRecipePage": "กลับไปหน้าสูตรอาหาร",
+  "stepDone": "เสร็จแล้ว",
+  "stepOfTotal": "ขั้นตอน {current} จาก {total}",
+  "@stepOfTotal": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "stepTypeVideoShort": "วิดีโอ",
+  "durationMinutesSeconds": "{minutes} นาที {seconds} วินาที",
+  "@durationMinutesSeconds": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutes": "{minutes} นาที",
+  "@durationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "durationSeconds": "{seconds} วินาที",
+  "@durationSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "stepHasNoVideo": "ขั้นตอนนี้ยังไม่มีวิดีโอ",
+  "previousStep": "ขั้นตอนก่อนหน้า",
+  "finishCooking": "ทำอาหารเสร็จแล้ว",
+  "finishStep": "เสร็จขั้นตอนนี้",
+  "cookingNow": "กำลังทำอาหาร",
+  "stepProgress": "{current} / {total} ขั้นตอน",
+  "@stepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "recipeHasNoSteps": "สูตรนี้ยังไม่มีขั้นตอนการทำ",
+  "loadingVideo": "กำลังโหลดวิดีโอ...",
+  "videoPlayFailedDetails": "เล่นวิดีโอไม่ได้\n{details}",
+  "@videoPlayFailedDetails": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "videoPlayFailed": "ไม่สามารถเล่นวิดีโอนี้ได้",
+  "rewind10": "ย้อนกลับ 10 วินาที",
+  "pause": "หยุดชั่วคราว",
+  "play": "เล่น",
+  "forward10": "เดินหน้า 10 วินาที",
+  "unmute": "เปิดเสียง",
+  "adjustVolume": "ปรับเสียง",
+  "mute": "ปิดเสียง",
+  "playbackSpeed": "ความเร็วการเล่น",
+  "rotateScreen": "หมุนหน้าจอ",
+  "exitFullscreen": "ออกจากเต็มจอ",
+  "fullscreen": "เต็มจอ",
+  "volumeDown": "ลดเสียง",
+  "volumeUp": "เพิ่มเสียง",
+  "groupNumber": "ชุดที่ {number}",
+  "@groupNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "stepsCount": "{count} ขั้นตอน",
+  "@stepsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "collapseSteps": "พับขั้นตอน",
+  "showSteps": "แสดงขั้นตอน",
+  "deleteStepGroup": "ลบหัวข้อขั้นตอน",
+  "noSubStepsHint": "ยังไม่มีขั้นตอนย่อย แตะการ์ดเพื่อเพิ่ม",
+  "untitledStep": "ยังไม่มีชื่อขั้นตอนย่อย",
+  "errorInvalidResponse": "ข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง",
+  "errorTimeout": "เซิร์ฟเวอร์ตอบช้าเกินไป กรุณาลองใหม่อีกครั้ง",
+  "errorConnection": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: {details}",
+  "@errorConnection": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "errorActionFailed": "{action}ไม่สำเร็จ (HTTP {statusCode})",
+  "@errorActionFailed": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "loginFailed": "เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน",
+  "loadBannersFailed": "โหลดแบนเนอร์ไม่สำเร็จ (HTTP {statusCode})",
+  "@loadBannersFailed": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "loadCategoriesFailed": "โหลดหมวดหมู่ไม่สำเร็จ",
+  "actionLoadCart": "โหลดตะกร้า",
+  "actionOpenCart": "เปิดตะกร้า",
+  "actionAddToCart": "เพิ่มสูตรนี้ลงตะกร้า",
+  "actionRemoveFromCart": "เอาสูตรนี้ออกจากตะกร้า",
+  "actionClearCart": "ล้างตะกร้า",
+  "cartSignInRequired": "กรุณาเข้าสู่ระบบเพื่อใช้ตะกร้า",
+  "chatInvalidResponse": "AI ตอบกลับมาในรูปแบบที่ไม่ถูกต้อง",
+  "chatBuyFirst": "ต้องซื้อสูตรนี้ก่อนจึงจะถาม AI ได้",
+  "chatImageTooLarge": "รูปใหญ่เกินไป (ไม่เกิน 5MB)",
+  "chatUnavailable": "AI ไม่พร้อมใช้งานชั่วคราว ลองใหม่อีกครั้ง",
+  "errorHttp": "เกิดข้อผิดพลาด (HTTP {statusCode})",
+  "@errorHttp": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "chatTimeout": "AI ตอบช้าเกินไป ลองใหม่อีกครั้ง",
+  "actionLoadFavorites": "โหลดรายการโปรด",
+  "actionSaveRecipe": "บันทึกสูตรนี้",
+  "actionUnsaveRecipe": "เอาสูตรนี้ออกจากรายการโปรด",
+  "favoriteSignInRequired": "กรุณาเข้าสู่ระบบเพื่อบันทึกสูตร",
+  "createRecipeFailed": "สร้างสูตรอาหารไม่สำเร็จ",
+  "updateRecipeFailed": "แก้ไขสูตรอาหารไม่สำเร็จ",
+  "loadRecipesFailed": "โหลดสูตรอาหารไม่สำเร็จ",
+  "recipeNotFoundShort": "ไม่พบเมนูนี้",
+  "loadRecipeFailed": "โหลดสูตรอาหารไม่สำเร็จ",
+  "searchRecipesFailed": "ค้นหาสูตรอาหารไม่สำเร็จ",
+  "deleteRecipeFailed": "ลบสูตรอาหารไม่สำเร็จ",
+  "actionLoadProfile": "โหลดโปรไฟล์",
+  "actionSaveProfile": "บันทึกโปรไฟล์",
+  "signInRequired": "กรุณาเข้าสู่ระบบ",
+  "signInBeforeCheckout": "กรุณาเข้าสู่ระบบก่อนชำระเงิน",
+  "mockPaymentFailedHttp": "ชำระเงินจำลองไม่สำเร็จ (HTTP {statusCode})",
+  "@mockPaymentFailedHttp": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "purchaseInvalidResult": "ผลการชำระเงินจากเซิร์ฟเวอร์ไม่ถูกต้อง",
+  "purchaseTimeout": "หมดเวลารอการยืนยันการชำระเงิน",
+  "actionLoadComments": "โหลดความคิดเห็น",
+  "actionCheckCommentPermission": "ตรวจสอบสิทธิ์แสดงความคิดเห็น",
+  "actionSaveComment": "บันทึกความคิดเห็น",
+  "actionUpdateComment": "แก้ไขความคิดเห็น",
+  "actionDeleteComment": "ลบความคิดเห็น",
+  "editOwnCommentOnly": "แก้ไขได้เฉพาะความคิดเห็นของตัวเอง",
+  "deleteOwnCommentOnly": "ลบได้เฉพาะความคิดเห็นของตัวเอง",
+  "commentSignInRequired": "กรุณาเข้าสู่ระบบเพื่อแสดงความคิดเห็น",
+  "errorNoPermission": "คุณไม่มีสิทธิ์{action}",
+  "@errorNoPermission": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "actionLoadCollection": "โหลด{collection}",
+  "@actionLoadCollection": {
+    "placeholders": {
+      "collection": {
+        "type": "String"
+      }
+    }
+  },
+  "librarySignInRequired": "กรุณาเข้าสู่ระบบเพื่อดูสูตรของคุณ",
+  "actionLoadReviews": "โหลดรีวิว",
+  "actionLoadYourReview": "โหลดรีวิวของคุณ",
+  "actionSaveYourReview": "บันทึกรีวิวของคุณ",
+  "reviewSignInRequired": "กรุณาเข้าสู่ระบบเพื่อรีวิวสูตร",
+  "buyToRate": "ต้องซื้อสูตรนี้ก่อนจึงจะให้คะแนนได้",
+  "uploadSignInRequired": "กรุณาเข้าสู่ระบบก่อนอัปโหลด",
+  "uploadPrepareFailed": "เตรียมการอัปโหลดไม่สำเร็จ",
+  "uploadFailedHttp": "อัปโหลดไฟล์ไม่สำเร็จ (HTTP {statusCode})",
+  "@uploadFailedHttp": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadVerifyFailed": "ตรวจสอบไฟล์ที่อัปโหลดไม่สำเร็จ",
+  "commentEmpty": "ความคิดเห็นต้องไม่ว่าง",
+  "signInAgain": "กรุณาเข้าสู่ระบบอีกครั้ง",
+  "roleCreator": "ผู้สร้างสูตร",
+  "roleAdmin": "ผู้ดูแลระบบ",
+  "roleFoodLover": "คนรักอาหาร",
+  "faqCreateTitle": "สร้างสูตรอาหารยังไง",
+  "faqCreateBody": "กดปุ่ม + ได้ 2 ที่\n• หน้าคอมมูนิตี้: สร้างสูตรแจกฟรีให้ทุกคนดู\n• โปรไฟล์ → สูตรของฉัน: สร้างสูตรแบบ Official ตั้งราคาขายได้\nกรอกชื่อ รูปปก รายละเอียด หมวดหมู่ และขั้นตอน แล้วกด \"เผยแพร่สูตรอาหาร\"",
+  "faqDraftTitle": "ยังเขียนสูตรไม่เสร็จ เก็บไว้ก่อนได้ไหม",
+  "faqDraftBody": "ได้ กดย้อนกลับระหว่างสร้างสูตรแล้วเลือก \"บันทึกฉบับร่าง\" สูตรจะอยู่ใน โปรไฟล์ → ฉบับร่าง กลับมาเขียนต่อหรือเผยแพร่ทีหลังได้",
+  "faqEditTitle": "แก้ไขหรือลบสูตรของฉัน",
+  "faqEditBody": "เปิดสูตรแล้วกดปุ่ม ⋮ มุมขวาบน เลือก \"แก้ไข\" หรือ \"ลบสูตรอาหาร\"\nสูตร Official ที่เผยแพร่แล้วแก้ไขไม่ได้ (ลบได้)",
+  "faqBuyTitle": "ซื้อสูตรยังไง",
+  "faqBuyBody": "เปิดสูตรแล้วกด \"ซื้อเลย\" เพื่อใส่ตะกร้า จากนั้นเข้าตะกร้าแล้วกดชำระเงิน สูตรที่ซื้อแล้วดูได้ที่ โปรไฟล์ → ซื้อแล้ว",
+  "faqAiTitle": "ถาม AI เกี่ยวกับสูตรได้ยังไง",
+  "faqAiBody": "ปุ่ม \"ถาม AI เกี่ยวกับสูตรนี้\" จะขึ้นในสูตรที่คุณซื้อแล้วหรือเป็นเจ้าของ พิมพ์คำถามหรือแนบรูปอาหารได้ คำตอบจาก AI อาจไม่ถูกต้องทุกครั้ง โปรดใช้วิจารณญาณ โดยเฉพาะเรื่องการแพ้อาหาร",
+  "faqRateTitle": "ให้คะแนนและรีวิวสูตร",
+  "faqRateBody": "ให้คะแนนได้เฉพาะสูตรที่ซื้อแล้ว กด \"ให้คะแนน\" ในหน้าสูตร แก้คะแนนทีหลังได้ ส่วนสูตรในคอมมูนิตี้แสดงความคิดเห็นได้เลย",
+  "faqProfileTitle": "เปลี่ยนรูปโปรไฟล์หรือชื่อ",
+  "faqProfileBody": "โปรไฟล์ → แก้ไขโปรไฟล์ เปลี่ยนรูปและชื่อที่แสดงได้ อีเมลใช้เข้าสู่ระบบจึงเปลี่ยนไม่ได้",
+  "faqForgotTitle": "ลืมรหัสผ่าน",
+  "faqForgotBody": "ตอนนี้ยังไม่มีระบบรีเซ็ตรหัสผ่านผ่านอีเมล ถ้ายังเข้าสู่ระบบอยู่ เปลี่ยนรหัสได้ที่ ตั้งค่า → เปลี่ยนรหัสผ่าน ถ้าเข้าไม่ได้แล้วโปรดติดต่อทีมงาน",
+  "faqLostTitle": "มือถือหาย หรือสงสัยว่ามีคนใช้บัญชีของฉัน",
+  "faqLostBody": "ตั้งค่า → ออกจากระบบทุกอุปกรณ์ แล้วเปลี่ยนรหัสผ่าน ทุกเครื่องที่เข้าสู่ระบบอยู่จะหลุดออกทันที",
+  "privacyCollectTitle": "ข้อมูลที่เราเก็บ",
+  "privacyCollectBody": "• ข้อมูลบัญชี: อีเมล ชื่อที่แสดง รูปโปรไฟล์ และรหัสผ่าน (เก็บแบบเข้ารหัสทางเดียว ทีมงานอ่านรหัสผ่านของคุณไม่ได้)\n• เนื้อหาที่คุณสร้าง: สูตรอาหาร รูปภาพ วิดีโอ คอมเมนต์ และรีวิว\n• การใช้งานในแอป: รายการโปรด ตะกร้า และประวัติการซื้อสูตร",
+  "privacyVisibleTitle": "ข้อมูลที่คนอื่นมองเห็น",
+  "privacyVisibleBody": "ชื่อที่แสดง รูปโปรไฟล์ สูตรที่เผยแพร่ คอมเมนต์ และรีวิวของคุณ ผู้ใช้คนอื่นมองเห็นได้ ส่วนอีเมล รายการโปรด ตะกร้า และประวัติการซื้อ เห็นได้เฉพาะคุณ",
+  "privacyAiTitle": "แชทถาม AI",
+  "privacyAiBody": "คำถามและรูปที่คุณส่งในแชท AI จะถูกส่งไปยังผู้ให้บริการ AI ภายนอกเพื่อสร้างคำตอบ บทสนทนาถูกจำไว้ชั่วคราวและถูกลืมเมื่อไม่มีการใช้งานประมาณ 20 นาที เราไม่เก็บรูปที่ส่งในแชท",
+  "privacyDeviceTitle": "ข้อมูลบนเครื่องของคุณ",
+  "privacyDeviceBody": "แอปเก็บข้อมูลเข้าสู่ระบบไว้ในพื้นที่ปลอดภัยของเครื่อง และเก็บรูปภาพที่เคยโหลดไว้ในเครื่องเพื่อให้เปิดได้เร็วขึ้น ข้อมูลเข้าสู่ระบบถูกลบเมื่อคุณออกจากระบบ",
+  "privacyDeleteTitle": "การลบข้อมูล",
+  "privacyDeleteBody": "ลบบัญชีได้ที่ ตั้งค่า → ลบบัญชี อีเมล ชื่อ รูปโปรไฟล์ รายการโปรด และตะกร้าจะถูกลบ สูตรของคุณจะไม่แสดงอีก ยกเว้นผู้ที่ซื้อไปแล้ว คอมเมนต์และรีวิวยังอยู่โดยแสดงเป็น \"ผู้ใช้ที่ลบบัญชีแล้ว\"",
+  "privacyContactTitle": "ติดต่อเรา",
+  "privacyContactBody": "มีคำถามเรื่องข้อมูลส่วนตัว ติดต่อทีมงานได้ที่หน้าช่วยเหลือและติดต่อ",
+  "termsAccountTitle": "บัญชีผู้ใช้",
+  "termsAccountBody": "คุณต้องรับผิดชอบการรักษารหัสผ่านและการใช้งานทั้งหมดที่เกิดจากบัญชีของคุณ ถ้าสงสัยว่ามีผู้อื่นใช้บัญชี ให้ออกจากระบบทุกอุปกรณ์และเปลี่ยนรหัสผ่านทันที",
+  "termsContentTitle": "เนื้อหาที่คุณโพสต์",
+  "termsContentBody": "สูตร รูป วิดีโอ คอมเมนต์ และรีวิวที่คุณโพสต์ต้องเป็นของคุณหรือคุณมีสิทธิ์เผยแพร่ ห้ามโพสต์เนื้อหาที่ผิดกฎหมาย ละเมิดลิขสิทธิ์ หรือทำร้ายผู้อื่น ทีมงานอาจลบเนื้อหาหรือระงับบัญชีที่ฝ่าฝืน",
+  "termsPurchaseTitle": "การซื้อสูตร",
+  "termsPurchaseBody": "สูตรที่ซื้อแล้วเปิดดูได้ในแอปเพื่อใช้ส่วนตัว ห้ามคัดลอกหรือนำไปเผยแพร่ต่อโดยไม่ได้รับอนุญาตจากผู้สร้างสูตร",
+  "termsAiTitle": "คำตอบจาก AI",
+  "termsAiBody": "คำแนะนำจาก AI ใช้ประกอบการทำอาหารเท่านั้น อาจไม่ถูกต้องหรือไม่ครบถ้วน โปรดตรวจสอบเองก่อนใช้ โดยเฉพาะเรื่องการแพ้อาหารและความปลอดภัยของอาหาร",
+  "termsCloseTitle": "การปิดบัญชี",
+  "termsCloseBody": "คุณลบบัญชีได้ทุกเมื่อที่ ตั้งค่า → ลบบัญชี",
+  "termsChangesTitle": "การเปลี่ยนแปลงข้อกำหนด",
+  "termsChangesBody": "ข้อกำหนดนี้อาจมีการปรับปรุง การใช้งานแอปต่อหลังมีการเปลี่ยนแปลง ถือว่าคุณยอมรับข้อกำหนดฉบับใหม่",
+  "settingsGeneral": "ทั่วไป",
+  "language": "ภาษา",
+  "chooseLanguage": "เลือกภาษา"
+}

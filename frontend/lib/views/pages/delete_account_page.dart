@@ -6,6 +6,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ลบบัญชี: อธิบายผลที่จะเกิด + ยืนยันรหัสผ่าน + ติ๊กยอมรับ
 class DeleteAccountPage extends StatefulWidget {
@@ -41,9 +42,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
     try {
       final token = await TokenStorage().readAccessToken();
       if (token == null || token.trim().isEmpty) {
-        throw const AuthRepositoryException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw AuthRepositoryException(appL10n.sessionExpired);
       }
       await _repository.deleteAccount(
         accessToken: token,
@@ -64,7 +63,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       canPop: !_isDeleting,
       child: Scaffold(
         backgroundColor: ProfileColors.background,
-        appBar: RecipeFormStyle.appBar(title: 'ลบบัญชี'),
+        appBar: RecipeFormStyle.appBar(title: context.l10n.deleteAccount),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: FilledButton.icon(
@@ -86,7 +85,11 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                     ),
                   )
                 : const Icon(Icons.delete_forever_rounded),
-            label: Text(_isDeleting ? 'กำลังลบบัญชี...' : 'ลบบัญชีถาวร'),
+            label: Text(
+              _isDeleting
+                  ? context.l10n.deletingAccount
+                  : context.l10n.deleteAccountPermanently,
+            ),
           ),
         ),
         body: Form(
@@ -100,7 +103,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                   color: _danger.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -108,7 +111,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                         Icon(Icons.warning_amber_rounded, color: _danger),
                         SizedBox(width: 8),
                         Text(
-                          'ลบแล้วกู้คืนไม่ได้',
+                          context.l10n.deleteIrreversible,
                           style: TextStyle(
                             color: _danger,
                             fontSize: 16,
@@ -118,22 +121,11 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                       ],
                     ),
                     SizedBox(height: 12),
-                    _Bullet(
-                      'ออกจากระบบทุกอุปกรณ์ และเข้าสู่ระบบด้วยบัญชีนี้ไม่ได้อีก',
-                    ),
-                    _Bullet(
-                      'ชื่อ รูปโปรไฟล์ และอีเมลถูกลบ '
-                      'กลับมาสมัครใหม่ด้วยอีเมลเดิมได้ แต่จะเป็นบัญชีใหม่',
-                    ),
-                    _Bullet(
-                      'สูตรที่คุณสร้างจะไม่แสดงให้ใครเห็นอีก '
-                      'ยกเว้นคนที่ซื้อไปแล้วยังเปิดดูได้',
-                    ),
-                    _Bullet('รายการโปรด ตะกร้า และสูตรที่คุณซื้อไว้จะหายไป'),
-                    _Bullet(
-                      'คอมเมนต์และรีวิวยังอยู่ แต่จะแสดงเป็น '
-                      '"ผู้ใช้ที่ลบบัญชีแล้ว"',
-                    ),
+                    _Bullet(context.l10n.deleteBulletSignOut),
+                    _Bullet(context.l10n.deleteBulletPersonalData),
+                    _Bullet(context.l10n.deleteBulletRecipes),
+                    _Bullet(context.l10n.deleteBulletLibrary),
+                    _Bullet(context.l10n.deleteBulletComments),
                   ],
                 ),
               ),
@@ -150,7 +142,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                       enableSuggestions: false,
                       decoration:
                           RecipeFormStyle.input(
-                            label: 'ยืนยันด้วยรหัสผ่าน',
+                            label: context.l10n.confirmWithPassword,
                             prefixIcon: const Icon(
                               Icons.lock_outline_rounded,
                               color: RecipeFormStyle.muted,
@@ -161,8 +153,8 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                                 () => _showPassword = !_showPassword,
                               ),
                               tooltip: _showPassword
-                                  ? 'ซ่อนรหัสผ่าน'
-                                  : 'แสดงรหัสผ่าน',
+                                  ? context.l10n.hidePassword
+                                  : context.l10n.showPassword,
                               color: RecipeFormStyle.muted,
                               icon: Icon(
                                 _showPassword
@@ -172,7 +164,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                             ),
                           ),
                       validator: (value) => (value == null || value.isEmpty)
-                          ? 'กรอกรหัสผ่าน'
+                          ? context.l10n.passwordEnter
                           : null,
                     ),
                     const SizedBox(height: 8),
@@ -185,9 +177,9 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                       activeColor: _danger,
                       contentPadding: EdgeInsets.zero,
                       controlAffinity: ListTileControlAffinity.leading,
-                      title: const Text(
-                        'ฉันเข้าใจว่าการลบบัญชีกู้คืนไม่ได้',
-                        style: TextStyle(
+                      title: Text(
+                        context.l10n.deleteUnderstand,
+                        style: const TextStyle(
                           color: ProfileColors.ink,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

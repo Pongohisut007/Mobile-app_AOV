@@ -5,6 +5,7 @@ import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:flutter_application_1/models/purchase_result.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// Boundary between the cart UI and a billing provider.
 /// Replace HttpMockPurchaseRepository with GooglePlayPurchaseRepository later.
@@ -31,7 +32,7 @@ class HttpMockPurchaseRepository implements PurchaseRepository {
   Future<PurchaseResult> purchase(CartItem item) async {
     final accessToken = await _tokenStorage.readAccessToken();
     if (accessToken == null || accessToken.trim().isEmpty) {
-      throw const PurchaseException('กรุณาเข้าสู่ระบบก่อนชำระเงิน');
+      throw PurchaseException(appL10n.signInBeforeCheckout);
     }
 
     try {
@@ -47,26 +48,26 @@ class HttpMockPurchaseRepository implements PurchaseRepository {
           .timeout(requestTimeout);
 
       if (response.statusCode == 401) {
-        throw const PurchaseException('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง');
+        throw PurchaseException(appL10n.sessionExpired);
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = _errorMessage(response.bodyBytes);
         throw PurchaseException(
-          message ?? 'ชำระเงินจำลองไม่สำเร็จ (HTTP ${response.statusCode})',
+          message ?? appL10n.mockPaymentFailedHttp(response.statusCode),
         );
       }
 
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is! Map<String, dynamic>) {
-        throw const PurchaseException('Backend ส่งผลการชำระเงินไม่ถูกต้อง');
+        throw PurchaseException(appL10n.purchaseInvalidResult);
       }
       return PurchaseResult.fromJson(decoded);
     } on TimeoutException {
-      throw const PurchaseException('หมดเวลารอการยืนยันการชำระเงิน');
+      throw PurchaseException(appL10n.purchaseTimeout);
     } on FormatException {
-      throw const PurchaseException('Backend ส่งข้อมูลการชำระเงินไม่ถูกต้อง');
+      throw PurchaseException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw PurchaseException('เชื่อมต่อ Backend ไม่ได้: ${error.message}');
+      throw PurchaseException(appL10n.errorConnection(error.message));
     }
   }
 
