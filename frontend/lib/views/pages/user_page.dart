@@ -24,10 +24,13 @@ class UserPage extends StatelessWidget {
     await completed;
   }
 
-  void _openSettings(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
+  // ยังไม่เข้าสู่ระบบก็เปิดได้ (เปลี่ยนภาษา/ดูนโยบาย) แต่ซ่อนเมนูที่ต้องมีบัญชี
+  void _openSettings(BuildContext context, {bool isSignedIn = true}) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsPage(isSignedIn: isSignedIn),
+      ),
+    );
   }
 
   void _openCart(BuildContext context) {
@@ -93,7 +96,7 @@ class UserPage extends StatelessWidget {
                 onEditProfile: () =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onSettingsPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.login),
+                    _openSettings(context, isSignedIn: false),
                 onRecipeCollectionPressed: (_) =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onCartPressed: () =>

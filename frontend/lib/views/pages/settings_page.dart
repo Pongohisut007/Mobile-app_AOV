@@ -6,6 +6,7 @@ import 'package:flutter_application_1/content/app_texts.dart';
 import 'package:flutter_application_1/data/session.dart';
 import 'package:flutter_application_1/repositories/auth_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/change_password_page.dart';
 import 'package:flutter_application_1/views/pages/delete_account_page.dart';
 import 'package:flutter_application_1/views/pages/text_sections_page.dart';
@@ -14,10 +15,13 @@ import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 
-/// ตั้งค่า: บัญชี / ความช่วยเหลือ / เกี่ยวกับแอป / ออกจากระบบ / ลบบัญชี
+/// ตั้งค่า: ภาษา / บัญชี / ความช่วยเหลือ / เกี่ยวกับแอป / ออกจากระบบ / ลบบัญชี
 /// (ปุ่ม Sign out มีที่นี่ที่เดียว)
+/// ยังไม่เข้าสู่ระบบก็เปิดได้ แต่ซ่อนเมนูที่ต้องมีบัญชี และมีปุ่มเข้าสู่ระบบแทนออกจากระบบ
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.isSignedIn = true});
+
+  final bool isSignedIn;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -176,24 +180,26 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          _SectionLabel(context.l10n.settingsAccount),
-          _SettingsGroup(
-            children: [
-              _SettingsTile(
-                icon: Icons.lock_reset_rounded,
-                label: context.l10n.changePassword,
-                onTap: _openChangePassword,
-              ),
-              _SettingsTile(
-                icon: Icons.devices_other_rounded,
-                label: context.l10n.signOutAllDevices,
-                subtitle: context.l10n.signOutAllDevicesHint,
-                isLoading: _isLoggingOutAll,
-                onTap: _logoutAllDevices,
-              ),
-            ],
-          ),
+          if (widget.isSignedIn) ...[
+            const SizedBox(height: 20),
+            _SectionLabel(context.l10n.settingsAccount),
+            _SettingsGroup(
+              children: [
+                _SettingsTile(
+                  icon: Icons.lock_reset_rounded,
+                  label: context.l10n.changePassword,
+                  onTap: _openChangePassword,
+                ),
+                _SettingsTile(
+                  icon: Icons.devices_other_rounded,
+                  label: context.l10n.signOutAllDevices,
+                  subtitle: context.l10n.signOutAllDevicesHint,
+                  isLoading: _isLoggingOutAll,
+                  onTap: _logoutAllDevices,
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           _SectionLabel(context.l10n.settingsHelpAndTerms),
           _SettingsGroup(
@@ -234,28 +240,37 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 20),
           _SettingsGroup(
             children: [
-              _SettingsTile(
-                icon: Icons.logout_rounded,
-                label: context.l10n.signOut,
-                foregroundColor: _danger,
-                showChevron: false,
-                onTap: _signOut,
-              ),
+              widget.isSignedIn
+                  ? _SettingsTile(
+                      icon: Icons.logout_rounded,
+                      label: context.l10n.signOut,
+                      foregroundColor: _danger,
+                      showChevron: false,
+                      onTap: _signOut,
+                    )
+                  : _SettingsTile(
+                      icon: Icons.login_rounded,
+                      label: context.l10n.signIn,
+                      onTap: () =>
+                          Navigator.pushNamed(context, AppRoutes.login),
+                    ),
             ],
           ),
-          const SizedBox(height: 20),
-          _SectionLabel(context.l10n.dangerZone),
-          _SettingsGroup(
-            children: [
-              _SettingsTile(
-                icon: Icons.delete_forever_outlined,
-                label: context.l10n.deleteAccount,
-                subtitle: context.l10n.deleteAccountHint,
-                foregroundColor: _danger,
-                onTap: () => _push(const DeleteAccountPage()),
-              ),
-            ],
-          ),
+          if (widget.isSignedIn) ...[
+            const SizedBox(height: 20),
+            _SectionLabel(context.l10n.dangerZone),
+            _SettingsGroup(
+              children: [
+                _SettingsTile(
+                  icon: Icons.delete_forever_outlined,
+                  label: context.l10n.deleteAccount,
+                  subtitle: context.l10n.deleteAccountHint,
+                  foregroundColor: _danger,
+                  onTap: () => _push(const DeleteAccountPage()),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
           Center(
             child: Text(
