@@ -113,12 +113,7 @@ pipeline {
         }
 
         stage('Secrets Detection') {
-            when {
-                expression {
-                    env.CI_MODE == 'FULL'
-                }
-            }
-
+            // Scan every branch/PR build, including FAST and documentation-only changes.
             steps {
                 sh '''
                     mkdir -p reports
