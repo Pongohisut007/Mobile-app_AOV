@@ -108,7 +108,7 @@ class CategoryList extends StatelessWidget {
                   final category = state.categories[index];
                   return CategoryItem(
                     icon: iconFor(category.slug),
-                    title: category.name,
+                    title: category.displayName(context),
                     categoryId: category.id,
                     isSelected: state.selectedId == category.id,
                     itemWidth: itemWidth,

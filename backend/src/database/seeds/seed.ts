@@ -4,6 +4,7 @@ import { randomBytes, scryptSync } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { Category } from '../../categories/entities/category.entity';
+import { CATEGORY_ENGLISH_NAMES } from '../migrations/1760000000003-AddNameEnToCategories';
 import { Favorite } from '../../favorites/entities/favorite.entity';
 import { Ingredient } from '../../ingredients/entities/ingredient.entity';
 import { RecipeIngredient } from '../../ingredients/entities/recipe-ingredient.entity';
@@ -94,12 +95,14 @@ async function seed(): Promise<void> {
       const categorySeeds = [
         {
           name: 'อาหารไทย',
+          nameEn: 'Thai food',
           slug: 'thai-food',
           description: 'สูตรอาหารไทย',
           sortOrder: 1,
         },
         {
           name: 'เมนูจานเดียว',
+          nameEn: 'One-dish meals',
           slug: 'single-dish',
           description: 'เมนูทำง่ายสำหรับหนึ่งมื้อ',
           sortOrder: 2,
@@ -116,6 +119,16 @@ async function seed(): Promise<void> {
           );
         }
         categories.push(category);
+      }
+
+      // หมวดที่มีอยู่แล้วแต่ยังไม่มีชื่ออังกฤษ (เพิ่มเข้า DB เองก่อนมีฟิลด์นี้) เติมให้ตาม slug
+      for (const [slug, nameEn] of Object.entries(CATEGORY_ENGLISH_NAMES)) {
+        await categoryRepository
+          .createQueryBuilder()
+          .update(Category)
+          .set({ nameEn })
+          .where('lower(slug) = :slug AND name_en IS NULL', { slug })
+          .execute();
       }
 
       const ingredientSeeds = [

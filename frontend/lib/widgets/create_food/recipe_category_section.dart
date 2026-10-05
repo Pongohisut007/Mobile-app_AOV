@@ -56,11 +56,12 @@ class RecipeCategorySection extends StatelessWidget {
                   }
 
                   return categories.where(
-                    (category) => category.name.toLowerCase().contains(query),
+                    (category) => category.matches(query),
                   );
                 },
 
-                displayStringForOption: (category) => category.name,
+                displayStringForOption: (category) =>
+                    category.displayName(context),
 
                 onSelected: onCategorySelected,
 
@@ -108,7 +109,7 @@ class RecipeCategorySection extends StatelessWidget {
                               return ListTile(
                                 dense: true,
                                 title: Text(
-                                  category.name,
+                                  category.displayName(context),
                                   style: TextStyle(
                                     color: RecipeFormStyle.ink,
                                     fontWeight: isSelected
@@ -144,7 +145,7 @@ class RecipeCategorySection extends StatelessWidget {
               children: [
                 for (final category in selected)
                   _SelectedCategoryChip(
-                    label: category.name,
+                    label: category.displayName(context),
                     onRemove: onCategoryRemoved == null
                         ? null
                         : () => onCategoryRemoved!(category),

@@ -42,7 +42,9 @@ class CartItemTile extends StatelessWidget {
                 onChanged: onSelectedChanged,
                 activeColor: ProfileColors.ink,
                 visualDensity: VisualDensity.compact,
-                semanticLabel: context.l10n.selectItemForCheckout(item.title),
+                semanticLabel: context.l10n.selectItemForCheckout(
+                  item.displayTitle(context),
+                ),
               ),
             ),
           ),
@@ -65,7 +67,7 @@ class CartItemTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title,
+                  item.displayTitle(context),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

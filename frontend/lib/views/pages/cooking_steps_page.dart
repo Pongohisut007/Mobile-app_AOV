@@ -83,7 +83,11 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(context.l10n.cookingDoneMessage(widget.food.name)),
+              Text(
+                context.l10n.cookingDoneMessage(
+                  widget.food.displayName(context),
+                ),
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -119,7 +123,7 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
           child: Column(
             children: [
               CookingStepsHeader(
-                recipeName: widget.food.name,
+                recipeName: widget.food.displayName(context),
                 currentStep: steps.isEmpty ? 0 : _currentIndex + 1,
                 totalSteps: steps.length,
                 onClose: () => Navigator.pop(context),

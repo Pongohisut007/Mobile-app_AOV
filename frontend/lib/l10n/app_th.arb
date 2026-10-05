@@ -553,8 +553,6 @@
   "thaiNameHint": "เช่น ผัดกะเพราไก่",
   "recipeNameField": "ชื่อสูตรอาหาร",
   "englishName": "ชื่อภาษาอังกฤษ",
-  "slugField": "ชื่อภาษาอังกฤษ",
-  "slugFormat": "ใช้ a-z, 0-9 และเครื่องหมาย - เท่านั้น",
   "descriptionField": "คำอธิบาย",
   "descriptionHint": "เล่าจุดเด่นหรือรสชาติของเมนูนี้",
   "categories": "หมวดหมู่",
@@ -914,5 +912,7 @@
   "termsChangesBody": "ข้อกำหนดนี้อาจมีการปรับปรุง การใช้งานแอปต่อหลังมีการเปลี่ยนแปลง ถือว่าคุณยอมรับข้อกำหนดฉบับใหม่",
   "settingsGeneral": "ทั่วไป",
   "language": "ภาษา",
-  "chooseLanguage": "เลือกภาษา"
+  "chooseLanguage": "เลือกภาษา",
+  "englishNameHint": "เช่น Spicy basil chicken",
+  "englishNameHelper": "ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ"
 }

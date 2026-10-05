@@ -299,8 +299,6 @@
   "thaiNameHint": "e.g. ผัดกะเพราไก่",
   "recipeNameField": "the recipe name",
   "englishName": "English name",
-  "slugField": "the English name",
-  "slugFormat": "Use only a-z, 0-9 and -",
   "descriptionField": "Description",
   "descriptionHint": "What makes this dish special?",
   "categories": "Categories",
@@ -515,5 +513,7 @@
   "termsChangesBody": "These terms may be updated. Continuing to use the app after a change means you accept the new terms",
   "settingsGeneral": "General",
   "language": "Language",
-  "chooseLanguage": "Choose language"
+  "chooseLanguage": "Choose language",
+  "englishNameHint": "e.g. Spicy basil chicken",
+  "englishNameHelper": "Optional. Shown when the app is in English"
 }

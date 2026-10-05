@@ -57,7 +57,7 @@ class _CategorySelectorState extends State<CategorySelector> {
           final category = widget.categories[index - 1];
           return _CategoryChip(
             icon: CategoryList.iconFor(category.slug),
-            label: category.name,
+            label: category.displayName(context),
             isSelected: _selectedId == category.id,
             onTap: () => _select(category.id),
           );

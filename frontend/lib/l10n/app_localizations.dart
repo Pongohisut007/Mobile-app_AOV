@@ -1892,18 +1892,6 @@ abstract class AppLocalizations {
   /// **'ชื่อภาษาอังกฤษ'**
   String get englishName;
 
-  /// No description provided for @slugField.
-  ///
-  /// In th, this message translates to:
-  /// **'ชื่อภาษาอังกฤษ'**
-  String get slugField;
-
-  /// No description provided for @slugFormat.
-  ///
-  /// In th, this message translates to:
-  /// **'ใช้ a-z, 0-9 และเครื่องหมาย - เท่านั้น'**
-  String get slugFormat;
-
   /// No description provided for @descriptionField.
   ///
   /// In th, this message translates to:
@@ -3193,6 +3181,18 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'เลือกภาษา'**
   String get chooseLanguage;
+
+  /// No description provided for @englishNameHint.
+  ///
+  /// In th, this message translates to:
+  /// **'เช่น Spicy basil chicken'**
+  String get englishNameHint;
+
+  /// No description provided for @englishNameHelper.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ'**
+  String get englishNameHelper;
 }
 
 class _AppLocalizationsDelegate

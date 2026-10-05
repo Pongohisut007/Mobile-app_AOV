@@ -44,7 +44,7 @@ class CreateFoodcardPage extends StatefulWidget {
 class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _slugController = TextEditingController();
+  final _titleEnController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController(text: '0');
   final _preparationController = TextEditingController();
@@ -85,7 +85,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     _loadIsCreator();
 
     _titleController.text = food.name;
-    _slugController.text = food.slug;
+    _titleEnController.text = food.titleEn ?? '';
     _descriptionController.text = food.description;
     _priceController.text = _formatNumber(food.price);
     _preparationController.text = food.preparationMinutes?.toString() ?? '';
@@ -126,7 +126,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   bool get _hasDraftContent {
     final sectionDraft = _sectionDraft;
     return _titleController.text.trim().isNotEmpty ||
-        _slugController.text.trim().isNotEmpty ||
+        _titleEnController.text.trim().isNotEmpty ||
         _descriptionController.text.trim().isNotEmpty ||
         _coverSelection != null ||
         _existingCoverUrl != null ||
@@ -153,7 +153,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   @override
   void dispose() {
     _titleController.dispose();
-    _slugController.dispose();
+    _titleEnController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
     _preparationController.dispose();
@@ -277,13 +277,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       }
 
       final title = _titleController.text.trim();
-      final slug = _slugController.text.trim();
-      final now = DateTime.now().microsecondsSinceEpoch;
-      final draftSlugBase = slug.isEmpty ? 'recipe' : slug;
-      final draftSlugSuffix = '-draft-$now';
-      final draftSlugMaxLength = 255 - draftSlugSuffix.length;
-      final generatedDraftSlug =
-          '${draftSlugBase.substring(0, draftSlugBase.length < draftSlugMaxLength ? draftSlugBase.length : draftSlugMaxLength)}$draftSlugSuffix';
+      final titleEn = _optionalText(_titleEnController.text);
       // community เป็นสูตรฟรี ไม่มีช่องราคา จึงส่ง 0 เสมอ
       final price = _type == 'community'
           ? 0.0
@@ -292,7 +286,8 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       final recipe = <String, dynamic>{
         if (!_isEditing) 'creatorId': creatorId,
         'title': title.isEmpty && asDraft ? appL10n.draftRecipeTitle : title,
-        'slug': slug.isEmpty && asDraft ? generatedDraftSlug : slug,
+        'titleEn': titleEn,
+        'slug': _buildSlug(titleEn, asDraft: asDraft),
         'shortDescription': _optionalText(_descriptionController.text),
         'coverImageUrl': coverUpload?.url ?? _existingCoverUrl,
         // official ไม่มี checkbox นี้ ส่ง false กันค่าเก่าค้างตอนเปลี่ยน type
@@ -546,6 +541,25 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     };
   }
 
+  /// slug ไม่ให้ผู้ใช้กรอกแล้ว สร้างจากชื่ออังกฤษ + เวลา (กันซ้ำกับสูตรอื่น)
+  /// แก้สูตรเดิมใช้ slug เดิม ยกเว้นฉบับร่างที่กำลังจะเผยแพร่ ได้ slug ใหม่ที่ไม่มีคำว่า draft
+  String _buildSlug(String? titleEn, {required bool asDraft}) {
+    final existing = widget.initialFood?.slug ?? '';
+    if (existing.isNotEmpty && (asDraft || !existing.contains('-draft-'))) {
+      return existing;
+    }
+    final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+    final suffix = asDraft ? '-draft-$stamp' : '-$stamp';
+    var base = (titleEn ?? '')
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    if (base.isEmpty) base = 'recipe';
+    final maxBase = 255 - suffix.length;
+    if (base.length > maxBase) base = base.substring(0, maxBase);
+    return '$base$suffix';
+  }
+
   String? _optionalText(String value) {
     final text = value.trim();
     return text.isEmpty ? null : text;
@@ -608,7 +622,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
             children: [
               RecipeBasicInfoSection(
                 titleController: _titleController,
-                slugController: _slugController,
+                titleEnController: _titleEnController,
                 descriptionController: _descriptionController,
                 validator: _requiredText,
               ),

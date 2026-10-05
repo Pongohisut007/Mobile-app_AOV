@@ -269,7 +269,7 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      food.name,
+                      food.displayName(context),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

@@ -995,12 +995,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get englishName => 'ชื่อภาษาอังกฤษ';
 
   @override
-  String get slugField => 'ชื่อภาษาอังกฤษ';
-
-  @override
-  String get slugFormat => 'ใช้ a-z, 0-9 และเครื่องหมาย - เท่านั้น';
-
-  @override
   String get descriptionField => 'คำอธิบาย';
 
   @override
@@ -1703,4 +1697,10 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get chooseLanguage => 'เลือกภาษา';
+
+  @override
+  String get englishNameHint => 'เช่น Spicy basil chicken';
+
+  @override
+  String get englishNameHelper => 'ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ';
 }

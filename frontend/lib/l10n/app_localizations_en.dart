@@ -1066,12 +1066,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get englishName => 'English name';
 
   @override
-  String get slugField => 'the English name';
-
-  @override
-  String get slugFormat => 'Use only a-z, 0-9 and -';
-
-  @override
   String get descriptionField => 'Description';
 
   @override
@@ -1786,4 +1780,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chooseLanguage => 'Choose language';
+
+  @override
+  String get englishNameHint => 'e.g. Spicy basil chicken';
+
+  @override
+  String get englishNameHelper => 'Optional. Shown when the app is in English';
 }

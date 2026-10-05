@@ -64,9 +64,11 @@ class RecipeLibraryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      recipe.categoryNames.isEmpty
+                      recipe.categories.isEmpty
                           ? 'RECIPE'
-                          : recipe.categoryNames.first.toUpperCase(),
+                          : recipe.categories.first
+                                .displayName(context)
+                                .toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -78,7 +80,7 @@ class RecipeLibraryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      recipe.title,
+                      recipe.displayTitle(context),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

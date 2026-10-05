@@ -9,6 +9,7 @@ import {
   IsString,
   IsUUID,
   Length,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -79,6 +80,12 @@ export class CreateRecipeDto {
   @IsString()
   @Length(1, 255)
   title!: string;
+
+  // ชื่อภาษาอังกฤษ ไม่บังคับ
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  titleEn?: string | null;
 
   @IsString()
   @Length(1, 255)

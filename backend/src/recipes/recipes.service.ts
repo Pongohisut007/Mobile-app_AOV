@@ -182,8 +182,10 @@ export class RecipesService {
       // ชื่อตรงเป๊ะมาก่อน ตามด้วยชื่อที่ขึ้นต้นด้วยคำค้นหา แล้วค่อยที่เหลือ
       .addSelect(
         `CASE
-           WHEN recipe.title ILIKE :exactTerm ESCAPE '\\' THEN 0
-           WHEN recipe.title ILIKE :prefixTerm ESCAPE '\\' THEN 1
+           WHEN recipe.title ILIKE :exactTerm ESCAPE '\\'
+             OR recipe.titleEn ILIKE :exactTerm ESCAPE '\\' THEN 0
+           WHEN recipe.title ILIKE :prefixTerm ESCAPE '\\'
+             OR recipe.titleEn ILIKE :prefixTerm ESCAPE '\\' THEN 1
            ELSE 2
          END`,
         'relevance',
@@ -239,13 +241,16 @@ export class RecipesService {
   ): void {
     if (options.search) {
       const search = `%${escapeLikeTerm(options.search)}%`;
+      // ค้นได้ทั้งชื่อไทยและชื่ออังกฤษ
+      const titleMatch =
+        "recipe.title ILIKE :search ESCAPE '\\' OR recipe.titleEn ILIKE :search ESCAPE '\\'";
       if (options.type === RecipeType.COMMUNITY) {
         query.andWhere(
-          "(recipe.title ILIKE :search ESCAPE '\\' OR recipe.shortDescription ILIKE :search ESCAPE '\\')",
+          `(${titleMatch} OR recipe.shortDescription ILIKE :search ESCAPE '\\')`,
           { search },
         );
       } else {
-        query.andWhere("recipe.title ILIKE :search ESCAPE '\\'", { search });
+        query.andWhere(`(${titleMatch})`, { search });
       }
     }
 
