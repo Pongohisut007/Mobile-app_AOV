@@ -40,9 +40,7 @@
   "signIn": "Sign in",
   "editProfile": "Edit profile",
   "yourKitchenTitle": "Your kitchen",
-  "yourKitchenSubtitle": "Everything you cook and collect",
   "appVersionFooter": "{appName} · Version {version}",
-  "profileHeaderSubtitle": "Your recipes, orders and preferences",
   "settingsTitle": "Settings",
   "cartTooltip": "Cart",
   "myRecipes": "My recipes",
@@ -520,5 +518,11 @@
   "statCommunitySaves": "Community saves",
   "statSavesReceived": "Saves",
   "statCommentsReceived": "Comments",
-  "statReviewsWritten": "Reviews written"
+  "statReviewsWritten": "Reviews written",
+  "recentPurchases": "Recently purchased",
+  "continueDraftTitle": "Pick up where you left off",
+  "continueDraftSubtitle": "{count, plural, =1{1 draft waiting} other{{count} drafts waiting}}",
+  "firstRecipeTitle": "Share your first recipe",
+  "firstRecipeSubtitleCreator": "Create an Official recipe and set your price",
+  "firstRecipeSubtitleUser": "Share a free recipe with the community"
 }

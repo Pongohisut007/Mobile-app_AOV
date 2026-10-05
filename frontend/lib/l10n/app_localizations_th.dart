@@ -151,15 +151,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get yourKitchenTitle => 'ครัวของคุณ';
 
   @override
-  String get yourKitchenSubtitle => 'ทุกเมนูที่คุณทำและสะสมไว้';
-
-  @override
   String appVersionFooter(String appName, String version) {
     return '$appName · เวอร์ชัน $version';
   }
-
-  @override
-  String get profileHeaderSubtitle => 'สูตร คำสั่งซื้อ และการตั้งค่าของคุณ';
 
   @override
   String get settingsTitle => 'ตั้งค่า';
@@ -1716,8 +1710,29 @@ class AppLocalizationsTh extends AppLocalizations {
   String get statSavesReceived => 'ถูกบันทึก';
 
   @override
-  String get statCommentsReceived => 'ความคิดเห็นที่ได้รับ';
+  String get statCommentsReceived => 'ความคิดเห็น';
 
   @override
   String get statReviewsWritten => 'รีวิวที่เขียน';
+
+  @override
+  String get recentPurchases => 'ซื้อล่าสุด';
+
+  @override
+  String get continueDraftTitle => 'เขียนต่อจากที่ค้างไว้';
+
+  @override
+  String continueDraftSubtitle(int count) {
+    return 'มีฉบับร่าง $count สูตร';
+  }
+
+  @override
+  String get firstRecipeTitle => 'แบ่งปันสูตรแรกของคุณ';
+
+  @override
+  String get firstRecipeSubtitleCreator =>
+      'สร้างสูตร Official และตั้งราคาขายได้';
+
+  @override
+  String get firstRecipeSubtitleUser => 'สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้';
 }

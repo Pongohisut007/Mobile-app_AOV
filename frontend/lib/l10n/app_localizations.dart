@@ -338,23 +338,11 @@ abstract class AppLocalizations {
   /// **'ครัวของคุณ'**
   String get yourKitchenTitle;
 
-  /// No description provided for @yourKitchenSubtitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ทุกเมนูที่คุณทำและสะสมไว้'**
-  String get yourKitchenSubtitle;
-
   /// No description provided for @appVersionFooter.
   ///
   /// In th, this message translates to:
   /// **'{appName} · เวอร์ชัน {version}'**
   String appVersionFooter(String appName, String version);
-
-  /// No description provided for @profileHeaderSubtitle.
-  ///
-  /// In th, this message translates to:
-  /// **'สูตร คำสั่งซื้อ และการตั้งค่าของคุณ'**
-  String get profileHeaderSubtitle;
 
   /// No description provided for @settingsTitle.
   ///
@@ -3215,7 +3203,7 @@ abstract class AppLocalizations {
   /// No description provided for @statCommentsReceived.
   ///
   /// In th, this message translates to:
-  /// **'ความคิดเห็นที่ได้รับ'**
+  /// **'ความคิดเห็น'**
   String get statCommentsReceived;
 
   /// No description provided for @statReviewsWritten.
@@ -3223,6 +3211,42 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'รีวิวที่เขียน'**
   String get statReviewsWritten;
+
+  /// No description provided for @recentPurchases.
+  ///
+  /// In th, this message translates to:
+  /// **'ซื้อล่าสุด'**
+  String get recentPurchases;
+
+  /// No description provided for @continueDraftTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'เขียนต่อจากที่ค้างไว้'**
+  String get continueDraftTitle;
+
+  /// No description provided for @continueDraftSubtitle.
+  ///
+  /// In th, this message translates to:
+  /// **'มีฉบับร่าง {count} สูตร'**
+  String continueDraftSubtitle(int count);
+
+  /// No description provided for @firstRecipeTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'แบ่งปันสูตรแรกของคุณ'**
+  String get firstRecipeTitle;
+
+  /// No description provided for @firstRecipeSubtitleCreator.
+  ///
+  /// In th, this message translates to:
+  /// **'สร้างสูตร Official และตั้งราคาขายได้'**
+  String get firstRecipeSubtitleCreator;
+
+  /// No description provided for @firstRecipeSubtitleUser.
+  ///
+  /// In th, this message translates to:
+  /// **'สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้'**
+  String get firstRecipeSubtitleUser;
 }
 
 class _AppLocalizationsDelegate

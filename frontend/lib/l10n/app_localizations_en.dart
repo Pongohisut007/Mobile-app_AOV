@@ -181,15 +181,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourKitchenTitle => 'Your kitchen';
 
   @override
-  String get yourKitchenSubtitle => 'Everything you cook and collect';
-
-  @override
   String appVersionFooter(String appName, String version) {
     return '$appName · Version $version';
   }
-
-  @override
-  String get profileHeaderSubtitle => 'Your recipes, orders and preferences';
 
   @override
   String get settingsTitle => 'Settings';
@@ -1809,4 +1803,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statReviewsWritten => 'Reviews written';
+
+  @override
+  String get recentPurchases => 'Recently purchased';
+
+  @override
+  String get continueDraftTitle => 'Pick up where you left off';
+
+  @override
+  String continueDraftSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count drafts waiting',
+      one: '1 draft waiting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get firstRecipeTitle => 'Share your first recipe';
+
+  @override
+  String get firstRecipeSubtitleCreator =>
+      'Create an Official recipe and set your price';
+
+  @override
+  String get firstRecipeSubtitleUser =>
+      'Share a free recipe with the community';
 }

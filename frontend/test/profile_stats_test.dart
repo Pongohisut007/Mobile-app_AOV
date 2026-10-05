@@ -62,7 +62,7 @@ void main() {
 
     expect(find.text('ถูกบันทึก'), findsOneWidget);
     expect(find.text('7'), findsOneWidget);
-    expect(find.text('ความคิดเห็นที่ได้รับ'), findsOneWidget);
+    expect(find.text('ความคิดเห็น'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
     expect(find.text('รีวิวที่เขียน'), findsOneWidget);
     expect(find.text('5'), findsOneWidget);

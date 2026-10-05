@@ -117,7 +117,6 @@
   "signIn": "เข้าสู่ระบบ",
   "editProfile": "แก้ไขโปรไฟล์",
   "yourKitchenTitle": "ครัวของคุณ",
-  "yourKitchenSubtitle": "ทุกเมนูที่คุณทำและสะสมไว้",
   "appVersionFooter": "{appName} · เวอร์ชัน {version}",
   "@appVersionFooter": {
     "placeholders": {
@@ -129,7 +128,6 @@
       }
     }
   },
-  "profileHeaderSubtitle": "สูตร คำสั่งซื้อ และการตั้งค่าของคุณ",
   "settingsTitle": "ตั้งค่า",
   "cartTooltip": "ตะกร้า",
   "myRecipes": "สูตรของฉัน",
@@ -926,5 +924,18 @@
   "statCommunitySaves": "บันทึกสูตรคอมมูนิตี้",
   "statSavesReceived": "ถูกบันทึก",
   "statCommentsReceived": "ความคิดเห็น",
-  "statReviewsWritten": "รีวิวที่เขียน"
+  "statReviewsWritten": "รีวิวที่เขียน",
+  "recentPurchases": "ซื้อล่าสุด",
+  "continueDraftTitle": "เขียนต่อจากที่ค้างไว้",
+  "continueDraftSubtitle": "มีฉบับร่าง {count} สูตร",
+  "@continueDraftSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "firstRecipeTitle": "แบ่งปันสูตรแรกของคุณ",
+  "firstRecipeSubtitleCreator": "สร้างสูตร Official และตั้งราคาขายได้",
+  "firstRecipeSubtitleUser": "สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้"
 }
