@@ -16,7 +16,6 @@ JENKINS_BASE_IMAGE="${JENKINS_BASE_IMAGE:-jenkins/inbound-agent:latest-jdk21}"
 FLUTTER_BASE_IMAGE="${FLUTTER_BASE_IMAGE:-ghcr.io/cirruslabs/flutter:stable}"
 
 DIND_IMAGE="${DIND_IMAGE:-docker:28.5.2-dind}"
-PLAYWRIGHT_IMAGE="${PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.63.0-noble}"
 
 
 # ============================================================
@@ -63,7 +62,6 @@ show_image() {
 JENKINS_DIGEST="$(get_digest "$JENKINS_BASE_IMAGE")"
 FLUTTER_DIGEST="$(get_digest "$FLUTTER_BASE_IMAGE")"
 DIND_DIGEST="$(get_digest "$DIND_IMAGE")"
-PLAYWRIGHT_DIGEST="$(get_digest "$PLAYWRIGHT_IMAGE")"
 
 
 # ============================================================
@@ -90,11 +88,6 @@ show_image \
     "$DIND_IMAGE" \
     "$DIND_DIGEST"
 
-show_image \
-    "Playwright" \
-    "$PLAYWRIGHT_IMAGE" \
-    "$PLAYWRIGHT_DIGEST"
-
 echo
 echo "============================================================"
 echo "ENV VALUES"
@@ -103,7 +96,6 @@ echo "============================================================"
 echo "JENKINS_BASE_DIGEST=$JENKINS_DIGEST"
 echo "FLUTTER_BASE_DIGEST=$FLUTTER_DIGEST"
 echo "DIND_DIGEST=$DIND_DIGEST"
-echo "PLAYWRIGHT_DIGEST=$PLAYWRIGHT_DIGEST"
 
 update_env() {
     local key="$1"
@@ -119,4 +111,3 @@ update_env() {
 update_env JENKINS_BASE_DIGEST "$JENKINS_DIGEST"
 update_env FLUTTER_BASE_DIGEST "$FLUTTER_DIGEST"
 update_env DIND_DIGEST "$DIND_DIGEST"
-update_env PLAYWRIGHT_DIGEST "$PLAYWRIGHT_DIGEST"

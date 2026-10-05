@@ -10,7 +10,7 @@ pipeline {
         APP_NAME = 'taskflow-api'
         NODE_ENV = 'test'
 
-        GITOPS_REPO   = 'https://github.com/Alivefordie/Mobile-app_AOV-Gitops.git'
+        GITOPS_REPO   = 'https://github.com/aovPro/Mobile-app_AOV-Gitops.git'
         GITOPS_BRANCH = 'main'
         GITOPS_DIR    = 'gitops'
 
@@ -70,7 +70,7 @@ pipeline {
                         }
                     }
                     def pipelineChanged = changedPaths.any {
-                        it == 'Jenkinsfile' || it == 'Makefile' ||
+                        it == 'Makefile' ||
                         it == '.gitleaks.toml' || it.startsWith('ci/') ||
                         it.startsWith('policy/')
                     }
@@ -106,12 +106,7 @@ pipeline {
         }
 
         stage('Secrets Detection') {
-            when {
-                expression {
-                    env.CI_MODE == 'FULL' && env.BACKEND_CHANGED == 'true'
-                }
-            }
-
+            // Scan every branch/PR build, including FAST and documentation-only changes.
             steps {
                 sh '''
                     mkdir -p reports
@@ -439,22 +434,25 @@ pipeline {
 
             steps {
                 script {
-                    def backendCommit = sh(
+                    def buildCommit = sh(
                         script: '''
-                            git log -1 --format=%H -- backend/
+                            git rev-parse HEAD
                         ''',
                         returnStdout: true
                     ).trim()
 
-                    env.IMAGE_TAG =
-                        backendCommit.take(7)
+                    if (!(buildCommit ==~ /[0-9a-fA-F]{40,64}/)) {
+                        error 'Cannot resolve a valid source commit for the image tag.'
+                    }
+                    // Include CI/build configuration changes and avoid short-SHA collisions.
+                    env.IMAGE_TAG = buildCommit
 
                     env.IMAGE_NAME =
                         "registry:5000/taskflow-api:${env.IMAGE_TAG}"
 
                     echo """
                     Current commit : ${env.GIT_COMMIT.take(7)}
-                    Backend commit : ${env.IMAGE_TAG}
+                    Build commit   : ${env.IMAGE_TAG}
                     Image          : ${env.IMAGE_NAME}
                     """.stripIndent()
                 }

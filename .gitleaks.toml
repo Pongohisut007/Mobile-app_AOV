@@ -1,8 +1,15 @@
 [extend]
 useDefault = true
 
-[[allowlists]]
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
 description = "Ignore known non-secret token example in backend README"
+condition = "AND"
 paths = [
-  '''backend/README\.md'''
+  '''^backend/README\.md$'''
+]
+regexes = [
+  '''^abc123def456$'''
 ]

@@ -62,7 +62,7 @@ pipeline {
                         }
                     }
                     def pipelineChanged = changedPaths.any {
-                        it == 'Jenkinsfile' || it == 'Makefile' ||
+                        it == 'Makefile' ||
                         it == '.gitleaks.toml' || it.startsWith('ci/') ||
                         it.startsWith('policy/')
                     }
@@ -95,12 +95,7 @@ pipeline {
         }
 
         stage('Secrets Detection') {
-            when {
-                expression {
-                    env.CI_MODE == 'FULL' && env.FRONTEND_CHANGED == 'true'
-                }
-            }
-
+            // Scan every branch/PR build, including FAST and documentation-only changes.
             steps {
                 sh '''
                     mkdir -p reports
