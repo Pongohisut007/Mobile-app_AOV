@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/recipe_review.dart';
 import 'package:flutter_application_1/repositories/recipe_review_repository.dart';
@@ -25,7 +26,8 @@ class RecipeReviewsPage extends StatefulWidget {
   State<RecipeReviewsPage> createState() => _RecipeReviewsPageState();
 }
 
-class _RecipeReviewsPageState extends State<RecipeReviewsPage> {
+class _RecipeReviewsPageState extends State<RecipeReviewsPage>
+    with RouteTransitionAware {
   static const _pageSize = 20;
 
   late final RecipeReviewRepository _repository =
@@ -53,7 +55,10 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage> {
   // โหลดไม่ได้ก็ใช้ค่าเดิมต่อ ไม่ต้องขึ้น error
   Future<void> _loadSummary() async {
     try {
-      final summary = await _repository.fetchSummary(widget.recipeId);
+      // ผลมาก่อนเลื่อนหน้าเสร็จ = รอให้เสร็จก่อนค่อยวาด (หลังจากนั้นไม่ต้องรอ)
+      final summary = await afterRouteTransition(
+        _repository.fetchSummary(widget.recipeId),
+      );
       if (!mounted) return;
       setState(() => _summary = summary);
     } on Exception catch (_) {
@@ -70,10 +75,12 @@ class _RecipeReviewsPageState extends State<RecipeReviewsPage> {
     });
 
     try {
-      final result = await _repository.fetchReviewPage(
-        widget.recipeId,
-        page: _page + 1,
-        limit: _pageSize,
+      final result = await afterRouteTransition(
+        _repository.fetchReviewPage(
+          widget.recipeId,
+          page: _page + 1,
+          limit: _pageSize,
+        ),
       );
       if (!mounted || generation != _generation) return;
       setState(() {

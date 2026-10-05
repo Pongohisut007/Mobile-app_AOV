@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
 import 'package:flutter_application_1/bloc/category/category_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_bloc.dart';
 import 'package:flutter_application_1/bloc/food/food_event.dart';
@@ -38,7 +39,8 @@ class _RecommendedView extends StatefulWidget {
   State<_RecommendedView> createState() => _RecommendedViewState();
 }
 
-class _RecommendedViewState extends State<_RecommendedView> {
+class _RecommendedViewState extends State<_RecommendedView>
+    with RouteTransitionAware {
   late String _query = widget.initialQuery.trim();
 
   final _scrollController = ScrollController();
@@ -135,7 +137,11 @@ class _RecommendedViewState extends State<_RecommendedView> {
                   // แถบหมวดเผื่อที่ให้เงาไว้ข้างล่างแล้ว 12
                   const SizedBox(height: 13),
 
-                  const FoodGridSection(),
+                  // grid การ์ดหลายใบ build หนัก รอเลื่อนหน้าเสร็จก่อน (ระหว่างนี้รายการก็ยังโหลดอยู่)
+                  if (isRouteTransitionDone)
+                    const FoodGridSection()
+                  else
+                    const Center(child: CircularProgressIndicator()),
                 ],
               ),
             ),

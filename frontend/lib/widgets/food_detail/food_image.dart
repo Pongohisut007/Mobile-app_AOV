@@ -25,6 +25,7 @@ class FoodImage extends StatelessWidget {
     return RecipeHero(
       recipeId: heroTag,
       imageUrl: imageUrl,
+      borderRadius: RecipeHero.headerRadius,
       child: ClipRRect(
         borderRadius: RecipeHero.headerRadius,
         child: SizedBox(

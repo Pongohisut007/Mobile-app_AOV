@@ -49,6 +49,7 @@ class FoodCard extends StatelessWidget {
                       RecipeHero(
                         recipeId: food.idfoods,
                         imageUrl: food.filePathImage,
+                        borderRadius: RecipeHero.cardRadius,
                         child: AppNetworkImage(
                           food.filePathImage,
                           placeholder: const ColoredBox(

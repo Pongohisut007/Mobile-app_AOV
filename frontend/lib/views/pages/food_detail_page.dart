@@ -24,6 +24,7 @@ import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
+import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_button.dart';
@@ -54,7 +55,8 @@ class FoodDetailPage extends StatefulWidget {
   State<FoodDetailPage> createState() => _FoodDetailPageState();
 }
 
-class _FoodDetailPageState extends State<FoodDetailPage> {
+class _FoodDetailPageState extends State<FoodDetailPage>
+    with RouteTransitionAware {
   final GlobalKey _commentsTitleKey = GlobalKey();
 
   // จุดเริ่มกับปลายทางของรูปที่ลอยลงตะกร้า
@@ -90,7 +92,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       _foodFuture = Future.value(cached);
       _refresh(silent: true);
     } else {
-      _foodFuture = FoodRepository().fetchFoodById(widget.foodsId);
+      // ยิง API ทันที แต่เอาเนื้อหาขึ้นจอหลังเลื่อนหน้าเสร็จ ไม่ให้ build ก้อนใหญ่ระหว่างแอนิเมชัน
+      _foodFuture = afterRouteTransition(
+        FoodRepository().fetchFoodById(widget.foodsId),
+      );
     }
     _loadLoginState();
   }
@@ -114,7 +119,9 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   // silent = อัปเดตเบื้องหลังตอนเปิดหน้าจาก RAM: ไม่โหลดรีวิว/คอมเมนต์ซ้ำ และไม่เด้ง error
   Future<void> _refresh({bool silent = false}) async {
     try {
-      final food = await FoodRepository().fetchFoodById(widget.foodsId);
+      final food = await afterRouteTransition(
+        FoodRepository().fetchFoodById(widget.foodsId),
+      );
       if (!mounted) return;
       setState(() {
         _foodFuture = Future.value(food);
@@ -323,7 +330,13 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                     const SizedBox(height: 28),
 
-                    if (widget.showComments ||
+                    // เปิดจาก RAM เนื้อหาขึ้นตั้งแต่เฟรมแรก รอเลื่อนหน้าเสร็จก่อนค่อยโหลด/วาดรีวิวกับคอมเมนต์
+                    if (!isRouteTransitionDone)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (widget.showComments ||
                         widget.scrollToComments ||
                         _isCommunity(food))
                       BlocProvider(

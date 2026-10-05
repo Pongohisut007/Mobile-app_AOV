@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
@@ -19,7 +20,8 @@ class RecipeVideoPlayer extends StatefulWidget {
   State<RecipeVideoPlayer> createState() => _RecipeVideoPlayerState();
 }
 
-class _RecipeVideoPlayerState extends State<RecipeVideoPlayer> {
+class _RecipeVideoPlayerState extends State<RecipeVideoPlayer>
+    with RouteTransitionAware {
   VideoPlayerController? _controller;
   Object? _error;
   int _loadGeneration = 0;
@@ -27,7 +29,12 @@ class _RecipeVideoPlayerState extends State<RecipeVideoPlayer> {
   @override
   void initState() {
     super.initState();
-    unawaited(_loadVideo());
+    // เตรียมวิดีโอ (ถอดรหัส/ต่อ native player) หนักเครื่อง รอเลื่อนหน้าเสร็จก่อน
+    unawaited(
+      routeTransitionDone.then((_) {
+        if (mounted) return _loadVideo();
+      }),
+    );
   }
 
   @override

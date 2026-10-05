@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
@@ -52,6 +53,13 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
           snackBarTheme: appSnackBarTheme,
+          // เปลี่ยนหน้าแบบ iOS ทุกแพลตฟอร์ม: เลื่อนเข้าจากขวา ปัดขอบซ้ายเพื่อย้อนกลับได้
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              for (final platform in TargetPlatform.values)
+                platform: const CupertinoPageTransitionsBuilder(),
+            },
+          ),
         ),
         initialRoute: AppRoutes.home,
         onGenerateRoute: (settings) => RoutesGenerator.generateRoute(settings),
