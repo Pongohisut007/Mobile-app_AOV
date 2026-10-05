@@ -14,6 +14,7 @@ import 'package:flutter_application_1/views/pages/community_page.dart';
 import 'package:flutter_application_1/views/pages/user_page.dart';
 import 'package:flutter_application_1/widgets/bottom_navbar.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter_application_1/widgets/common/fade_indexed_stack.dart';
 
 class MainTreeWidget extends StatefulWidget {
   const MainTreeWidget({super.key, required this.title});
@@ -86,7 +87,8 @@ class _MainTreeWidgetState extends State<MainTreeWidget> {
           _visitedPages.add(state.selectedPage);
           return Scaffold(
             backgroundColor: Colors.white,
-            body: IndexedStack(
+            // สลับแท็บแบบจางเข้า ทุกแท็บยังเก็บ state ไว้เหมือน IndexedStack
+            body: FadeIndexedStack(
               index: state.selectedPage,
               children: [
                 for (var index = 0; index < 3; index++)
