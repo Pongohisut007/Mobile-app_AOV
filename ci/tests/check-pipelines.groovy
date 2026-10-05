@@ -9,7 +9,7 @@ def fixtures = [
     [base: baseline, paths: ['frontend/lib/main.dart'], backend: false, frontend: true, mode: 'FAST'],
     [base: baseline, paths: ['backend/a', 'frontend/b'], backend: true, frontend: true, mode: 'FAST'],
     [base: baseline, paths: ['README.md'], backend: false, frontend: false, mode: 'FAST'],
-    [base: baseline, paths: ['Jenkinsfile'], backend: true, frontend: true, mode: 'FULL'],
+    [base: baseline, paths: ['Jenkinsfile'], backend: false, frontend: false, mode: 'FAST'],
     [base: baseline, paths: ['ci/pods/frontend.yaml'], backend: true, frontend: true, mode: 'FULL'],
     [base: baseline, paths: ['policy/security.rego'], backend: true, frontend: true, mode: 'FULL'],
     [base: baseline, paths: ['Makefile'], backend: true, frontend: true, mode: 'FULL'],
@@ -48,5 +48,48 @@ def fixtures = [
     }
     println "${component}: Groovy syntax and ${fixtures.size()} change-selection cases passed"
 }
-new GroovyShell().parse(new File('Jenkinsfile').text)
-println 'Migration guard: Groovy syntax passed'
+
+['ci/Jenkinsfile.backend', 'ci/Jenkinsfile.frontend'].each { path ->
+    def source = new File(path).text
+    def start = source.indexOf("stage('Secrets Detection')")
+    assert start >= 0
+    def header = source.substring(start, source.indexOf('steps {', start))
+    assert !header.contains('when {'): "Secrets scan must run in FAST and FULL: ${path}"
+    assert source.contains('disableConcurrentBuilds()'): "Builds must queue: ${path}"
+    println "${path}: unconditional secret scan and build queue checks passed"
+}
+
+['ci/Jenkinsfile.backend'].each { path ->
+    def source = new File(path).text
+    def start = source.indexOf('def buildCommit =')
+    assert start >= 0
+    def logic = source.substring(start, source.indexOf('echo """', start))
+    def imageNames = []
+    // Different CI commits with the same backend source must have different image tags.
+    ['a' * 40, 'b' * 40, 'c' * 64].each { commit ->
+        def environment = [:]
+        new GroovyShell(new Binding([
+            env: environment,
+            sh: { Map options ->
+                assert options.script.trim() == 'git rev-parse HEAD'
+                commit + '\n'
+            },
+            error: { String message -> throw new IllegalStateException(message) }
+        ])).evaluate(logic)
+        assert environment.IMAGE_TAG == commit
+        assert environment.IMAGE_NAME == "registry:5000/taskflow-api:${commit}".toString()
+        imageNames << environment.IMAGE_NAME
+    }
+    assert imageNames.toSet().size() == 3
+    def rejected = false
+    try {
+        new GroovyShell(new Binding([
+            env: [:], sh: { Map options -> '' },
+            error: { String message -> throw new IllegalStateException(message) }
+        ])).evaluate(logic)
+    } catch (IllegalStateException expected) {
+        rejected = true
+    }
+    assert rejected
+    println "${path}: image resolution passed (3 commits and invalid commit rejection)"
+}
