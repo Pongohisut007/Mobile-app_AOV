@@ -1,0 +1,2 @@
+# Public example token in the original regression test; ignore only this historical finding.
+8568b0fd7639b86bc5e7e897d2555153b6368d27:ci/tests/check-secrets.sh:generic-api-key:11

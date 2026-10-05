@@ -33,14 +33,12 @@ Branch deploy rules remain: `develop` to staging, `main` to production with appr
 feature branches and PR jobs do not deploy. Approval still uses the pipeline's
 existing 60-minute timeout.
 
-## Local checks
+## Verification
 
 ```sh
-groovy ci/tests/check-pipelines.groovy
-bash ci/tests/check-secrets.sh
 git diff --check
 ```
 
-These checks cover Groovy syntax, component selection, unconditional secret stages,
-build queue declarations, and execution of the actual image-tag resolution code.
-Jenkins plugin validation and registry/deployment integration still require a CI run.
+Run both Multibranch jobs to validate the pipelines with the installed Jenkins
+plugins. Verify feature/PR builds scan secrets and do not deploy, and confirm
+backend image scanning and E2E complete before approving production deployment.
