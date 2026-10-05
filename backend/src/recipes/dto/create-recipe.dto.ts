@@ -74,8 +74,10 @@ export class CreateRecipeSectionDto {
 }
 
 export class CreateRecipeDto {
+  // ไม่ถูกใช้: backend ตั้งเป็นคนที่ login เสมอ (รับไว้ให้แอปเวอร์ชันเก่าที่ยังส่งมาไม่ error)
+  @IsOptional()
   @IsUUID()
-  creatorId!: string;
+  creatorId?: string;
 
   @IsString()
   @Length(1, 255)

@@ -8,6 +8,8 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { AdminOnly } from '../auth/decorators/admin-only.decorator';
+import { CreateIngredientDto, UpdateIngredientDto } from './dto/ingredient.dto';
 import { Ingredient } from './entities/ingredient.entity';
 import { IngredientsService } from './ingredients.service';
 
@@ -25,19 +27,22 @@ export class IngredientsController {
     return this.ingredientsService.findOne(id);
   }
 
+  @AdminOnly()
   @Post()
-  create(@Body() data: Partial<Ingredient>): Promise<Ingredient> {
+  create(@Body() data: CreateIngredientDto): Promise<Ingredient> {
     return this.ingredientsService.create(data);
   }
 
+  @AdminOnly()
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<Ingredient>,
+    @Body() data: UpdateIngredientDto,
   ): Promise<Ingredient> {
     return this.ingredientsService.update(id, data);
   }
 
+  @AdminOnly()
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.ingredientsService.remove(id);

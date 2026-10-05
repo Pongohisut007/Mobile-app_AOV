@@ -14,6 +14,7 @@ import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
+import type { AuthUser } from '../auth/interfaces/jwt-payload.interface';
 import { UserStatus } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { RecipeSort } from './dto/list-recipes-query.dto';
@@ -22,6 +23,7 @@ import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { RecipeContent } from './entities/recipe-content.entity';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
+import { assertCanManageRecipe } from './recipe-permissions';
 
 export interface FindRecipesOptions {
   search?: string;
@@ -341,11 +343,44 @@ export class RecipesService {
       RecipesService.detailTtlSeconds,
       () => this.findOne(id),
     );
+    // สูตรที่ยังไม่เผยแพร่ (draft/ซ่อน) เห็นได้แค่เจ้าของและคนที่ซื้อไปแล้ว
+    // ตอบเหมือนไม่มีสูตรนี้ คนอื่นจะได้ไม่รู้ว่ามี id นี้อยู่
+    if (
+      recipe.status !== RecipeStatus.PUBLISHED &&
+      !(await this.isOwnerOrBuyer(recipe, userId))
+    ) {
+      throw new NotFoundException(`Recipe with id ${id} not found`);
+    }
+
     recipe.canViewFullRecipe = await this.canViewFullRecipe(recipe, userId);
     if (recipe.canViewFullRecipe) return recipe;
 
     recipe.sections = recipe.sections.filter((section) => section.isPreview);
     return recipe;
+  }
+
+  private async isOwnerOrBuyer(
+    recipe: Recipe,
+    userId?: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+    return (
+      recipe.creatorId === userId ||
+      this.recipeAccessService.hasActiveAccess(userId, recipe.id)
+    );
+  }
+
+  /** แก้/ลบได้เฉพาะเจ้าของสูตร (หรือ admin) ไม่มีสูตรนี้ = 404 */
+  async assertCanManage(
+    id: string,
+    user: Pick<AuthUser, 'id' | 'role'>,
+  ): Promise<void> {
+    const recipe = await this.recipeRepository.findOne({
+      where: { id },
+      select: { id: true, creatorId: true },
+    });
+    if (!recipe) throw new NotFoundException(`Recipe with id ${id} not found`);
+    assertCanManageRecipe(recipe, user);
   }
 
   private async canViewFullRecipe(

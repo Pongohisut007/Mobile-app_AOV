@@ -187,8 +187,16 @@ class FoodRepository {
     }
   }
 
+  /// ลบได้เฉพาะสูตรของตัวเอง (backend ตรวจจาก token)
   Future<void> deleteFood(String foodId) async {
-    final response = await http.delete(Uri.parse('$baseUrl/recipes/$foodId'));
+    final token = await TokenStorage().readAccessToken();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/recipes/$foodId'),
+      headers: {
+        if (token != null && token.trim().isNotEmpty)
+          'Authorization': 'Bearer ${token.trim()}',
+      },
+    );
     _detailCache.remove(foodId);
     // สูตรที่ลบอาจอยู่ในหลายคลัง (My recipes, Favorites ของคนอื่นในเครื่องเดียวกัน ฯลฯ)
     RecipeLibraryCache.invalidateAll();

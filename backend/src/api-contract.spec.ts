@@ -42,7 +42,9 @@ const commentId = '80ee684b-b7e5-48b2-baf3-07a619c0d51a';
 function authenticate(context: ExecutionContext, required: boolean): boolean {
   const incoming = context.switchToHttp().getRequest<Request>();
   if (incoming.headers.authorization === 'Bearer test-user') {
-    incoming.user = { id: userId };
+    incoming.user = { id: userId, role: 'user' };
+  } else if (incoming.headers.authorization === 'Bearer test-creator') {
+    incoming.user = { id: userId, role: 'creator' };
   } else if (required) {
     throw new UnauthorizedException();
   }
@@ -56,6 +58,7 @@ describe('Recipe API HTTP contracts', () => {
     search: jest.fn().mockResolvedValue({ data: [], total: 0 }),
     findOneForViewer: jest.fn().mockResolvedValue({ id: recipeId }),
     create: jest.fn().mockResolvedValue({ id: recipeId }),
+    assertCanManage: jest.fn().mockResolvedValue(undefined),
     update: jest.fn().mockResolvedValue({ id: recipeId }),
     remove: jest.fn().mockResolvedValue(undefined),
   };
@@ -206,6 +209,60 @@ describe('Recipe API HTTP contracts', () => {
     });
   });
 
+  it('keeps category management for admins', async () => {
+    await request(app.getHttpServer())
+      .post('/categories')
+      .send({ name: 'Soup', slug: 'soup' })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/categories')
+      .set('Authorization', 'Bearer test-creator')
+      .send({ name: 'Soup', slug: 'soup' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .delete(`/categories/${recipeId}`)
+      .set('Authorization', 'Bearer test-user')
+      .expect(403);
+    expect(categories.create).not.toHaveBeenCalled();
+    expect(categories.remove).not.toHaveBeenCalled();
+  });
+
+  it('lists only published recipes unless the viewer owns them', async () => {
+    await request(app.getHttpServer())
+      .get('/recipes')
+      .query({ type: 'community' })
+      .expect(200);
+    expect(recipes.findAll).toHaveBeenLastCalledWith({
+      type: 'community',
+      status: 'published',
+    });
+
+    await request(app.getHttpServer())
+      .get('/recipes')
+      .query({ creatorId: userId, status: 'draft' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .get('/recipes')
+      .set('Authorization', 'Bearer test-user')
+      .query({ creatorId: commentId, status: 'draft' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .get('/recipes')
+      .set('Authorization', 'Bearer test-user')
+      .query({ creatorId: userId, status: 'draft' })
+      .expect(200);
+    expect(recipes.findAll).toHaveBeenLastCalledWith({
+      creatorId: userId,
+      status: 'draft',
+    });
+
+    await request(app.getHttpServer())
+      .get('/recipes/search')
+      .query({ q: 'soup', status: 'draft' })
+      .expect(403);
+  });
+
   it('accepts nested recipe sections and validates their content', async () => {
     const body = {
       creatorId: userId,
@@ -219,15 +276,35 @@ describe('Recipe API HTTP contracts', () => {
         },
       ],
     };
+    await request(app.getHttpServer()).post('/recipes').send(body).expect(401);
+    expect(recipes.create).not.toHaveBeenCalled();
+
+    // creatorId ที่ส่งมาถูกแทนด้วยคนที่ login เสมอ
     await request(app.getHttpServer())
       .post('/recipes')
-      .send(body)
+      .set('Authorization', 'Bearer test-user')
+      .send({ ...body, creatorId: commentId })
       .expect(201)
       .expect({ id: recipeId });
     expect(recipes.create).toHaveBeenCalledWith(expect.objectContaining(body));
     recipes.create.mockClear();
+
+    // คนทั่วไปสร้างสูตร official (ขายได้) ไม่ได้
     await request(app.getHttpServer())
       .post('/recipes')
+      .set('Authorization', 'Bearer test-user')
+      .send({ ...body, type: 'official' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .post('/recipes')
+      .set('Authorization', 'Bearer test-creator')
+      .send({ ...body, type: 'official' })
+      .expect(201);
+    recipes.create.mockClear();
+
+    await request(app.getHttpServer())
+      .post('/recipes')
+      .set('Authorization', 'Bearer test-user')
       .send({
         ...body,
         sections: [{ title: 'Cook', contents: [{ contentType: 'invalid' }] }],
@@ -239,6 +316,16 @@ describe('Recipe API HTTP contracts', () => {
   it('accepts partial edits while forbidding unexpected or invalid nested fields', async () => {
     await request(app.getHttpServer())
       .patch(`/recipes/${recipeId}`)
+      .send({ showImgCommu: true })
+      .expect(401);
+    await request(app.getHttpServer())
+      .patch(`/recipes/${recipeId}`)
+      .set('Authorization', 'Bearer test-user')
+      .send({ status: 'hidden' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .patch(`/recipes/${recipeId}`)
+      .set('Authorization', 'Bearer test-user')
       .send({
         showImgCommu: true,
         sections: [
@@ -253,6 +340,10 @@ describe('Recipe API HTTP contracts', () => {
       recipeId,
       expect.objectContaining({ showImgCommu: true }),
     );
+    expect(recipes.assertCanManage).toHaveBeenCalledWith(recipeId, {
+      id: userId,
+      role: 'user',
+    });
     recipes.update.mockClear();
     for (const body of [
       { price: 'free' },
@@ -261,6 +352,7 @@ describe('Recipe API HTTP contracts', () => {
     ]) {
       await request(app.getHttpServer())
         .patch(`/recipes/${recipeId}`)
+        .set('Authorization', 'Bearer test-user')
         .send(body)
         .expect(400);
     }
@@ -276,7 +368,16 @@ describe('Recipe API HTTP contracts', () => {
     await request(app.getHttpServer()).get(`/recipes/${recipeId}`).expect(404);
     await request(app.getHttpServer())
       .delete(`/recipes/${recipeId}`)
+      .expect(401);
+    expect(recipes.remove).not.toHaveBeenCalled();
+    await request(app.getHttpServer())
+      .delete(`/recipes/${recipeId}`)
+      .set('Authorization', 'Bearer test-user')
       .expect(200);
+    expect(recipes.assertCanManage).toHaveBeenCalledWith(recipeId, {
+      id: userId,
+      role: 'user',
+    });
     expect(recipes.remove).toHaveBeenCalledWith(recipeId);
   });
 

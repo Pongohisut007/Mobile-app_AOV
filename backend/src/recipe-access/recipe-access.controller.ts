@@ -1,14 +1,13 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
   Param,
   ParseUUIDPipe,
-  Patch,
-  Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   DEFAULT_PAGE_LIMIT,
   OptionalPaginationQueryDto,
@@ -17,27 +16,19 @@ import {
 import { RecipeAccess } from './entities/recipe-access.entity';
 import { RecipeAccessService } from './recipe-access.service';
 
-@Controller('recipe-access')
+/**
+ * สิทธิ์ดูสูตรของคนที่ login อยู่เท่านั้น (id มาจาก token ไม่ใช่จาก URL)
+ * สิทธิ์ถูกสร้างตอนซื้อผ่าน /iap ไม่มี endpoint ให้สร้าง/แก้/ลบเอง
+ */
+@UseGuards(JwtAuthGuard)
+@Controller('recipe-access/me')
 export class RecipeAccessController {
   constructor(private readonly recipeAccessService: RecipeAccessService) {}
 
-  @Get()
-  findAll(): Promise<RecipeAccess[]> {
-    return this.recipeAccessService.findAll();
-  }
-
-  @Get('check/:userId/:recipeId')
-  hasActiveAccess(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Param('recipeId', ParseUUIDPipe) recipeId: string,
-  ): Promise<boolean> {
-    return this.recipeAccessService.hasActiveAccess(userId, recipeId);
-  }
-
   // ส่ง page มา = แบ่งหน้า ไม่ส่ง = ทั้งหมดเป็น array แบบเดิม
-  @Get('user/:userId')
-  findPurchasedByUser(
-    @Param('userId', ParseUUIDPipe) userId: string,
+  @Get()
+  findPurchased(
+    @CurrentUser('id') userId: string,
     @Query() query: OptionalPaginationQueryDto,
   ): Promise<RecipeAccess[] | PaginatedResult<RecipeAccess>> {
     if (query.page === undefined) {
@@ -51,33 +42,16 @@ export class RecipeAccessController {
   }
 
   // แค่ id ของสูตรที่ซื้อแล้ว ใช้เช็กสิทธิ์ทั้งแอปโดยไม่ต้องโหลดรายละเอียดทุกสูตร
-  @Get('user/:userId/recipe-ids')
-  findPurchasedRecipeIds(
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<string[]> {
+  @Get('recipe-ids')
+  findPurchasedRecipeIds(@CurrentUser('id') userId: string): Promise<string[]> {
     return this.recipeAccessService.findPurchasedRecipeIds(userId);
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<RecipeAccess> {
-    return this.recipeAccessService.findOne(id);
-  }
-
-  @Post()
-  create(@Body() data: Partial<RecipeAccess>): Promise<RecipeAccess> {
-    return this.recipeAccessService.create(data);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() data: Partial<RecipeAccess>,
-  ): Promise<RecipeAccess> {
-    return this.recipeAccessService.update(id, data);
-  }
-
-  @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.recipeAccessService.remove(id);
+  @Get('check/:recipeId')
+  hasActiveAccess(
+    @CurrentUser('id') userId: string,
+    @Param('recipeId', ParseUUIDPipe) recipeId: string,
+  ): Promise<boolean> {
+    return this.recipeAccessService.hasActiveAccess(userId, recipeId);
   }
 }

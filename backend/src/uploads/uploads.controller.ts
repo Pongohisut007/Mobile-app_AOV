@@ -42,6 +42,7 @@ export class UploadsController {
   }
 
   @Post('images')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
@@ -50,6 +51,7 @@ export class UploadsController {
   }
 
   @Post('videos')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 100 * 1024 * 1024 } }),
   )

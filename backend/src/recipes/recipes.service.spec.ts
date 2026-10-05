@@ -1,11 +1,12 @@
 /* eslint-disable security/detect-object-injection, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment -- Test query builders and transaction callbacks are Jest mocks. */
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
+import { UserRole } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { RecipeSort } from './dto/list-recipes-query.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
@@ -234,6 +235,7 @@ describe('RecipesService', () => {
     const recipe = {
       id: 'r',
       type: RecipeType.OFFICIAL,
+      status: RecipeStatus.PUBLISHED,
       creatorId: 'owner',
       sections: [
         {
@@ -269,12 +271,14 @@ describe('RecipesService', () => {
     recipeRepository.findOne.mockResolvedValue({
       id: 'r',
       type: RecipeType.COMMUNITY,
+      status: RecipeStatus.PUBLISHED,
       sections: [],
     });
     expect((await service.findOneForViewer('r')).canViewFullRecipe).toBe(true);
     recipeRepository.findOne.mockResolvedValue({
       id: 'r',
       type: RecipeType.OFFICIAL,
+      status: RecipeStatus.PUBLISHED,
       creatorId: 'owner',
       sections: [],
     });
@@ -282,6 +286,52 @@ describe('RecipesService', () => {
       (await service.findOneForViewer('r', 'owner')).canViewFullRecipe,
     ).toBe(true);
     expect(access.hasActiveAccess).not.toHaveBeenCalled();
+  });
+
+  it('shows unpublished recipes only to the owner and buyers', async () => {
+    recipeRepository.findOne.mockResolvedValue({
+      id: 'r',
+      type: RecipeType.COMMUNITY,
+      status: RecipeStatus.DRAFT,
+      creatorId: 'owner',
+      sections: [],
+    });
+    access.hasActiveAccess.mockResolvedValue(false);
+
+    await expect(service.findOneForViewer('r')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(
+      service.findOneForViewer('r', 'stranger'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOneForViewer('r', 'owner')).resolves.toEqual(
+      expect.objectContaining({ id: 'r' }),
+    );
+
+    // ซื้อไปแล้ว แต่เจ้าของซ่อนสูตรทีหลัง ยังเปิดได้
+    access.hasActiveAccess.mockResolvedValue(true);
+    await expect(service.findOneForViewer('r', 'buyer')).resolves.toEqual(
+      expect.objectContaining({ id: 'r' }),
+    );
+  });
+
+  it('lets only the owner or an admin manage a recipe', async () => {
+    recipeRepository.findOne.mockResolvedValue({ id: 'r', creatorId: 'owner' });
+
+    await expect(
+      service.assertCanManage('r', { id: 'owner', role: UserRole.USER }),
+    ).resolves.toBeUndefined();
+    await expect(
+      service.assertCanManage('r', { id: 'admin', role: UserRole.ADMIN }),
+    ).resolves.toBeUndefined();
+    await expect(
+      service.assertCanManage('r', { id: 'other', role: UserRole.CREATOR }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    recipeRepository.findOne.mockResolvedValue(null);
+    await expect(
+      service.assertCanManage('missing', { id: 'owner', role: UserRole.USER }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('creates recipe sections and contents in one transaction', async () => {

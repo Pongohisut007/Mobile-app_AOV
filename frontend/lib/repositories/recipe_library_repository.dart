@@ -9,8 +9,8 @@ import 'package:http/http.dart' as http;
 
 abstract interface class RecipeLibraryRepository {
   /// สูตรในคลังทีละหน้า
-  /// favorites ถูก guard ด้วย JWT จึงต้องแนบ accessToken
-  /// ส่วน myRecipes/drafts/purchased ยังอ้างอิง userId ทาง query
+  /// ทุกคลังแนบ accessToken: favorites/purchased รู้ว่าเป็นของใครจาก token
+  /// myRecipes/drafts กรองด้วย userId (draft ดูได้เฉพาะเจ้าของที่แนบ token มา)
   Future<PagedResult<RecipeSummary>> fetchCollectionPage(
     RecipeCollectionType type, {
     required String userId,
@@ -81,11 +81,9 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
     required String userId,
     required String accessToken,
   }) async {
-    final normalizedUserId = _requireUserId(userId, accessToken);
-    final uri = Uri.parse(
-      '$_baseUrl/recipe-access/user/'
-      '${Uri.encodeComponent(normalizedUserId)}/recipe-ids',
-    );
+    _requireUserId(userId, accessToken);
+    // backend รู้ว่าเป็นของใครจาก token
+    final uri = Uri.parse('$_baseUrl/recipe-access/me/recipe-ids');
 
     final decoded = await _get(
       uri,
@@ -158,8 +156,9 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
       RecipeCollectionType.favorites => Uri.parse(
         '$_baseUrl/favorites',
       ).replace(queryParameters: paging),
+      // /recipe-access/me รู้ว่าเป็นของใครจาก token เหมือน /favorites
       RecipeCollectionType.purchased => Uri.parse(
-        '$_baseUrl/recipe-access/user/${Uri.encodeComponent(userId)}',
+        '$_baseUrl/recipe-access/me',
       ).replace(queryParameters: paging),
     };
   }
