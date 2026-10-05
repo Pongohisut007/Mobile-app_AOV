@@ -26,6 +26,9 @@ class CategoryList extends StatelessWidget {
     'thai-food': Icons.rice_bowl,
   };
 
+  // ที่ว่างใต้ปุ่มหมวดสำหรับเงา (ปุ่มยังสูงเท่าเดิม)
+  static const double _shadowSpace = 12;
+
   // หน้า community ใช้ไอคอนชุดเดียวกัน
   static IconData iconFor(String slug) =>
       _icons[slug.trim().toLowerCase()] ?? Icons.restaurant_menu;
@@ -94,10 +97,12 @@ class CategoryList extends StatelessWidget {
               return SizedBox(height: listHeight);
             }
 
+            // ListView ตัดทุกอย่างที่ล้นกรอบ เผื่อที่ด้านล่าง/ข้าง ๆ ให้เงาของปุ่มไม่ขาด
             return SizedBox(
-              height: listHeight,
+              height: listHeight + _shadowSpace,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, _shadowSpace),
                 itemCount: state.categories.length,
                 itemBuilder: (_, index) {
                   final category = state.categories[index];

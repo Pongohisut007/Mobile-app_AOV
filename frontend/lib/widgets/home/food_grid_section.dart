@@ -98,6 +98,8 @@ class FoodGridSection extends StatelessWidget {
             final grid = GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              // ไม่ตัดขอบ grid เงาของการ์ดแถวนอกสุดจะได้ไม่ขาด
+              clipBehavior: Clip.none,
               itemCount: foods.length,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,

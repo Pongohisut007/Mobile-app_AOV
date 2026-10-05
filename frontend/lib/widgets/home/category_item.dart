@@ -50,15 +50,20 @@ class CategoryItem extends StatelessWidget {
               : null,
           color: isSelected ? null : const Color(0xFFFFF3E0), // ส้มอ่อนมาก
           borderRadius: BorderRadius.circular(18),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
+          // เลือกอยู่ = เงาส้มเด่น ไม่ได้เลือก = เงาจาง ๆ ให้ดูเป็นปุ่มเหมือนการ์ดสูตร
+          boxShadow: [
+            isSelected
+                ? BoxShadow(
                     color: const Color(0xFFE64A19).withValues(alpha: 0.35),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
+                  )
+                : BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
-                ]
-              : null,
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

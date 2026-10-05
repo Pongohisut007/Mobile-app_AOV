@@ -132,7 +132,8 @@ class _RecommendedViewState extends State<_RecommendedView> {
                   // เปลี่ยนหมวดตอนค้นหาอยู่ ต้องค้นหาคำเดิมในหมวดใหม่ ไม่ใช่โหลดทั้งหมวด
                   CategoryList(onCategoryChanged: _loadFoods),
 
-                  const SizedBox(height: 25),
+                  // แถบหมวดเผื่อที่ให้เงาไว้ข้างล่างแล้ว 12
+                  const SizedBox(height: 13),
 
                   const FoodGridSection(),
                 ],

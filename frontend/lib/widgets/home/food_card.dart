@@ -17,69 +17,93 @@ class FoodCard extends StatelessWidget {
 
   const FoodCard({super.key, required this.food, this.onTap});
 
+  // พื้นหลังตอนรูปกำลังโหลด/ไม่มีรูป สีเดียวกับการ์ดหน้า favorite
+  static const _imageBackground = Color(0xFFE8E9E2);
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
+      // เงาอยู่นอก ClipRRect ไม่งั้นโดนตัดไปพร้อมมุมโค้ง
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // หัวใจลอยทับมุมขวาบนของรูป รูปจะได้ใช้พื้นที่เต็มความสูง
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Center(
-                      child: AppNetworkImage(
-                        food.filePathImage,
-                        fit: BoxFit.contain,
-                        // การ์ดพื้นขาว ไม่ต้องมีกรอบเทาตอนกำลังโหลด
-                        placeholder: const SizedBox.shrink(),
-                        errorBuilder: (context) => Icon(
-                          Icons.fastfood,
-                          size: 48,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: _FavoriteButton(recipeId: food.idfoods), //หัวใจ
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              food.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              food.description,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(child: _RatingLabel(food: food)),
-                _AddToCartButton(food: food), // add
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        // รูปเต็มขอบบนของการ์ดเหมือนการ์ดหน้า favorite ตัดมุมโค้งตามการ์ด
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: ColoredBox(
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // หัวใจลอยทับมุมขวาบนของรูป
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      AppNetworkImage(
+                        food.filePathImage,
+                        placeholder: const ColoredBox(color: _imageBackground),
+                        errorBuilder: (context) => ColoredBox(
+                          color: _imageBackground,
+                          child: Icon(
+                            Icons.fastfood,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: _FavoriteButton(recipeId: food.idfoods), //หัวใจ
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        food.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        food.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(child: _RatingLabel(food: food)),
+                          _AddToCartButton(food: food), // add
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -136,6 +160,10 @@ class _RatingLabel extends StatelessWidget {
 class _FavoriteButton extends StatelessWidget {
   const _FavoriteButton({required this.recipeId});
 
+  static const _heartShadows = [
+    Shadow(color: Color(0x59000000), blurRadius: 4, offset: Offset(0, 1)),
+  ];
+
   final String recipeId;
 
   @override
@@ -159,11 +187,30 @@ class _FavoriteButton extends StatelessWidget {
           },
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),          tooltip: isFavorite ? 'เอาออกจากรายการโปรด' : 'บันทึกลงรายการโปรด',
-          icon: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: isFavorite ? Colors.redAccent : Colors.grey.shade400,
-          ),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          tooltip: isFavorite ? 'เอาออกจากรายการโปรด' : 'บันทึกลงรายการโปรด',
+          // หัวใจลอยอยู่บนรูป ยังไม่กด = หัวใจทึบสีขาว
+          // กดแล้ว = หัวใจแดงซ้อนบนหัวใจขาวที่ใหญ่กว่านิด ได้ขอบขาวรอบหัวใจ
+          // เงาจาง ๆ ใต้หัวใจขาว กันกลืนกับรูปสีอ่อน
+          icon: isFavorite
+              ? const Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.favorite,
+                      size: 32,
+                      color: Colors.white,
+                      shadows: _heartShadows,
+                    ),
+                    Icon(Icons.favorite, size: 26, color: Colors.redAccent),
+                  ],
+                )
+              : const Icon(
+                  Icons.favorite,
+                  size: 26,
+                  color: Colors.white,
+                  shadows: _heartShadows,
+                ),
         );
       },
     );
@@ -191,6 +238,9 @@ class _AddToCartButton extends StatelessWidget {
         return Material(
           color: Colors.lime,
           shape: const CircleBorder(),
+          // ลอยขึ้นจากการ์ดนิดหน่อย ให้รู้ว่ากดได้
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.4),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: isPending
