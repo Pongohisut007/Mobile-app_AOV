@@ -20,6 +20,13 @@ still scanned. Git scanning retains its existing history scan behavior.
 
 ## Images and deployment
 
+Backend images are pushed to Docker Hub (`docker.io/pongphisut/taskflow-api`,
+public). The pipeline logs in with the Jenkins `dockerhub` credential
+(Username with password: Docker Hub username + an access token with Read & Write
+scope). The BuildKit layer cache is stored in the same repository under the
+`buildcache` tag. The GitOps update only changes `image.tag`; the repository
+comes from the chart's `values.yaml`.
+
 Image tags use the full checked-out commit SHA. Changes to CI/build configuration
 therefore get a new tag even if the backend source is unchanged. Rerunning the
 same commit may reuse its existing image, which is still scanned and tested.
