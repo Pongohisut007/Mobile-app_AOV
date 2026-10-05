@@ -86,6 +86,20 @@ class AppNetworkImage extends StatelessWidget {
   }
 }
 
+/// provider ตัวเดียวกับที่ [AppNetworkImage] ใช้ตอนแสดงในกรอบขนาด [logicalSize]
+/// (key ใน ImageCache ตรงกัน) ถ้ากรอบนั้นเคยแสดงไปแล้วจะได้รูปที่ถอดรหัสไว้ทันที
+ImageProvider appNetworkImageProviderForBox(
+  BuildContext context,
+  String url,
+  Size logicalSize,
+) {
+  return ResizeImage.resizeIfNeeded(
+    AppNetworkImage.decodeWidth(context, logicalSize.width, logicalSize.height),
+    null,
+    CachedNetworkImageProvider(url),
+  );
+}
+
 /// ImageProvider แบบมี cache สำหรับที่ต้องใช้ provider (เช่น CircleAvatar)
 /// ส่ง logicalSize = ขนาดที่แสดง จะถอดรหัสแค่ขนาดนั้น
 ImageProvider appNetworkImageProvider(

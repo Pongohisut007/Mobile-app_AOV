@@ -10,6 +10,7 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
+import 'package:flutter_application_1/widgets/common/recipe_hero.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FoodCard extends StatelessWidget {
@@ -44,15 +45,22 @@ class FoodCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      AppNetworkImage(
-                        food.filePathImage,
-                        placeholder: const ColoredBox(color: _imageBackground),
-                        errorBuilder: (context) => ColoredBox(
-                          color: _imageBackground,
-                          child: Icon(
-                            Icons.fastfood,
-                            size: 48,
-                            color: Colors.grey.shade400,
+                      // รูปบินไปเป็นรูปหัวหน้ารายละเอียด (tag เดียวกับ FoodImage)
+                      RecipeHero(
+                        recipeId: food.idfoods,
+                        imageUrl: food.filePathImage,
+                        child: AppNetworkImage(
+                          food.filePathImage,
+                          placeholder: const ColoredBox(
+                            color: _imageBackground,
+                          ),
+                          errorBuilder: (context) => ColoredBox(
+                            color: _imageBackground,
+                            child: Icon(
+                              Icons.fastfood,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
                           ),
                         ),
                       ),

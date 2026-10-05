@@ -117,7 +117,10 @@ class FoodGridSection extends StatelessWidget {
                     final deleted = await Navigator.push<bool>(
                       context,
                       MaterialPageRoute<bool>(
-                        builder: (_) => FoodDetailPage(foodsId: food.idfoods),
+                        builder: (_) => FoodDetailPage(
+                          foodsId: food.idfoods,
+                          heroImageUrl: food.filePathImage,
+                        ),
                       ),
                     );
                     if (deleted == true) {

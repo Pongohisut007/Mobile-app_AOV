@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
@@ -58,35 +59,17 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // พื้นหลัง
-        Container(
-          height: 320,
-          decoration: const BoxDecoration(
-            color: FoodDetailColors.softOrange,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(40),
-              bottomRight: Radius.circular(40),
-            ),
-          ),
-        ),
-
-        // รูปอาหาร
-        SizedBox(
-          height: 320,
-          child: Center(
-            child: FoodImage(
-              heroTag: widget.food.idfoods,
-              imageUrl: widget.food.filePathImage,
-            ),
-          ),
+        // รูปอาหารเต็มความกว้าง ปุ่มลอยทับด้านบน
+        FoodImage(
+          heroTag: widget.food.idfoods,
+          imageUrl: widget.food.filePathImage,
         ),
 
         // ปุ่มย้อนกลับ
         Positioned(
           top: 10,
           left: 10,
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
+          child: _FloatingCircle(
             child: IconButton(
               icon: const Icon(
                 Icons.arrow_back,
@@ -104,8 +87,7 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
           Positioned(
             top: 10,
             right: 10,
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
+            child: _FloatingCircle(
               child: widget.isBusy
                   ? const SizedBox(
                       width: 20,
@@ -161,6 +143,28 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// ปุ่มวงกลมขาวลอยทับรูป มีเงาให้เห็นชัดทั้งบนรูปสีเข้มและสีอ่อน
+class _FloatingCircle extends StatelessWidget {
+  const _FloatingCircle({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: AppShadows.chip,
+      ),
+      child: child,
     );
   }
 }

@@ -24,6 +24,7 @@ import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
+import 'package:flutter_application_1/widgets/food_detail/food_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/loading_view.dart';
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_button.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_section.dart';
@@ -37,9 +38,14 @@ class FoodDetailPage extends StatefulWidget {
     this.showComments = false,
     this.scrollToComments = false,
     this.onCommentCountChanged,
+    this.heroImageUrl,
   });
 
   final String foodsId;
+
+  /// รูปจากการ์ดที่กดเข้ามา (มี Hero tag = foodsId)
+  /// ระหว่างโหลดสูตรครั้งแรกจะโชว์รูปนี้เป็นหัวหน้าไว้ก่อน รูปจะได้บินจากการ์ดมาได้
+  final String? heroImageUrl;
   final bool showComments;
   final bool scrollToComments;
   final ValueChanged<int>? onCommentCountChanged;
@@ -192,7 +198,15 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
             // มีข้อมูลเดิมอยู่แล้ว (เช่นหลังแก้ไขสูตร) ให้โชว์ของเดิมไว้ระหว่างโหลด
             if (state.connectionState == ConnectionState.waiting &&
                 !state.hasData) {
-              return const LoadingView();
+              final heroImageUrl = widget.heroImageUrl;
+              return LoadingView(
+                header: heroImageUrl == null
+                    ? null
+                    : FoodImage(
+                        heroTag: widget.foodsId,
+                        imageUrl: heroImageUrl,
+                      ),
+              );
             }
 
             if (state.hasError || !state.hasData) {
