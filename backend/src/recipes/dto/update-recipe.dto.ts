@@ -9,6 +9,7 @@ import {
   IsString,
   IsUUID,
   Length,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -25,6 +26,11 @@ export class UpdateRecipeDto implements Partial<CreateRecipeDto> {
   @IsString()
   @Length(1, 255)
   title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  titleEn?: string | null;
 
   @IsOptional()
   @IsString()

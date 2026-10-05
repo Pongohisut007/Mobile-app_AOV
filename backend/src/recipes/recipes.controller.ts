@@ -32,12 +32,13 @@ export class RecipesController {
   findAll(
     @Query() query: ListRecipesQueryDto,
   ): Promise<Recipe[] | PaginatedResult<Recipe>> {
-    const { page, limit, ...options } = query;
+    const { page, limit, sort, ...options } = query;
     if (page === undefined) return this.recipesService.findAll(options);
     return this.recipesService.findPage(
       options,
       page,
       limit ?? DEFAULT_PAGE_LIMIT,
+      sort,
     );
   }
 

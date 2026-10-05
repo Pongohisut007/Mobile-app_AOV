@@ -4,6 +4,7 @@ import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/comment_text.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeCommentTile extends StatelessWidget {
   const RecipeCommentTile({
@@ -105,7 +106,7 @@ class RecipeCommentTile extends StatelessWidget {
                         dimension: 32,
                         child: PopupMenuButton<String>(
                           enabled: onEdit != null || onDelete != null,
-                          tooltip: 'จัดการความคิดเห็น',
+                          tooltip: context.l10n.manageComment,
                           padding: EdgeInsets.zero,
                           iconSize: 18,
                           icon: const Icon(Icons.more_horiz),
@@ -113,14 +114,14 @@ class RecipeCommentTile extends StatelessWidget {
                             if (action == 'edit') onEdit?.call();
                             if (action == 'delete') onDelete?.call();
                           },
-                          itemBuilder: (context) => const [
+                          itemBuilder: (context) => [
                             PopupMenuItem(
                               value: 'edit',
                               child: Row(
                                 children: [
                                   Icon(Icons.edit_outlined, size: 18),
                                   SizedBox(width: 8),
-                                  Text('แก้ไข'),
+                                  Text(context.l10n.edit),
                                 ],
                               ),
                             ),
@@ -130,7 +131,7 @@ class RecipeCommentTile extends StatelessWidget {
                                 children: [
                                   Icon(Icons.delete_outline, size: 18),
                                   SizedBox(width: 8),
-                                  Text('ลบ'),
+                                  Text(context.l10n.delete),
                                 ],
                               ),
                             ),

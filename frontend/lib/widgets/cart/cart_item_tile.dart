@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CartItemTile extends StatelessWidget {
   const CartItemTile({
@@ -26,6 +28,7 @@ class CartItemTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +42,9 @@ class CartItemTile extends StatelessWidget {
                 onChanged: onSelectedChanged,
                 activeColor: ProfileColors.ink,
                 visualDensity: VisualDensity.compact,
-                semanticLabel: 'เลือก ${item.title} เพื่อชำระเงิน',
+                semanticLabel: context.l10n.selectItemForCheckout(
+                  item.displayTitle(context),
+                ),
               ),
             ),
           ),
@@ -62,7 +67,7 @@ class CartItemTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title,
+                  item.displayTitle(context),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -75,7 +80,7 @@ class CartItemTile extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   item.price == 0
-                      ? 'Free'
+                      ? context.l10n.priceFree
                       : '฿${item.price.toStringAsFixed(0)}',
                   style: const TextStyle(
                     color: ProfileColors.ink,
@@ -107,7 +112,7 @@ class CartItemTile extends StatelessWidget {
                         ),
                       )
                     : const Icon(Icons.close_rounded, size: 18),
-                tooltip: 'Remove',
+                tooltip: context.l10n.remove,
               ),
             ),
           ),

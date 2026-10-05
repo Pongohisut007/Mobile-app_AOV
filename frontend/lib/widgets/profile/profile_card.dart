@@ -2,19 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class ProfileCard extends StatelessWidget {
   const ProfileCard({
     super.key,
     required this.profile,
     required this.onEditPressed,
-    this.actionLabel = 'Edit profile',
+    this.actionLabel,
     this.actionIcon = Icons.edit_outlined,
   });
 
   final UserProfile profile;
   final VoidCallback onEditPressed;
-  final String actionLabel;
+
+  /// ไม่ส่ง = "แก้ไขโปรไฟล์"
+  final String? actionLabel;
   final IconData actionIcon;
 
   @override
@@ -91,7 +94,7 @@ class ProfileCard extends StatelessWidget {
               ),
               icon: Icon(actionIcon, size: 19),
               label: Text(
-                actionLabel,
+                actionLabel ?? context.l10n.editProfile,
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),

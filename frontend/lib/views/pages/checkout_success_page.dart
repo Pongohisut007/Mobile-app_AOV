@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CheckoutSuccessPage extends StatelessWidget {
   const CheckoutSuccessPage({
@@ -21,7 +22,7 @@ class CheckoutSuccessPage extends StatelessWidget {
         backgroundColor: ProfileColors.background,
         foregroundColor: ProfileColors.ink,
         automaticallyImplyLeading: false,
-        title: const Text('ชำระเงินสำเร็จ'),
+        title: Text(context.l10n.paymentSuccessTitle),
       ),
       body: SafeArea(
         child: Center(
@@ -44,8 +45,8 @@ class CheckoutSuccessPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
-                const Text(
-                  'ซื้อสูตรสำเร็จ!',
+                Text(
+                  context.l10n.purchaseSuccess,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: ProfileColors.ink,
@@ -55,7 +56,7 @@ class CheckoutSuccessPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'เปิดสิทธิ์เข้าถึง $purchasedCount สูตรแล้ว',
+                  context.l10n.purchaseUnlocked(purchasedCount),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: ProfileColors.muted,
@@ -63,8 +64,8 @@ class CheckoutSuccessPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'รายการนี้เป็นการชำระเงินจำลอง ไม่มีการตัดเงินจริง',
+                Text(
+                  context.l10n.mockPaymentNotice,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: ProfileColors.muted, fontSize: 13),
                 ),
@@ -74,7 +75,7 @@ class CheckoutSuccessPage extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onViewRecipes,
                     icon: const Icon(Icons.menu_book_rounded),
-                    label: const Text('ดูสูตรที่ซื้อแล้ว'),
+                    label: Text(context.l10n.viewPurchasedRecipes),
                     style: FilledButton.styleFrom(
                       backgroundColor: ProfileColors.ink,
                       foregroundColor: Colors.white,
@@ -85,7 +86,7 @@ class CheckoutSuccessPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: onBackHome,
-                  child: const Text('กลับหน้าหลัก'),
+                  child: Text(context.l10n.backToHome),
                 ),
               ],
             ),

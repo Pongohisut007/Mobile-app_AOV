@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeCategorySection extends StatelessWidget {
   const RecipeCategorySection({
@@ -30,18 +31,18 @@ class RecipeCategorySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RecipeFormSectionHeading(
-            title: 'หมวดหมู่',
+            title: context.l10n.categories,
             subtitle: selected.isEmpty
-                ? 'เลือกได้มากกว่า 1 หมวด'
-                : 'เลือกแล้ว ${selected.length} หมวด',
+                ? context.l10n.categoriesPickMany
+                : context.l10n.categoriesSelected(selected.length),
             icon: Icons.category_rounded,
           ),
 
           const SizedBox(height: 16),
 
           if (categories.isEmpty)
-            const Text(
-              'ไม่มีหมวดหมู่ให้เลือก',
+            Text(
+              context.l10n.noCategories,
               style: TextStyle(color: RecipeFormStyle.muted),
             )
           else
@@ -55,11 +56,12 @@ class RecipeCategorySection extends StatelessWidget {
                   }
 
                   return categories.where(
-                    (category) => category.name.toLowerCase().contains(query),
+                    (category) => category.matches(query),
                   );
                 },
 
-                displayStringForOption: (category) => category.name,
+                displayStringForOption: (category) =>
+                    category.displayName(context),
 
                 onSelected: onCategorySelected,
 
@@ -69,7 +71,7 @@ class RecipeCategorySection extends StatelessWidget {
                         controller: controller,
                         focusNode: focusNode,
                         decoration: RecipeFormStyle.input(
-                          hint: 'ค้นหาหมวดหมู่...',
+                          hint: context.l10n.searchCategoriesHint,
                           prefixIcon: const Icon(
                             Icons.search_rounded,
                             color: RecipeFormStyle.muted,
@@ -107,7 +109,7 @@ class RecipeCategorySection extends StatelessWidget {
                               return ListTile(
                                 dense: true,
                                 title: Text(
-                                  category.name,
+                                  category.displayName(context),
                                   style: TextStyle(
                                     color: RecipeFormStyle.ink,
                                     fontWeight: isSelected
@@ -143,7 +145,7 @@ class RecipeCategorySection extends StatelessWidget {
               children: [
                 for (final category in selected)
                   _SelectedCategoryChip(
-                    label: category.name,
+                    label: category.displayName(context),
                     onRemove: onCategoryRemoved == null
                         ? null
                         : () => onCategoryRemoved!(category),

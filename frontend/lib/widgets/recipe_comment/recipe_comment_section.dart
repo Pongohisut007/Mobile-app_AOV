@@ -9,6 +9,7 @@ import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_tile.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeCommentSection extends StatelessWidget {
   const RecipeCommentSection({
@@ -45,7 +46,7 @@ class RecipeCommentSection extends StatelessWidget {
         if (state.mutationStatus == RecipeCommentMutationStatus.failure) {
           showAppSnackBar(
             context,
-            state.error ?? 'ทำรายการไม่สำเร็จ',
+            state.error ?? context.l10n.actionFailed,
             type: AppSnackType.error,
           );
         }
@@ -80,7 +81,7 @@ class RecipeCommentSection extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
-                    'ซื้อสูตรนี้ก่อนจึงจะแสดงความคิดเห็นได้',
+                    context.l10n.buyToComment,
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ),
@@ -90,7 +91,7 @@ class RecipeCommentSection extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'ความคิดเห็น',
+                    context.l10n.comments,
                     key: headingKey,
                     style: const TextStyle(
                       fontSize: 20,
@@ -114,7 +115,7 @@ class RecipeCommentSection extends StatelessWidget {
               )
             else if (state.status == RecipeCommentStatus.failure)
               _LoadError(
-                message: state.error ?? 'โหลดความคิดเห็นไม่สำเร็จ',
+                message: state.error ?? context.l10n.commentsLoadFailed,
                 onRetry: () => context.read<RecipeCommentBloc>().add(
                   const RecipeCommentsRequested(),
                 ),
@@ -125,7 +126,7 @@ class RecipeCommentSection extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Center(
                     child: Text(
-                      'ยังไม่มีความคิดเห็น',
+                      context.l10n.noCommentsYet,
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ),
@@ -160,7 +161,7 @@ class RecipeCommentSection extends StatelessWidget {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('ดูความคิดเห็นเพิ่มเติม'),
+                          : Text(context.l10n.viewMoreComments),
                     ),
                   ),
                 if (state.error != null && state.hasMore)
@@ -169,7 +170,7 @@ class RecipeCommentSection extends StatelessWidget {
                       const RecipeCommentsMoreRequested(),
                     ),
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('โหลดความคิดเห็นเพิ่มอีกครั้ง'),
+                    label: Text(context.l10n.loadMoreCommentsAgain),
                   ),
               ],
             ],
@@ -203,16 +204,16 @@ class RecipeCommentSection extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('ลบความคิดเห็น'),
-        content: const Text('ต้องการลบความคิดเห็นนี้ใช่ไหม'),
+        title: Text(context.l10n.deleteComment),
+        content: Text(context.l10n.deleteCommentConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('ยกเลิก'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('ลบ'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -250,28 +251,28 @@ class _EditRecipeCommentDialogState extends State<_EditRecipeCommentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('แก้ไขความคิดเห็น'),
+      title: Text(context.l10n.editComment),
       content: TextField(
         controller: _controller,
         autofocus: true,
         maxLength: 1000,
         maxLines: 4,
-        decoration: const InputDecoration(
-          hintText: 'เขียนความคิดเห็น',
+        decoration: InputDecoration(
+          hintText: context.l10n.writeCommentHint,
           alignLabelWithHint: true,
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('ยกเลิก'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
             final text = _controller.text.trim();
             if (text.isNotEmpty) Navigator.pop(context, text);
           },
-          child: const Text('บันทึก'),
+          child: Text(context.l10n.save),
         ),
       ],
     );
@@ -372,7 +373,7 @@ class _InlineCommentComposerState extends State<_InlineCommentComposer> {
                 onTap: () => setState(() => _expanded = true),
                 onChanged: (_) => setState(() => _expanded = true),
                 decoration: InputDecoration(
-                  hintText: 'เพิ่มความคิดเห็น...',
+                  hintText: context.l10n.addCommentHint,
                   counterText: '',
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -391,11 +392,11 @@ class _InlineCommentComposerState extends State<_InlineCommentComposer> {
                   children: [
                     TextButton(
                       onPressed: widget.isSubmitting ? null : _cancel,
-                      child: const Text('ยกเลิก'),
+                      child: Text(context.l10n.cancel),
                     ),
                     const SizedBox(width: 8),
                     IconButton.filled(
-                      tooltip: 'ส่งความคิดเห็น',
+                      tooltip: context.l10n.sendComment,
                       onPressed: hasText && !widget.isSubmitting
                           ? _submit
                           : null,
@@ -450,7 +451,7 @@ class _LoadError extends StatelessWidget {
           TextButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('ลองอีกครั้ง'),
+            label: Text(context.l10n.tryAgain),
           ),
         ],
       ),

@@ -16,6 +16,7 @@ import 'package:flutter_application_1/widgets/community/community_header.dart';
 import 'package:flutter_application_1/widgets/community/community_post_list.dart';
 import 'package:flutter_application_1/widgets/community/community_search.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -313,7 +314,8 @@ class _CommunityPageState extends State<CommunityPage> {
                           onCategorySelected: _selectCategory,
                         ),
 
-                        const SizedBox(height: 20),
+                        // แถบหมวดเผื่อที่ให้เงาไว้ข้างล่างแล้ว 8
+                        const SizedBox(height: 12),
 
                         CommunityPostList(
                           foodState: foodState,
@@ -335,10 +337,14 @@ class _CommunityPageState extends State<CommunityPage> {
             }
 
             if (categoryState is CategoryError) {
-              return Center(child: Text('Error: ${categoryState.message}'));
+              return Center(
+                child: Text(
+                  context.l10n.errorWithMessage(categoryState.message),
+                ),
+              );
             }
 
-            return const Center(child: Text('No data available.'));
+            return Center(child: Text(context.l10n.noData));
           },
         ),
       ),

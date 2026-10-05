@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CheckoutFailurePage extends StatelessWidget {
   const CheckoutFailurePage({
@@ -23,7 +24,7 @@ class CheckoutFailurePage extends StatelessWidget {
         backgroundColor: ProfileColors.background,
         foregroundColor: ProfileColors.ink,
         automaticallyImplyLeading: false,
-        title: const Text('ชำระเงินไม่สำเร็จ'),
+        title: Text(context.l10n.paymentFailedTitle),
       ),
       body: SafeArea(
         child: Center(
@@ -46,8 +47,8 @@ class CheckoutFailurePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
-                const Text(
-                  'ยังซื้อสูตรไม่ครบ',
+                Text(
+                  context.l10n.purchaseIncomplete,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: ProfileColors.ink,
@@ -67,7 +68,7 @@ class CheckoutFailurePage extends StatelessWidget {
                 if (purchasedCount > 0) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'ก่อนเกิดข้อผิดพลาด ซื้อสำเร็จแล้ว $purchasedCount สูตร สูตรที่เหลือยังอยู่ในตะกร้า',
+                    context.l10n.purchasePartialMessage(purchasedCount),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: ProfileColors.ink,
@@ -81,7 +82,7 @@ class CheckoutFailurePage extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('ลองใหม่'),
+                    label: Text(context.l10n.retry),
                     style: FilledButton.styleFrom(
                       backgroundColor: ProfileColors.ink,
                       foregroundColor: Colors.white,
@@ -92,7 +93,7 @@ class CheckoutFailurePage extends StatelessWidget {
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: onBackToCart,
-                  child: const Text('กลับไปตะกร้า'),
+                  child: Text(context.l10n.backToCart),
                 ),
               ],
             ),

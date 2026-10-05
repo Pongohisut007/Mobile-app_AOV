@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeStepsSection extends StatelessWidget {
   const RecipeStepsSection({
@@ -30,10 +31,10 @@ class RecipeStepsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RecipeFormSectionHeading(
-            title: 'ขั้นตอนการทำอาหาร',
+            title: context.l10n.cookingSteps,
             subtitle: hasDraft
-                ? 'แตะเพื่อแก้ไขหัวข้อและขั้นตอน'
-                : 'ยังไม่ได้เพิ่มหัวข้อขั้นตอน',
+                ? context.l10n.tapToEditSteps
+                : context.l10n.noStepGroupsYet,
             icon: Icons.format_list_numbered_rounded,
           ),
 
@@ -42,11 +43,17 @@ class RecipeStepsSection extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _StatTile(value: '$sectionCount', label: 'ชุด'),
+                  child: _StatTile(
+                    value: '$sectionCount',
+                    label: context.l10n.statGroups,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _StatTile(value: '$stepCount', label: 'ขั้นตอน'),
+                  child: _StatTile(
+                    value: '$stepCount',
+                    label: context.l10n.statSteps,
+                  ),
                 ),
               ],
             ),
@@ -61,7 +68,9 @@ class RecipeStepsSection extends StatelessWidget {
               style: RecipeFormStyle.secondaryButton(height: 50),
               icon: Icon(hasDraft ? Icons.edit_rounded : Icons.add_rounded),
               label: Text(
-                hasDraft ? 'แก้ไขหัวข้อขั้นตอน' : 'เพิ่มหัวข้อขั้นตอน',
+                hasDraft
+                    ? context.l10n.editStepGroups
+                    : context.l10n.addStepGroups,
               ),
             ),
           ),

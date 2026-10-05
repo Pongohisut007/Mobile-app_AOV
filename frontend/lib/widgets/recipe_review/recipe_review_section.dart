@@ -9,6 +9,7 @@ import 'package:flutter_application_1/widgets/recipe_review/recipe_rate_dialog.d
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_tile.dart';
 import 'package:flutter_application_1/widgets/recipe_review/star_rating.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ส่วน "คะแนนและรีวิว" ของหน้าสูตรอาหาร:
 /// การ์ดคะแนนเฉลี่ย + กราฟแท่งแต่ละดาว + ปุ่มให้คะแนน แล้วตามด้วยรีวิวล่าสุด
@@ -35,7 +36,7 @@ class RecipeReviewSection extends StatelessWidget {
 
         if (state.status == RecipeReviewStatus.failure) {
           return _LoadError(
-            message: state.error ?? 'โหลดคะแนนไม่สำเร็จ',
+            message: state.error ?? context.l10n.ratingLoadFailed,
             onRetry: () => context.read<RecipeReviewBloc>().add(
               const RecipeReviewRequested(),
             ),
@@ -53,7 +54,9 @@ class RecipeReviewSection extends StatelessWidget {
               // ยังไม่ซื้อ/ยังไม่ล็อกอิน = ไม่มีปุ่ม
               trailing: state.canReview
                   ? _RateButton(
-                      label: state.myReview == null ? 'ให้คะแนน' : 'แก้ไขคะแนน',
+                      label: state.myReview == null
+                          ? context.l10n.rate
+                          : context.l10n.editRating,
                       onPressed: () => _openRateDialog(context, state.myReview),
                     )
                   : null,
@@ -61,9 +64,9 @@ class RecipeReviewSection extends StatelessWidget {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'รีวิวล่าสุด',
+                    context.l10n.latestReviews,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -80,8 +83,8 @@ class RecipeReviewSection extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: FoodDetailColors.purple,
                     ),
-                    child: const Text(
-                      'ดูทั้งหมด',
+                    child: Text(
+                      context.l10n.seeMore,
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -93,7 +96,7 @@ class RecipeReviewSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Center(
                   child: Text(
-                    'ยังไม่มีรีวิว',
+                    context.l10n.noReviewsYet,
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ),
@@ -115,12 +118,14 @@ class RecipeReviewSummaryCard extends StatelessWidget {
   const RecipeReviewSummaryCard({
     super.key,
     required this.summary,
-    this.title = 'คะแนนและรีวิว',
+    this.title,
     this.trailing,
   });
 
   final RecipeReviewSummary summary;
-  final String title;
+
+  /// ไม่ส่ง = "คะแนนและรีวิว"
+  final String? title;
   final Widget? trailing;
 
   @override
@@ -140,7 +145,7 @@ class RecipeReviewSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  title,
+                  title ?? context.l10n.ratingsAndReviews,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -172,8 +177,8 @@ class RecipeReviewSummaryCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     summary.count == 0
-                        ? 'ยังไม่มีคะแนน'
-                        : 'จาก ${summary.count} รีวิว',
+                        ? context.l10n.noRatingsYet
+                        : context.l10n.fromReviewCount(summary.count),
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
@@ -284,7 +289,7 @@ class _LoadError extends StatelessWidget {
             TextButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('ลองใหม่'),
+              label: Text(context.l10n.retry),
             ),
           ],
         ),

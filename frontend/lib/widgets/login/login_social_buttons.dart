@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class LoginSocialButtons extends StatelessWidget {
   const LoginSocialButtons({super.key});
@@ -7,9 +8,9 @@ class LoginSocialButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Text(
-          'or sign in with',
-          style: TextStyle(color: Color(0xFF8A8A8A)),
+        Text(
+          context.l10n.orSignInWith,
+          style: const TextStyle(color: Color(0xFF8A8A8A)),
         ),
         const SizedBox(height: 15),
         Row(

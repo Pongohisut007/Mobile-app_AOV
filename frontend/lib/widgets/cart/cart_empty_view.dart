@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CartEmptyView extends StatelessWidget {
   const CartEmptyView({super.key, required this.onBrowsePressed});
@@ -20,8 +21,8 @@ class CartEmptyView extends StatelessWidget {
               size: 56,
             ),
             const SizedBox(height: 18),
-            const Text(
-              'Your cart is empty',
+            Text(
+              context.l10n.cartEmptyTitle,
               style: TextStyle(
                 color: ProfileColors.ink,
                 fontSize: 18,
@@ -29,8 +30,8 @@ class CartEmptyView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Recipes you add will show up here.',
+            Text(
+              context.l10n.cartEmptyMessage,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: ProfileColors.muted,
@@ -43,7 +44,7 @@ class CartEmptyView extends StatelessWidget {
               onPressed: onBrowsePressed,
               style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
               icon: const Icon(Icons.search_rounded),
-              label: const Text('Browse recipes'),
+              label: Text(context.l10n.browseRecipes),
             ),
           ],
         ),

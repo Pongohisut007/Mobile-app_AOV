@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_application_1/models/banner_item.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 abstract interface class BannerRepository {
   Future<List<BannerItem>> fetchBanners();
@@ -27,7 +28,7 @@ class HttpBannerRepository implements BannerRepository {
         .timeout(requestTimeout);
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to load banners (${response.statusCode})');
+      throw Exception(appL10n.loadBannersFailed(response.statusCode));
     }
 
     final decoded = json.decode(response.body);

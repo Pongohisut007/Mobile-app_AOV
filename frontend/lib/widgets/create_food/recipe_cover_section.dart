@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeCoverSection extends StatelessWidget {
   const RecipeCoverSection({
@@ -50,9 +51,9 @@ class RecipeCoverSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const RecipeFormSectionHeading(
-            title: 'รูปตัวอย่างอาหาร',
-            subtitle: 'รูปหน้าปกที่ทุกคนจะเห็นก่อน',
+          RecipeFormSectionHeading(
+            title: context.l10n.coverPhoto,
+            subtitle: context.l10n.coverPhotoSubtitle,
             icon: Icons.photo_camera_back_rounded,
           ),
 
@@ -63,15 +64,15 @@ class RecipeCoverSection extends StatelessWidget {
             child: AspectRatio(
               aspectRatio: 16 / 9,
               child: hasCover
-                  ? _buildPreview(disabled: disabled, loading: loading)
-                  : _buildPicker(disabled: disabled, loading: loading),
+                  ? _buildPreview(context, disabled: disabled, loading: loading)
+                  : _buildPicker(context, disabled: disabled, loading: loading),
             ),
           ),
 
           if (hasCover) ...[
             const SizedBox(height: 8),
             Text(
-              coverFile == null ? 'รูปเดิม' : fileName ?? '',
+              coverFile == null ? context.l10n.currentImage : fileName ?? '',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -99,17 +100,20 @@ class RecipeCoverSection extends StatelessWidget {
                     RecipeFormStyle.fieldRadius,
                   ),
                 ),
-                title: const Text(
-                  'แสดงรูปในชุมชน',
-                  style: TextStyle(
+                title: Text(
+                  context.l10n.showImageInCommunity,
+                  style: const TextStyle(
                     color: RecipeFormStyle.ink,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                subtitle: const Text(
-                  'โชว์รูปเล็กใต้โพสต์ในหน้า Community',
-                  style: TextStyle(color: RecipeFormStyle.muted, fontSize: 12),
+                subtitle: Text(
+                  context.l10n.showImageInCommunityHint,
+                  style: const TextStyle(
+                    color: RecipeFormStyle.muted,
+                    fontSize: 12,
+                  ),
                 ),
                 value: showImgCommu,
                 onChanged: disabled
@@ -126,7 +130,11 @@ class RecipeCoverSection extends StatelessWidget {
   }
 
   // ยังไม่มีรูป: พื้นที่ใหญ่ให้แตะเลือก
-  Widget _buildPicker({required bool disabled, required bool loading}) {
+  Widget _buildPicker(
+    BuildContext context, {
+    required bool disabled,
+    required bool loading,
+  }) {
     return Material(
       color: RecipeFormStyle.fieldFill,
       child: InkWell(
@@ -156,18 +164,21 @@ class RecipeCoverSection extends StatelessWidget {
                     ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'เลือกรูปภาพ',
-              style: TextStyle(
+            Text(
+              context.l10n.chooseImage,
+              style: const TextStyle(
                 color: RecipeFormStyle.ink,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 2),
-            const Text(
-              'JPG, PNG, WEBP หรือ GIF ไม่เกิน 10 MB',
-              style: TextStyle(color: RecipeFormStyle.muted, fontSize: 12),
+            Text(
+              context.l10n.imageRequirements,
+              style: const TextStyle(
+                color: RecipeFormStyle.muted,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -176,7 +187,11 @@ class RecipeCoverSection extends StatelessWidget {
   }
 
   // มีรูปแล้ว: รูปเต็มกรอบ + ปุ่มเปลี่ยน/ลบลอยอยู่มุมล่าง
-  Widget _buildPreview({required bool disabled, required bool loading}) {
+  Widget _buildPreview(
+    BuildContext context, {
+    required bool disabled,
+    required bool loading,
+  }) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -200,7 +215,7 @@ class RecipeCoverSection extends StatelessWidget {
             children: [
               _OverlayButton(
                 onPressed: disabled ? null : onPickImage,
-                tooltip: 'เปลี่ยนรูปภาพ',
+                tooltip: context.l10n.changeImage,
                 child: loading
                     ? const SizedBox.square(
                         dimension: 18,
@@ -209,14 +224,14 @@ class RecipeCoverSection extends StatelessWidget {
                           color: RecipeFormStyle.ink,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.swap_horiz_rounded, size: 18),
-                          SizedBox(width: 4),
+                          const Icon(Icons.swap_horiz_rounded, size: 18),
+                          const SizedBox(width: 4),
                           Text(
-                            'เปลี่ยนรูปภาพ',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                            context.l10n.changeImage,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -224,7 +239,7 @@ class RecipeCoverSection extends StatelessWidget {
               const SizedBox(width: 8),
               _OverlayButton(
                 onPressed: disabled ? null : onRemoveImage,
-                tooltip: 'ลบรูปภาพ',
+                tooltip: context.l10n.removeImage,
                 child: const Icon(Icons.delete_outline_rounded, size: 19),
               ),
             ],

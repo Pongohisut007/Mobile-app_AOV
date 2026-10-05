@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_application_1/models/paged_result.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/models/recipe_summary.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:http/http.dart' as http;
 
 abstract interface class RecipeLibraryRepository {
@@ -52,12 +53,10 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
     final decoded = await _get(
       uri,
       accessToken,
-      errorLabel: type.title.toLowerCase(),
+      errorLabel: type.title(appL10n),
     );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeLibraryException(
-        'Backend returned an invalid recipe list.',
-      );
+      throw RecipeLibraryException(appL10n.errorInvalidResponse);
     }
 
     try {
@@ -68,16 +67,12 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
           _ => item,
         };
         if (recipeJson is! Map<String, dynamic>) {
-          throw const RecipeLibraryException(
-            'Backend response does not include recipe details.',
-          );
+          throw RecipeLibraryException(appL10n.errorInvalidResponse);
         }
         return RecipeSummary.fromJson(recipeJson, apiBaseUrl: _baseUrl);
       });
     } on FormatException {
-      throw const RecipeLibraryException(
-        'Backend returned an invalid recipe list.',
-      );
+      throw RecipeLibraryException(appL10n.errorInvalidResponse);
     }
   }
 
@@ -95,12 +90,10 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
     final decoded = await _get(
       uri,
       accessToken,
-      errorLabel: 'purchased recipes',
+      errorLabel: appL10n.purchasedRecipes,
     );
     if (decoded is! List) {
-      throw const RecipeLibraryException(
-        'Backend returned an invalid purchased recipe list.',
-      );
+      throw RecipeLibraryException(appL10n.errorInvalidResponse);
     }
     return {
       for (final id in decoded)
@@ -111,7 +104,7 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
   String _requireUserId(String userId, String accessToken) {
     final normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty || accessToken.trim().isEmpty) {
-      throw const RecipeLibraryException('Please sign in to see your recipes.');
+      throw RecipeLibraryException(appL10n.librarySignInRequired);
     }
     return normalizedUserId;
   }
@@ -127,27 +120,24 @@ class HttpRecipeLibraryRepository implements RecipeLibraryRepository {
           .timeout(requestTimeout);
 
       if (response.statusCode == 401) {
-        throw const RecipeLibraryException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw RecipeLibraryException(appL10n.sessionExpired);
       }
       if (response.statusCode != 200) {
         throw RecipeLibraryException(
-          'Could not load $errorLabel (HTTP ${response.statusCode}).',
+          appL10n.errorActionFailed(
+            appL10n.actionLoadCollection(errorLabel),
+            response.statusCode,
+          ),
         );
       }
 
       return jsonDecode(utf8.decode(response.bodyBytes));
     } on TimeoutException {
-      throw const RecipeLibraryException(
-        'The request timed out. Check the backend connection.',
-      );
+      throw RecipeLibraryException(appL10n.errorTimeout);
     } on FormatException {
-      throw const RecipeLibraryException('Backend returned malformed JSON.');
+      throw RecipeLibraryException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw RecipeLibraryException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw RecipeLibraryException(appL10n.errorConnection(error.message));
     }
   }
 

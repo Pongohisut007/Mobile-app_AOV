@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/widgets/home/category_list.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// แถบหมวดหมู่ของหน้า community เป็นชิปแคปซูล (ต่างจากไทล์ของหน้า Home)
 /// ใช้สี ink/accent แบบหน้า Profile และไอคอนชุดเดียวกับหน้า Home
@@ -34,17 +36,20 @@ class _CategorySelectorState extends State<CategorySelector> {
 
   @override
   Widget build(BuildContext context) {
+    // ListView ตัดทุกอย่างที่ล้นกรอบ เผื่อที่ด้านล่าง/ข้าง ๆ ให้เงาของชิปไม่ขาด
+    // (ชิปยังสูง 42 เท่าเดิม)
     return SizedBox(
-      height: 42,
+      height: 42 + 8,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
         itemCount: widget.categories.length + 1,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (_, index) {
           if (index == 0) {
             return _CategoryChip(
               icon: Icons.apps_rounded,
-              label: 'ทั้งหมด',
+              label: context.l10n.categoryAll,
               isSelected: _selectedId == null,
               onTap: () => _select(null),
             );
@@ -52,7 +57,7 @@ class _CategorySelectorState extends State<CategorySelector> {
           final category = widget.categories[index - 1];
           return _CategoryChip(
             icon: CategoryList.iconFor(category.slug),
-            label: category.name,
+            label: category.displayName(context),
             isSelected: _selectedId == category.id,
             onTap: () => _select(category.id),
           );
@@ -87,6 +92,7 @@ class _CategoryChip extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
           decoration: ShapeDecoration(
             color: isSelected ? ProfileColors.ink : Colors.white,
+            shadows: AppShadows.chip,
             shape: StadiumBorder(
               side: BorderSide(
                 color: isSelected ? ProfileColors.ink : Colors.grey.shade300,

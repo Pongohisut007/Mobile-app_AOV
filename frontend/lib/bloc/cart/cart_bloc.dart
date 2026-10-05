@@ -1,5 +1,6 @@
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/cart/cart_state.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/repositories/cart_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,7 +76,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       emit(
         state.copyWith(
           feedback: CartFeedback.alreadyInCart,
-          feedbackTitle: food.name,
+          feedbackTitle: food.nameFor(AppLanguage.current),
         ),
       );
       return;
@@ -102,7 +103,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           items: items,
           pendingRecipeIds: _without(recipeId),
           feedback: event.showFeedback ? CartFeedback.added : null,
-          feedbackTitle: food.name,
+          feedbackTitle: food.nameFor(AppLanguage.current),
         ),
       );
     } on Exception catch (error) {
@@ -111,7 +112,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           status: CartStatus.failure,
           pendingRecipeIds: _without(recipeId),
           feedback: event.showFeedback ? CartFeedback.failed : null,
-          feedbackTitle: food.name,
+          feedbackTitle: food.nameFor(AppLanguage.current),
           error: error.toString(),
         ),
       );

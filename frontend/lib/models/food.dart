@@ -1,8 +1,14 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_application_1/models/recipe_step.dart';
 
 class Food {
   final String idfoods;
+
+  /// ชื่อภาษาไทย (ชื่อหลัก)
   final String name;
+
+  /// ชื่อภาษาอังกฤษ null = ไม่ได้ตั้ง ใช้ชื่อไทยแทน
+  final String? titleEn;
   final String category;
   // ใช้ตอนแก้ไขสูตร (prefill หน้า CreateFoodcardPage)
   final String slug;
@@ -15,6 +21,8 @@ class Food {
   final double price;
   final int favoriteCount;
   final int reviewCount;
+  // ค่าเฉลี่ยดาวจริงจากรีวิวที่เผยแพร่ (ทศนิยม 1 ตำแหน่ง) null = ยังไม่มีรีวิว
+  final double? averageRating;
   final int commentCount;
 
   final int? preparationMinutes;
@@ -38,6 +46,7 @@ class Food {
   Food({
     required this.idfoods,
     required this.name,
+    this.titleEn,
     required this.category,
     this.slug = '',
     this.type,
@@ -49,6 +58,7 @@ class Food {
     this.price = 0,
     this.favoriteCount = 0,
     this.reviewCount = 0,
+    this.averageRating,
     this.commentCount = 0,
     this.preparationMinutes,
     this.cookingMinutes,
@@ -98,6 +108,7 @@ class Food {
     return Food(
       idfoods: json['id'] as String,
       name: json['title'] as String,
+      titleEn: _optionalText(json['titleEn']),
       category: firstCategory?['name'] as String? ?? '',
       slug: json['slug'] as String? ?? '',
       type: json['type'] as String?,
@@ -114,6 +125,9 @@ class Food {
       price: _toDouble(json['price']),
       favoriteCount: _toInt(json['favoriteCount']) ?? 0,
       reviewCount: _toInt(json['reviewCount']) ?? 0,
+      averageRating: json['averageRating'] == null
+          ? null
+          : _toDouble(json['averageRating']),
       commentCount: _toInt(json['commentCount']) ?? 0,
       preparationMinutes: _toInt(json['preparationMinutes']),
       cookingMinutes: _toInt(json['cookingMinutes']),
@@ -129,6 +143,17 @@ class Food {
           : DateTime.tryParse(json['publishedAt'] as String),
     );
   }
+
+  /// ชื่อตามภาษา: อังกฤษใช้ titleEn ถ้ามี นอกนั้นใช้ชื่อไทย
+  String nameFor(Locale locale) =>
+      locale.languageCode == 'en' && titleEn != null ? titleEn! : name;
+
+  /// ชื่อตามภาษาที่แอปใช้อยู่
+  String displayName(BuildContext context) =>
+      nameFor(Localizations.localeOf(context));
+
+  static String? _optionalText(Object? value) =>
+      value is String && value.trim().isNotEmpty ? value.trim() : null;
 
   static double _toDouble(dynamic value) {
     if (value == null) return 0;
