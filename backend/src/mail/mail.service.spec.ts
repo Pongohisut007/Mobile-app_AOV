@@ -58,7 +58,7 @@ describe('MailService', () => {
     );
   });
 
-  it('only logs the email in development when SMTP is not set', async () => {
+  it('only logs the email outside production when SMTP is not set', async () => {
     const service = serviceWith({});
 
     expect(service.isConfigured).toBe(false);
@@ -67,7 +67,7 @@ describe('MailService', () => {
   });
 
   it('fails in production when SMTP is not set', async () => {
-    const service = serviceWith({ NODE_ENV: 'production' });
+    const service = serviceWith({ 'app.env': 'production' });
 
     await expect(service.send(message)).rejects.toBeInstanceOf(
       ServiceUnavailableException,

@@ -15,7 +15,7 @@ export interface MailMessage {
 
 /**
  * ส่งอีเมลผ่าน SMTP (ตั้งค่าใน config/mail.config.ts)
- * ยังไม่ได้ตั้ง SMTP: ตอนพัฒนาพิมพ์อีเมลลง log ให้ทดสอบต่อได้ ส่วน production ถือว่า error
+ * ยังไม่ได้ตั้ง SMTP: development/staging พิมพ์อีเมลลง log ให้ทดสอบต่อได้ ส่วน production ถือว่า error
  */
 @Injectable()
 export class MailService {
@@ -30,7 +30,7 @@ export class MailService {
 
   async send(message: MailMessage): Promise<void> {
     if (!this.isConfigured) {
-      if (this.config.get<string>('NODE_ENV') === 'production') {
+      if (this.config.get<string>('app.env') === 'production') {
         this.logger.error('SMTP_HOST is not set; cannot send email');
         throw new ServiceUnavailableException(
           'ระบบส่งอีเมลยังไม่พร้อม กรุณาลองใหม่ภายหลัง',

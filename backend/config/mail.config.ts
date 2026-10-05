@@ -2,7 +2,7 @@ import { registerAs } from '@nestjs/config';
 
 // ส่งอีเมล (ตอนนี้ใช้ส่งรหัสรีเซ็ตรหัสผ่าน) ผ่าน SMTP
 // Gmail: SMTP_HOST=smtp.gmail.com SMTP_PORT=465 SMTP_USER=อีเมล SMTP_PASS=App Password 16 ตัว
-// SMTP_HOST ว่าง = ไม่ส่งจริง (dev พิมพ์เนื้อหาลง log แทน, production แจ้ง error)
+// SMTP_HOST ว่าง = ไม่ส่งจริง (development/staging พิมพ์เนื้อหาลง log แทน, production แจ้ง error)
 export default registerAs('mail', () => {
   const port = Number.parseInt(process.env.SMTP_PORT ?? '465', 10);
   return {

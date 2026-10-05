@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppCacheModule } from './cache/app-cache.module';
+import appConfig from '../config/app.config';
 import databaseConfig from '../config/database.config';
 import googleConfig from '../config/google.config';
 import jwtConfig from '../config/jwt.config';
@@ -33,6 +34,7 @@ import r2ClientConfig from '../config/r2.client.config';
       isGlobal: true,
       envFilePath: ['.env.production', '.env', '.env.development.local'],
       load: [
+        appConfig,
         databaseConfig,
         jwtConfig,
         r2ClientConfig,

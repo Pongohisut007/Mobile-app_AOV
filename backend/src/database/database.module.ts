@@ -59,8 +59,8 @@ const entities = [
         entities,
         autoLoadEntities: true,
 
-        // เปิดใช้งานเฉพาะตอนพัฒนา
-        synchronize: config.get<string>('NODE_ENV') !== 'production',
+        // เปิดเฉพาะเครื่องนักพัฒนา staging/production ใช้ migration เท่านั้น
+        synchronize: config.get<string>('app.env') === 'development',
 
         migrations: [`${__dirname}/migrations/*{.ts,.js}`],
       }),
