@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/data/user_cache.dart';
-import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter/services.dart' show TextInput;
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
@@ -28,6 +29,20 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  /// error จาก server แสดงในฟอร์ม พิมพ์แก้ช่องไหนก็หายไป
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_clearError);
+    _passwordController.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -36,6 +51,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _submit() {
+    _clearError();
     if (!_formKey.currentState!.validate()) return;
 
     context.read<AuthBloc>().add(
@@ -51,6 +67,8 @@ class _LoginPageState extends State<LoginPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          // ให้ password manager บันทึกบัญชีที่เพิ่งเข้าสู่ระบบได้
+          TextInput.finishAutofillContext();
           clearUserCaches();
           // secure storage ไม่มี stream บอกว่า token เปลี่ยน
           // ต้องสั่งให้ตะกร้ากับหัวใจโหลดของคนนี้เองหลัง AuthBloc เขียน token แล้ว
@@ -66,37 +84,43 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
         if (state is AuthFailure) {
-          showAppSnackBar(context, state.message, type: AppSnackType.error);
+          setState(() => _errorMessage = state.message);
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFD96868),
-        body: SafeArea(
-          bottom: false,
-          // ฟอร์มสีขาวยืดเต็มพื้นที่ที่เหลือจนถึงล่างสุด ไม่ให้เห็นพื้นแดงด้านล่าง
-          // ถ้าเนื้อหายาวกว่าจอ (จอเล็ก/คีย์บอร์ดขึ้น) ก็ยังเลื่อนได้
-          child: CustomScrollView(
-            slivers: [
-              const SliverToBoxAdapter(
-                child: LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
-              ),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: LoginForm(
-                  formKey: _formKey,
-                  emailController: _emailController,
-                  passwordController: _passwordController,
-                  obscurePassword: _obscurePassword,
-                  onTogglePassword: () => setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  }),
-                  onSubmit: _submit,
-                  onSignUp: () {
-                    Navigator.pushReplacementNamed(context, AppRoutes.register);
-                  },
+        backgroundColor: AuthStyle.primary,
+        body: AuthBackground(
+          child: SafeArea(
+            bottom: false,
+            // ฟอร์มสีขาวยืดเต็มพื้นที่ที่เหลือจนถึงล่างสุด ไม่ให้เห็นพื้นแดงด้านล่าง
+            // ถ้าเนื้อหายาวกว่าจอ (จอเล็ก/คีย์บอร์ดขึ้น) ก็ยังเลื่อนได้
+            child: CustomScrollView(
+              slivers: [
+                const SliverToBoxAdapter(
+                  child: LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
                 ),
-              ),
-            ],
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: LoginForm(
+                    formKey: _formKey,
+                    emailController: _emailController,
+                    passwordController: _passwordController,
+                    obscurePassword: _obscurePassword,
+                    onTogglePassword: () => setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    }),
+                    onSubmit: _submit,
+                    onSignUp: () {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        AppRoutes.register,
+                      );
+                    },
+                    errorMessage: _errorMessage,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

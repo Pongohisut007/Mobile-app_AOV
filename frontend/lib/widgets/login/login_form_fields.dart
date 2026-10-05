@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 
 class LoginFormFields extends StatelessWidget {
   const LoginFormFields({
@@ -28,12 +29,15 @@ class LoginFormFields extends StatelessWidget {
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
-          decoration: _inputDecoration(context.l10n.emailHint),
+          // ให้ password manager เติม/บันทึกบัญชีได้
+          autofillHints: const [AutofillHints.email, AutofillHints.username],
+          autocorrect: false,
+          decoration: AuthStyle.input(context.l10n.emailHint),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return context.l10n.emailRequired;
             }
-            if (!value.contains('@')) {
+            if (!AuthStyle.isEmail(value)) {
               return context.l10n.emailInvalid;
             }
             return null;
@@ -46,7 +50,8 @@ class LoginFormFields extends StatelessWidget {
           controller: passwordController,
           obscureText: obscurePassword,
           textInputAction: TextInputAction.done,
-          decoration: _inputDecoration(context.l10n.passwordHint).copyWith(
+          autofillHints: const [AutofillHints.password],
+          decoration: AuthStyle.input(context.l10n.passwordHint).copyWith(
             suffixIcon: IconButton(
               tooltip: obscurePassword
                   ? context.l10n.showPassword
@@ -64,8 +69,11 @@ class LoginFormFields extends StatelessWidget {
             if (value == null || value.isEmpty) {
               return context.l10n.passwordRequired;
             }
-            if (value.length < 8) {
+            if (value.length < AuthStyle.minPasswordLength) {
               return context.l10n.passwordTooShort;
+            }
+            if (value.length > AuthStyle.maxPasswordLength) {
+              return context.l10n.passwordTooLong;
             }
             return null;
           },
@@ -74,6 +82,7 @@ class LoginFormFields extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
+            // ยังไม่มีระบบรีเซ็ตรหัสผ่าน (ปุ่มไว้ก่อน)
             onPressed: () {},
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF777777),
@@ -83,27 +92,6 @@ class LoginFormFields extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  InputDecoration _inputDecoration(String hintText) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(color: Color(0xFFB8B8B8), fontSize: 14),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-      enabledBorder: _border(const Color(0xFFE3E3E3)),
-      focusedBorder: _border(const Color(0xFFF20D13), width: 1.5),
-      errorBorder: _border(Colors.red),
-      focusedErrorBorder: _border(Colors.red, width: 1.5),
-    );
-  }
-
-  OutlineInputBorder _border(Color color, {double width = 1}) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(28),
-      borderSide: BorderSide(color: color, width: width),
     );
   }
 }
@@ -118,7 +106,7 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       label,
       style: const TextStyle(
-        color: Color(0xFF303030),
+        color: AuthStyle.label,
         fontSize: 14,
         fontWeight: FontWeight.w700,
       ),

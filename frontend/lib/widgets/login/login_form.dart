@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_application_1/widgets/login/login_footer.dart';
 import 'package:flutter_application_1/widgets/login/login_form_fields.dart';
 import 'package:flutter_application_1/widgets/login/login_social_buttons.dart';
@@ -13,6 +14,7 @@ class LoginForm extends StatelessWidget {
     required this.onTogglePassword,
     required this.onSubmit,
     this.onSignUp,
+    this.errorMessage,
     super.key,
   });
 
@@ -23,6 +25,9 @@ class LoginForm extends StatelessWidget {
   final VoidCallback onTogglePassword;
   final VoidCallback onSubmit;
   final VoidCallback? onSignUp;
+
+  /// error จาก server (เช่น รหัสผ่านผิด) แสดงเหนือปุ่ม จนกว่าจะแก้ข้อมูล
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -35,23 +40,30 @@ class LoginForm extends StatelessWidget {
       ),
       child: Form(
         key: formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LoginFormFields(
-              emailController: emailController,
-              passwordController: passwordController,
-              obscurePassword: obscurePassword,
-              onTogglePassword: onTogglePassword,
-              onSubmitted: onSubmit,
-            ),
-            const SizedBox(height: 22),
-            LoginSubmitButton(onPressed: onSubmit),
-            const SizedBox(height: 22),
-            const LoginSocialButtons(),
-            const SizedBox(height: 26),
-            LoginFooter(onSignUp: onSignUp),
-          ],
+        // password manager เสนอเติม/บันทึกอีเมลกับรหัสผ่านคู่กัน
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LoginFormFields(
+                emailController: emailController,
+                passwordController: passwordController,
+                obscurePassword: obscurePassword,
+                onTogglePassword: onTogglePassword,
+                onSubmitted: onSubmit,
+              ),
+              if (errorMessage case final message?) ...[
+                const SizedBox(height: 14),
+                AuthErrorBanner(message: message),
+              ],
+              const SizedBox(height: 22),
+              LoginSubmitButton(onPressed: onSubmit),
+              const SizedBox(height: 22),
+              const LoginSocialButtons(),
+              const SizedBox(height: 26),
+              LoginFooter(onSignUp: onSignUp),
+            ],
+          ),
         ),
       ),
     );

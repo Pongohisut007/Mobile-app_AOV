@@ -1735,4 +1735,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get firstRecipeSubtitleUser => 'สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้';
+
+  @override
+  String get authTagline => 'วันนี้ทำอะไรอร่อยดี';
 }

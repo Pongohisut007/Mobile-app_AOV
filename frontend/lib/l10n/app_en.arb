@@ -524,5 +524,6 @@
   "continueDraftSubtitle": "{count, plural, =1{1 draft waiting} other{{count} drafts waiting}}",
   "firstRecipeTitle": "Share your first recipe",
   "firstRecipeSubtitleCreator": "Create an Official recipe and set your price",
-  "firstRecipeSubtitleUser": "Share a free recipe with the community"
+  "firstRecipeSubtitleUser": "Share a free recipe with the community",
+  "authTagline": "Cook something great today"
 }

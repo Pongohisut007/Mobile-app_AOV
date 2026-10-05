@@ -1831,4 +1831,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get firstRecipeSubtitleUser =>
       'Share a free recipe with the community';
+
+  @override
+  String get authTagline => 'Cook something great today';
 }

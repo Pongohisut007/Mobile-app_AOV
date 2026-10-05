@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/content/app_texts.dart';
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_application_1/views/pages/text_sections_page.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 
@@ -19,10 +20,7 @@ class RegisterTerms extends StatefulWidget {
 }
 
 class _RegisterTermsState extends State<RegisterTerms> {
-  static const _linkStyle = TextStyle(
-    color: Color(0xFFF20D13),
-    fontWeight: FontWeight.w700,
-  );
+  static const _linkStyle = AuthStyle.linkStyle;
 
   // TapGestureRecognizer ต้อง dispose เอง เลยต้องเป็น StatefulWidget
   late final _termsRecognizer = TapGestureRecognizer()
@@ -56,7 +54,7 @@ class _RegisterTermsState extends State<RegisterTerms> {
       children: [
         Checkbox(
           value: widget.accepted,
-          activeColor: const Color(0xFFF20D13),
+          activeColor: AuthStyle.primary,
           visualDensity: VisualDensity.compact,
           onChanged: (value) => widget.onChanged(value ?? false),
         ),

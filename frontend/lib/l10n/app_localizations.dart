@@ -3247,6 +3247,12 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้'**
   String get firstRecipeSubtitleUser;
+
+  /// No description provided for @authTagline.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้ทำอะไรอร่อยดี'**
+  String get authTagline;
 }
 
 class _AppLocalizationsDelegate

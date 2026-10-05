@@ -11,6 +11,7 @@ import 'package:flutter_application_1/views/pages/change_password_page.dart';
 import 'package:flutter_application_1/views/pages/delete_account_page.dart';
 import 'package:flutter_application_1/views/pages/text_sections_page.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter_application_1/widgets/common/language_picker.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
@@ -112,46 +113,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _chooseLanguage() async {
-    final selected = await showModalBottomSheet<Locale>(
-      context: context,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text(
-                sheetContext.l10n.chooseLanguage,
-                style: const TextStyle(
-                  color: ProfileColors.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            for (final locale in AppLanguage.supported)
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                title: Text(AppLanguage.nativeName(locale)),
-                trailing: locale == AppLanguage.current
-                    ? const Icon(Icons.check_rounded, color: ProfileColors.ink)
-                    : null,
-                onTap: () => Navigator.pop(sheetContext, locale),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (selected == null || selected == AppLanguage.current) return;
-    // ทั้งแอปวาดใหม่เป็นภาษาที่เลือก รวมถึงหน้านี้
-    await AppLanguage.change(selected);
-  }
-
   void _openAbout() {
     showAboutDialog(
       context: context,
@@ -176,7 +137,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.translate_rounded,
                 label: context.l10n.language,
                 subtitle: AppLanguage.nativeName(AppLanguage.current),
-                onTap: _chooseLanguage,
+                onTap: () => showLanguagePicker(context),
               ),
             ],
           ),

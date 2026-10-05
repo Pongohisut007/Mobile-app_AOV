@@ -57,9 +57,11 @@ class UserProfile {
   bool get isCreator => role == 'creator';
 
   factory UserProfile.guest() {
-    return UserProfile(
+    // ชื่อ "ผู้เยี่ยมชม" แปลตอนแสดงผล (ดู [displayNameFor]) ไม่เก็บไว้ที่นี่
+    // ไม่งั้นเปลี่ยนภาษาแล้วชื่อยังค้างเป็นภาษาเดิม
+    return const UserProfile(
       id: '',
-      displayName: appL10n.guest,
+      displayName: '',
       email: '-',
       avatarUrl: null,
       role: 'guest',
@@ -72,10 +74,16 @@ class UserProfile {
     );
   }
 
-  String get roleLabel => switch (role) {
-    'creator' => appL10n.roleCreator,
-    'admin' => appL10n.roleAdmin,
-    _ => appL10n.roleFoodLover,
+  bool get isGuest => role == 'guest';
+
+  /// ชื่อที่แสดง ผู้เยี่ยมชมใช้คำว่า "ผู้เยี่ยมชม" ตามภาษาปัจจุบัน
+  String displayNameFor(AppLocalizations l10n) =>
+      isGuest ? l10n.guest : displayName;
+
+  String roleLabel(AppLocalizations l10n) => switch (role) {
+    'creator' => l10n.roleCreator,
+    'admin' => l10n.roleAdmin,
+    _ => l10n.roleFoodLover,
   };
 
   factory UserProfile.fromJson(
