@@ -24,6 +24,7 @@ import { RecipeContent } from './entities/recipe-content.entity';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
 import { assertCanManageRecipe } from './recipe-permissions';
+import { MediaSigner } from '../uploads/media-signer.service';
 
 export interface FindRecipesOptions {
   search?: string;
@@ -64,6 +65,9 @@ export class RecipesService {
 
     @Optional()
     private readonly cache?: AppCacheService,
+
+    @Optional()
+    private readonly mediaSigner?: MediaSigner,
   ) {}
 
   // อายุ cache: รายการสั้นไว้ก่อน เพราะยอดหัวใจ/คอมเมนต์เปลี่ยนบ่อย
@@ -353,10 +357,40 @@ export class RecipesService {
     }
 
     recipe.canViewFullRecipe = await this.canViewFullRecipe(recipe, userId);
-    if (recipe.canViewFullRecipe) return recipe;
+    if (recipe.canViewFullRecipe) return this.signPaidMedia(recipe);
 
     recipe.sections = recipe.sections.filter((section) => section.isPreview);
     return recipe;
+  }
+
+  /**
+   * ไฟล์ในขั้นตอนที่ต้องซื้อ (ไม่ใช่ตัวอย่าง) ของสูตร official
+   * แนบลายเซ็นชั่วคราวให้คนที่มีสิทธิ์ดู /uploads จะไม่ยอมเปิดถ้าไม่มีลายเซ็น
+   */
+  private signPaidMedia(recipe: Recipe): Recipe {
+    const signer = this.mediaSigner;
+    if (!signer || recipe.type !== RecipeType.OFFICIAL) return recipe;
+    for (const section of recipe.sections) {
+      if (section.isPreview) continue;
+      for (const content of section.contents) {
+        if (content.mediaUrl) content.mediaUrl = signer.sign(content.mediaUrl);
+      }
+    }
+    return recipe;
+  }
+
+  /** ลิงก์ที่แอปส่งกลับมาตอนแก้สูตรอาจติดลายเซ็นมาด้วย เก็บเป็น path เปล่าเสมอ */
+  private static withoutSignedMedia<
+    T extends { sections?: { contents?: { mediaUrl?: string | null }[] }[] },
+  >(dto: T): T {
+    for (const section of dto.sections ?? []) {
+      for (const content of section.contents ?? []) {
+        if (content.mediaUrl) {
+          content.mediaUrl = MediaSigner.stripQuery(content.mediaUrl);
+        }
+      }
+    }
+    return dto;
   }
 
   private async isOwnerOrBuyer(
@@ -454,7 +488,11 @@ export class RecipesService {
   }
 
   async create(dto: CreateRecipeDto): Promise<Recipe> {
-    const { categoryIds, sections = [], ...recipeData } = dto;
+    const {
+      categoryIds,
+      sections = [],
+      ...recipeData
+    } = RecipesService.withoutSignedMedia(dto);
     const categories = await this.resolveCategories(categoryIds);
 
     const created = await this.recipeRepository.manager.transaction(
@@ -508,7 +546,8 @@ export class RecipesService {
   }
 
   async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
-    const { categoryIds, sections, ...recipeData } = dto;
+    const { categoryIds, sections, ...recipeData } =
+      RecipesService.withoutSignedMedia(dto);
     const categories = categoryIds
       ? await this.resolveCategories(categoryIds)
       : undefined;

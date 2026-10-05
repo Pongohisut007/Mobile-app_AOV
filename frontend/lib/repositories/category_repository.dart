@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
+
 // foundation ก็ export ชื่อ Category (annotation) มาด้วย เลยต้อง hide ไว้
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/category.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/data/api_cache.dart';
 
 class CategoryRepository {
   static const String baseUrl = ApiConfig.apiBaseUrl;
@@ -22,22 +25,34 @@ class CategoryRepository {
     return categories;
   }
 
+  static const _cacheKey = 'categories';
+
+  /// หมวดชุดล่าสุดที่เคยโหลด (RAM หรือ disk) ไว้แสดงทันทีตอนเปิดแอป ไม่มี = null
+  Future<List<Category>?> cachedCategories() async {
+    final cached = _cache;
+    if (cached != null) return cached;
+    final body = await ApiCache.instance.read(_cacheKey);
+    if (body == null) return null;
+    try {
+      return _decode(body);
+    } on Object {
+      return null;
+    }
+  }
+
+  static List<Category> _decode(String body) {
+    final List<dynamic> jsonList = json.decode(body);
+    return jsonList.map((json) => Category.fromJson(json)).toList();
+  }
+
   Future<List<Category>> _fetchCategories() async {
     final url = '$baseUrl/categories';
-    debugPrint('Fetching categories from: $url');
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      final List<dynamic> jsonList = json.decode(response.body);
-      final categories = jsonList
-          .map((json) => Category.fromJson(json))
-          .toList();
-
-      debugPrint('Parsed ${categories.length} categories successfully');
-      for (var category in categories) {
-        debugPrint('  - ${category.slug}: ${category.name}');
-      }
-
+      final body = utf8.decode(response.bodyBytes);
+      final categories = _decode(body);
+      unawaited(ApiCache.instance.write(_cacheKey, body));
       return categories;
     } else {
       debugPrint('Failed to load categories: ${response.statusCode}');

@@ -12,6 +12,7 @@ import { RecipeSort } from './dto/list-recipes-query.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
+import { MediaSigner } from '../uploads/media-signer.service';
 import { RecipesService } from './recipes.service';
 
 function queryBuilder() {
@@ -288,6 +289,56 @@ describe('RecipesService', () => {
     expect(access.hasActiveAccess).not.toHaveBeenCalled();
   });
 
+  it('signs paid step media for viewers who can see the full recipe', async () => {
+    const signer = { sign: jest.fn((url: string) => `${url}?sig=1`) };
+    const signing = new RecipesService(
+      recipeRepository as unknown as Repository<Recipe>,
+      categoryRepository as unknown as Repository<Category>,
+      favoriteRepository as unknown as Repository<Favorite>,
+      reviewRepository as unknown as Repository<Review>,
+      commentRepository as unknown as Repository<RecipeComment>,
+      access as unknown as RecipeAccessService,
+      undefined,
+      signer as unknown as MediaSigner,
+    );
+    const recipe = () => ({
+      id: 'r',
+      type: RecipeType.OFFICIAL,
+      status: RecipeStatus.PUBLISHED,
+      creatorId: 'owner',
+      sections: [
+        {
+          sortOrder: 1,
+          isPreview: true,
+          contents: [{ sortOrder: 1, mediaUrl: '/uploads/images/free.png' }],
+        },
+        {
+          sortOrder: 2,
+          isPreview: false,
+          contents: [{ sortOrder: 1, mediaUrl: '/uploads/videos/paid.mp4' }],
+        },
+      ],
+    });
+
+    recipeRepository.findOne.mockResolvedValue(recipe());
+    access.hasActiveAccess.mockResolvedValue(true);
+    const bought = await signing.findOneForViewer('r', 'buyer');
+    expect(bought.sections[0].contents[0].mediaUrl).toBe(
+      '/uploads/images/free.png',
+    );
+    expect(bought.sections[1].contents[0].mediaUrl).toBe(
+      '/uploads/videos/paid.mp4?sig=1',
+    );
+
+    // ยังไม่ซื้อ: ไม่เห็นขั้นตอนที่ต้องซื้อ และไม่ได้ลิงก์ที่เซ็นแล้ว
+    recipeRepository.findOne.mockResolvedValue(recipe());
+    access.hasActiveAccess.mockResolvedValue(false);
+    signer.sign.mockClear();
+    const preview = await signing.findOneForViewer('r', 'stranger');
+    expect(preview.sections).toHaveLength(1);
+    expect(signer.sign).not.toHaveBeenCalled();
+  });
+
   it('shows unpublished recipes only to the owner and buyers', async () => {
     recipeRepository.findOne.mockResolvedValue({
       id: 'r',
@@ -364,8 +415,22 @@ describe('RecipesService', () => {
       title: 'Soup',
       status: RecipeStatus.PUBLISHED,
       categoryIds: ['cat', 'cat'],
-      sections: [{ title: 'Prepare', contents: [{ textContent: 'Chop' }] }],
+      sections: [
+        {
+          title: 'Prepare',
+          contents: [
+            {
+              textContent: 'Chop',
+              mediaUrl: '/uploads/videos/a.mp4?exp=1&sig=old',
+            },
+          ],
+        },
+      ],
     } as CreateRecipeDto);
+    // ลิงก์ที่เซ็นมาจากหน้าแก้ไข เก็บลงฐานข้อมูลเป็น path เปล่า
+    expect(contentRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ mediaUrl: '/uploads/videos/a.mp4' }),
+    );
     expect(result).toEqual({ id: 'r' });
     expect(categoryRepository.findBy).toHaveBeenCalledTimes(1);
     expect(recipeRepo.save).toHaveBeenCalledWith(

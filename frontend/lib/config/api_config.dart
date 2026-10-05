@@ -8,7 +8,7 @@ class ApiConfig {
   static const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   /// Fake purchases are available in debug/profile builds only unless explicitly
-  /// enabled. The backend independently blocks them when NODE_ENV=production.
+  /// enabled. The backend independently blocks them when APP_ENV=production.
   static const mockIapEnabled = bool.fromEnvironment(
     'ENABLE_MOCK_IAP',
     defaultValue: !kReleaseMode,

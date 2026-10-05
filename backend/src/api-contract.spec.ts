@@ -388,6 +388,7 @@ describe('Recipe API HTTP contracts', () => {
     expect(comments.list).toHaveBeenLastCalledWith(
       recipeId,
       expect.objectContaining({ page: 1, limit: 3 }),
+      undefined,
     );
     await request(app.getHttpServer())
       .get(`/recipes/${recipeId}/comments?page=2&limit=5`)
@@ -395,6 +396,7 @@ describe('Recipe API HTTP contracts', () => {
     expect(comments.list).toHaveBeenLastCalledWith(
       recipeId,
       expect.objectContaining({ page: 2, limit: 5 }),
+      undefined,
     );
     await request(app.getHttpServer())
       .get(`/recipes/${recipeId}/comments?limit=51`)
@@ -466,13 +468,21 @@ describe('Recipe API HTTP contracts', () => {
     expect(reviews.listRecipeReviews).toHaveBeenLastCalledWith(
       recipeId,
       expect.objectContaining({ page: 1, limit: 20 }),
+      undefined,
     );
+    // แนบ token มา = ส่งผู้ชมไปด้วย (เจ้าของ/คนที่ซื้อแล้วอ่านสูตรที่ยังไม่เผยแพร่ได้)
     await request(app.getHttpServer())
       .get(`/recipes/${recipeId}/reviews/list?page=3&limit=4`)
+      .set('Authorization', 'Bearer test-user')
       .expect(200);
     expect(reviews.listRecipeReviews).toHaveBeenLastCalledWith(
       recipeId,
       expect.objectContaining({ page: 3, limit: 4 }),
+      userId,
+    );
+    expect(reviews.getRecipeSummary).toHaveBeenLastCalledWith(
+      recipeId,
+      undefined,
     );
     await request(app.getHttpServer())
       .get(`/recipes/${recipeId}/reviews/list?page=-1`)

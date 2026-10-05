@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { ChangePasswordDto } from './dto/change-password.dto';
@@ -11,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
 import { User, UserRole, UserStatus } from '../users/entities/user.entity';
 import { IdentityProvider } from '../users/entities/user-identity.entity';
+import { AppCacheService } from '../cache/app-cache.service';
 import { UsersService } from '../users/users.service';
 import { GoogleTokenVerifier } from './google-token-verifier';
 import type { LoginDto } from './dto/login.dto';
@@ -28,7 +30,28 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly googleVerifier: GoogleTokenVerifier,
+    @Optional() private readonly cache?: AppCacheService,
   ) {}
+
+  /**
+   * ออกจากระบบเครื่องนี้: token ใบนี้ใช้ไม่ได้อีก (เครื่องอื่นยังอยู่)
+   * จดไว้แค่จนถึงเวลาที่ token หมดอายุเอง หลังจากนั้นใช้ไม่ได้อยู่แล้ว
+   */
+  async logout(accessToken: string): Promise<void> {
+    const payload = this.jwtService.decode<JwtPayload | null>(accessToken);
+    if (!payload?.jti || !payload.exp) return;
+    const ttlSeconds = payload.exp - Math.floor(Date.now() / 1000);
+    await this.cache?.setFlag(AuthService.revokedKey(payload.jti), ttlSeconds);
+  }
+
+  async isRevoked(jti: string | undefined): Promise<boolean> {
+    if (!jti || !this.cache) return false;
+    return this.cache.hasFlag(AuthService.revokedKey(jti));
+  }
+
+  private static revokedKey(jti: string): string {
+    return `revoked-token:${jti}`;
+  }
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
     const existing = await this.usersService.findByEmail(dto.email);
@@ -42,7 +65,7 @@ export class AuthService {
       email: dto.email,
       passwordHash: await bcrypt.hash(dto.password, saltRounds),
       displayName: dto.displayName,
-      role: dto.role ?? UserRole.USER,
+      role: UserRole.USER,
     });
 
     return this.issueToken(user);
@@ -188,6 +211,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       ver: user.tokenVersion ?? 0,
+      jti: randomUUID(),
     };
 
     return {

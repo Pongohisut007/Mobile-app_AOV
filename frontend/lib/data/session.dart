@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
@@ -5,7 +7,9 @@ import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/data/user_cache.dart';
+import 'package:flutter_application_1/repositories/auth_repository.dart';
 import 'package:flutter_application_1/repositories/google_sign_in_service.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
@@ -20,7 +24,18 @@ Future<void> signOutLocally(BuildContext context) async {
   final purchasedRecipesBloc = context.read<PurchasedRecipesBloc>();
   final navigator = Navigator.of(context);
 
-  await TokenStorage().clearSession();
+  final storage = TokenStorage();
+  // ให้ backend ยกเลิก token ใบนี้ด้วย (หลุดไปอยู่ที่อื่นก็ใช้ไม่ได้แล้ว)
+  // ไม่รอผล: ไม่มีเน็ต/token หมดอายุไปแล้ว ก็ยังออกจากระบบในเครื่องได้ทันที
+  final accessToken = await storage.readAccessToken();
+  if (accessToken != null && accessToken.trim().isNotEmpty) {
+    unawaited(
+      HttpAuthRepository(
+        baseUrl: ApiConfig.apiBaseUrl,
+      ).logout(accessToken: accessToken).catchError((Object _) {}),
+    );
+  }
+  await storage.clearSession();
   // ครั้งหน้ากด "เข้าสู่ระบบด้วย Google" จะได้เลือกบัญชีใหม่
   await GoogleSignInService.instance.signOut();
   clearUserCaches();

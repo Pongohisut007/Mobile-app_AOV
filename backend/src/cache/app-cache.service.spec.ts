@@ -32,6 +32,9 @@ class FakeRedis {
       return next;
     }),
   );
+  exists = jest.fn((key: string) =>
+    this.run(() => (this.store.has(key) ? 1 : 0)),
+  );
   quit = jest.fn(() => Promise.resolve('OK'));
 
   private run<T>(fn: () => T): Promise<T> {
@@ -186,5 +189,27 @@ describe('AppCacheService', () => {
     await service.onModuleDestroy();
 
     expect(loader).toHaveBeenCalledTimes(1);
+  });
+
+  it('remembers flags until they expire, in memory and in Redis', async () => {
+    const service = createService();
+    await service.setFlag('revoked:a', 60);
+    expect(await service.hasFlag('revoked:a')).toBe(true);
+    expect(FakeRedis.last!.set).toHaveBeenCalledWith(
+      'flag:revoked:a',
+      '1',
+      'EX',
+      60,
+    );
+
+    // อีกเครื่องเห็นจาก Redis แม้ RAM ของตัวเองไม่มี
+    const other = createService();
+    FakeRedis.last!.store.set('flag:revoked:b', '1');
+    expect(await other.hasFlag('revoked:b')).toBe(true);
+    expect(await other.hasFlag('revoked:c')).toBe(false);
+
+    // หมดอายุไปแล้ว ไม่ต้องจด
+    await service.setFlag('revoked:d', 0);
+    expect(await service.hasFlag('revoked:d')).toBe(false);
   });
 });

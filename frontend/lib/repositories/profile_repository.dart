@@ -4,9 +4,13 @@ import 'dart:convert';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/data/api_cache.dart';
 
 abstract interface class ProfileRepository {
   Future<UserProfile> fetchProfile(String accessToken);
+
+  /// โปรไฟล์ล่าสุดที่เคยโหลด (ของคนที่ login อยู่) ไม่มี = null
+  Future<UserProfile?> cachedProfile();
 
   /// แก้ชื่อ/รูปโปรไฟล์ของตัวเอง (ไม่ส่ง = ไม่แตะ field นั้น)
   /// avatarPath เป็น path ที่อัปโหลดแล้ว เช่น /uploads/images/xxx.jpg
@@ -28,6 +32,22 @@ class HttpProfileRepository implements ProfileRepository {
   final String _baseUrl;
   final http.Client _client;
   final Duration requestTimeout;
+
+  static const _cacheKey = '${ApiCache.userPrefix}profile';
+
+  @override
+  Future<UserProfile?> cachedProfile() async {
+    final body = await ApiCache.instance.read(_cacheKey);
+    if (body == null) return null;
+    try {
+      return UserProfile.fromJson(
+        jsonDecode(body) as Map<String, dynamic>,
+        apiBaseUrl: _baseUrl,
+      );
+    } on Object {
+      return null;
+    }
+  }
 
   @override
   Future<UserProfile> fetchProfile(String accessToken) {
@@ -83,13 +103,17 @@ class HttpProfileRepository implements ProfileRepository {
         );
       }
 
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      final body = utf8.decode(response.bodyBytes);
+      final decoded = jsonDecode(body);
       if (decoded is! Map<String, dynamic>) {
         throw ProfileRepositoryException(appL10n.errorInvalidResponse);
       }
 
       try {
-        return UserProfile.fromJson(decoded, apiBaseUrl: _baseUrl);
+        final profile = UserProfile.fromJson(decoded, apiBaseUrl: _baseUrl);
+        // ทั้งโหลดและแก้โปรไฟล์ตอบเป็นโปรไฟล์ล่าสุด เก็บไว้เปิดครั้งหน้า
+        unawaited(ApiCache.instance.write(_cacheKey, body));
+        return profile;
       } on FormatException catch (error) {
         throw ProfileRepositoryException(error.message);
       }

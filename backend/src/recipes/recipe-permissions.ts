@@ -87,3 +87,17 @@ export function canFavorite(
     recipe.status === RecipeStatus.PUBLISHED || recipe.creatorId === userId
   );
 }
+
+/**
+ * อ่านข้อมูลของสูตร (คอมเมนต์ รีวิว ฯลฯ) ได้ไหม
+ * สูตรที่เผยแพร่แล้วอ่านได้ทุกคน ที่เหลือเฉพาะเจ้าของและคนที่ซื้อไปแล้ว
+ */
+export async function canReadRecipe(
+  recipe: { id: string; status: RecipeStatus; creatorId: string },
+  viewerId: string | undefined,
+  hasAccess: (userId: string, recipeId: string) => Promise<boolean>,
+): Promise<boolean> {
+  if (recipe.status === RecipeStatus.PUBLISHED) return true;
+  if (!viewerId) return false;
+  return recipe.creatorId === viewerId || hasAccess(viewerId, recipe.id);
+}

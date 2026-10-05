@@ -15,12 +15,23 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     FetchCategoriesEvent event,
     Emitter<CategoryState> emit,
   ) async {
-    emit(CategoryLoading());
+    // มีชุดเก่า = โชว์ทันที แล้วค่อยแทนด้วยของใหม่ (คงหมวดที่เลือกไว้)
+    final cached = await repository.cachedCategories();
+    final showingCache = cached != null && cached.isNotEmpty;
+    emit(showingCache ? CategoryLoaded(cached) : CategoryLoading());
     try {
-      final categories = await repository.fetchCategories();
-      emit(CategoryLoaded(categories));
+      final categories = await repository.fetchCategories(
+        forceRefresh: showingCache,
+      );
+      final current = state;
+      emit(
+        CategoryLoaded(
+          categories,
+          selectedId: current is CategoryLoaded ? current.selectedId : '',
+        ),
+      );
     } catch (e) {
-      emit(CategoryError(message: e.toString()));
+      if (!showingCache) emit(CategoryError(message: e.toString()));
     }
   }
 

@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/data/api_cache.dart';
 import 'package:flutter_application_1/data/recipe_library_cache.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/paged_result.dart';
@@ -21,8 +24,49 @@ class FoodRepository {
 
   static Food? cachedFood(String id) => _detailCache[id];
 
+  /// รายละเอียดที่เคยเปิด: RAM ก่อน ไม่มีค่อยอ่านจาก disk (เปิดแอปใหม่ก็ยังมี)
+  static Future<Food?> loadCachedFood(String id) async {
+    final inMemory = _detailCache[id];
+    if (inMemory != null) return inMemory;
+    final body = await ApiCache.instance.read(_detailKey(id));
+    if (body == null) return null;
+    try {
+      return _detailCache[id] = _decodeFood(body);
+    } on Object {
+      return null;
+    }
+  }
+
   /// เนื้อหาขึ้นกับว่าใคร login (ซื้อแล้วเห็นขั้นตอนครบ) เปลี่ยนบัญชีต้องล้าง
+  /// (ของบน disk ล้างพร้อมข้อมูลผู้ใช้อื่น ๆ ใน clearUserCaches)
   static void clearCache() => _detailCache.clear();
+
+  // ขึ้นกับผู้ชม (ซื้อแล้วเห็นขั้นตอนครบ) จึงเป็นข้อมูลของผู้ใช้
+  static String _detailKey(String id) => '${ApiCache.userPrefix}recipe:$id';
+
+  /// หน้าแรกของรายการที่เคยโหลด ใช้แสดงทันทีตอนเปิดแอป/สลับหมวด
+  /// (ระหว่างนั้นโหลดของใหม่มาแทน) ไม่เคยโหลด = null
+  Future<PagedResult<Food>?> cachedRecipesPage({
+    String? type,
+    String? status,
+    String? categoryId,
+    String? sort,
+  }) async {
+    final uri = _recipesUri(
+      type: type,
+      status: status,
+      categoryId: categoryId,
+      sort: sort,
+      page: 1,
+    );
+    final body = await ApiCache.instance.read('list:$uri');
+    if (body == null) return null;
+    try {
+      return _decodePage(body);
+    } on Object {
+      return null;
+    }
+  }
 
   // =========================== เรียกใช้ตรงนี้ ==================================
 
@@ -36,7 +80,24 @@ class FoodRepository {
     String? sort,
     int page = 1,
   }) async {
-    final uri = Uri.parse('$baseUrl/recipes').replace(
+    final uri = _recipesUri(
+      type: type,
+      status: status,
+      categoryId: categoryId,
+      sort: sort,
+      page: page,
+    );
+    return _getFoodsPage(uri, cacheKey: page == 1 ? 'list:$uri' : null);
+  }
+
+  static Uri _recipesUri({
+    String? type,
+    String? status,
+    String? categoryId,
+    String? sort,
+    required int page,
+  }) {
+    return Uri.parse('$baseUrl/recipes').replace(
       queryParameters: {
         'type': ?type,
         'status': ?status,
@@ -47,7 +108,6 @@ class FoodRepository {
         'limit': '$pageSize',
       },
     );
-    return _getFoodsPage(uri);
   }
 
   /// ค้นหาตามชื่อทีละหน้า เรียงตามความใกล้เคียง
@@ -129,14 +189,28 @@ class FoodRepository {
 
   // ============================ อ่านฟังก์ชั่น ==============================
 
-  Future<PagedResult<Food>> _getFoodsPage(Uri uri) async {
+  static PagedResult<Food> _decodePage(String body) {
+    return PagedResult.fromJson(
+      json.decode(body) as Map<String, dynamic>,
+      (item) => Food.fromJson(item, apiBaseUrl: baseUrl),
+    );
+  }
+
+  static Food _decodeFood(String body) {
+    return Food.fromJson(
+      json.decode(body) as Map<String, dynamic>,
+      apiBaseUrl: baseUrl,
+    );
+  }
+
+  Future<PagedResult<Food>> _getFoodsPage(Uri uri, {String? cacheKey}) async {
     debugPrint('Fetching foods from: $uri');
     final response = await http.get(uri);
     if (response.statusCode == 200) {
-      return PagedResult.fromJson(
-        json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
-        (item) => Food.fromJson(item, apiBaseUrl: baseUrl),
-      );
+      final body = utf8.decode(response.bodyBytes);
+      final result = _decodePage(body);
+      if (cacheKey != null) unawaited(ApiCache.instance.write(cacheKey, body));
+      return result;
     }
     debugPrint('Failed to load foods: ${response.statusCode}');
     throw Exception(appL10n.loadRecipesFailed);
@@ -154,13 +228,15 @@ class FoodRepository {
     );
 
     if (response.statusCode == 200) {
-      final food = Food.fromJson(
-        json.decode(response.body) as Map<String, dynamic>,
-        apiBaseUrl: baseUrl,
-      );
-      debugPrint('Parsed food: ${food.idfoods} - ${food.name}');
+      final body = utf8.decode(response.bodyBytes);
+      final food = _decodeFood(body);
+      unawaited(ApiCache.instance.write(_detailKey(food.idfoods), body));
       return food;
     } else if (response.statusCode == 404) {
+      // ถูกลบ/ซ่อนไปแล้ว ของเก่าในเครื่องไม่ควรโชว์อีก
+      final id = Uri.parse(url).pathSegments.last;
+      _detailCache.remove(id);
+      unawaited(ApiCache.instance.remove(_detailKey(id)));
       throw Exception(appL10n.recipeNotFoundShort);
     } else {
       debugPrint('Failed to load food: ${response.statusCode}');
@@ -198,6 +274,7 @@ class FoodRepository {
       },
     );
     _detailCache.remove(foodId);
+    unawaited(ApiCache.instance.remove(_detailKey(foodId)));
     // สูตรที่ลบอาจอยู่ในหลายคลัง (My recipes, Favorites ของคนอื่นในเครื่องเดียวกัน ฯลฯ)
     RecipeLibraryCache.invalidateAll();
     if (response.statusCode != 200) {

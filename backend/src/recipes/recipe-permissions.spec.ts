@@ -6,6 +6,7 @@ import {
   assertPurchasable,
   assertRecipeFieldsAllowed,
   canFavorite,
+  canReadRecipe,
   visibleRecipeFilters,
 } from './recipe-permissions';
 
@@ -149,5 +150,27 @@ describe('recipe permissions', () => {
     expect(
       canFavorite({ status: RecipeStatus.DRAFT, creatorId: 'a' }, 'u1'),
     ).toBe(false);
+  });
+
+  it('canReadRecipe opens unpublished recipes only to the owner and buyers', async () => {
+    const draft = { id: 'r', status: RecipeStatus.DRAFT, creatorId: 'owner' };
+    const noAccess = jest.fn().mockResolvedValue(false);
+    await expect(
+      canReadRecipe(
+        { ...draft, status: RecipeStatus.PUBLISHED },
+        undefined,
+        noAccess,
+      ),
+    ).resolves.toBe(true);
+    await expect(canReadRecipe(draft, undefined, noAccess)).resolves.toBe(
+      false,
+    );
+    await expect(canReadRecipe(draft, 'stranger', noAccess)).resolves.toBe(
+      false,
+    );
+    await expect(canReadRecipe(draft, 'owner', noAccess)).resolves.toBe(true);
+    await expect(
+      canReadRecipe(draft, 'buyer', jest.fn().mockResolvedValue(true)),
+    ).resolves.toBe(true);
   });
 });

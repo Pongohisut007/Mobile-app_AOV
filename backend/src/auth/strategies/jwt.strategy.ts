@@ -12,6 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     configService: ConfigService,
     private readonly usersService: UsersService,
+    private readonly authService: AuthService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -28,6 +29,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
     // ออกจากระบบทุกอุปกรณ์/เปลี่ยนรหัสผ่านแล้ว token ใบเก่าใช้ไม่ได้
     if ((payload.ver ?? 0) !== user.tokenVersion) {
+      throw new UnauthorizedException('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    }
+    // ออกจากระบบเครื่องนี้ไปแล้ว
+    if (await this.authService.isRevoked(payload.jti)) {
       throw new UnauthorizedException('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
     }
     return AuthService.toAuthUser(user);

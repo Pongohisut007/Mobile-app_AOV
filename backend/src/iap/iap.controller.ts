@@ -1,6 +1,7 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RateLimit } from '../common/throttle/rate-limits';
 import { CreateMockPurchaseDto } from './dto/create-mock-purchase.dto';
 import { IapService, MockPurchaseResult } from './iap.service';
 
@@ -13,6 +14,7 @@ export class IapController {
    * Development-only stand-in for Google Play purchase verification.
    * It intentionally accepts a cart item, not a price or success flag from the app.
    */
+  @RateLimit('write')
   @Post('mock/purchases')
   createMockPurchase(
     @CurrentUser('id') userId: string,
