@@ -1,6 +1,7 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// ส่วนหัวโลโก้ของหน้า register (ใช้เป็น sliver ใน CustomScrollView)
@@ -39,7 +40,6 @@ class _RegisterLogoHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   static const _minHeight = 64.0;
   static const _minLogoSize = 40.0;
-  static const _background = Color(0xFFD96868);
 
   final double maxHeight;
   final double maxLogoSize;
@@ -69,9 +69,9 @@ class _RegisterLogoHeaderDelegate extends SliverPersistentHeaderDelegate {
       progress,
     )!.clamp(_minLogoSize, currentHeight - 16).toDouble();
 
-    // พื้นสีเดียวกับหน้า ฟอร์มที่เลื่อนลอดใต้แถบจะได้ไม่โผล่ทะลุ
-    return ColoredBox(
-      color: _background,
+    // พื้นทึบไล่สีเดียวกับหน้า ฟอร์มที่เลื่อนลอดใต้แถบจะได้ไม่โผล่ทะลุ
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: AuthStyle.gradient),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -91,11 +91,13 @@ class _RegisterLogoHeaderDelegate extends SliverPersistentHeaderDelegate {
               onPressed: () {
                 Navigator.maybePop(context);
               },
-              icon: const Icon(Icons.arrow_back, size: 35),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              icon: const Icon(Icons.arrow_back, size: 32),
               color: Colors.white,
               padding: EdgeInsets.zero,
             ),
           ),
+          const Positioned(top: 12, right: 12, child: AuthLanguageButton()),
         ],
       ),
     );

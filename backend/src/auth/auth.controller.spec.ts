@@ -2,6 +2,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './password-reset.service';
 import type { AuthUser } from './interfaces/jwt-payload.interface';
 
 // @nestjs/jwt เป็น ESM ที่ jest โหลดตรง ๆ ไม่ได้ (auth.service import อยู่)
@@ -40,9 +41,14 @@ describe('AuthController', () => {
     findProfile: jest.fn().mockResolvedValue('profile'),
     updateOwnProfile: jest.fn().mockResolvedValue('updated'),
   };
+  const passwordReset = {
+    requestCode: jest.fn().mockResolvedValue(undefined),
+    resetPassword: jest.fn().mockResolvedValue('reset'),
+  };
   const controller = new AuthController(
     authService as unknown as AuthService,
     usersService as unknown as UsersService,
+    passwordReset as unknown as PasswordResetService,
   );
 
   it('forwards register and login', async () => {
@@ -84,6 +90,23 @@ describe('AuthController', () => {
     expect(usersService.updateOwnProfile).toHaveBeenCalledWith('u1', {
       displayName: 'Chef',
     });
+  });
+
+  it('forwards forgot and reset password', async () => {
+    await controller.forgotPassword({ email: 'a@b.c', language: 'en' });
+    expect(passwordReset.requestCode).toHaveBeenCalledWith('a@b.c', 'en');
+    await expect(
+      controller.resetPassword({
+        email: 'a@b.c',
+        code: '123456',
+        newPassword: 'new-pass1',
+      }),
+    ).resolves.toBe('reset');
+    expect(passwordReset.resetPassword).toHaveBeenCalledWith(
+      'a@b.c',
+      '123456',
+      'new-pass1',
+    );
   });
 
   it('greets creators on the creator-only route', () => {

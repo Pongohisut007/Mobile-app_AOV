@@ -42,12 +42,13 @@ export class IapService {
   }
 
   private assertMockPurchasesEnabled(): void {
-    const nodeEnv = this.configService.get<string>('NODE_ENV');
+    const appEnv = this.configService.get<string>('app.env');
     const explicitlyDisabled =
       this.configService.get<string>('IAP_MOCK_ENABLED') === 'false';
 
     // A fake purchase endpoint must never be usable in production.
-    if (nodeEnv === 'production' || explicitlyDisabled) {
+    // Staging allows it (unless IAP_MOCK_ENABLED=false) until real billing exists.
+    if (appEnv === 'production' || explicitlyDisabled) {
       throw new ServiceUnavailableException(
         'Mock purchases are disabled in this environment.',
       );

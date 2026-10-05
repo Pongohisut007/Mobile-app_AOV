@@ -12,3 +12,5 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# ยกเว้น debug keystore กลางของทีม (ไม่ใช่ key จริงสำหรับขึ้น store)
+!app/debug.keystore

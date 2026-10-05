@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserRole, UserStatus } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import { GoogleTokenVerifier } from './google-token-verifier';
 
 // @nestjs/jwt เป็น ESM ที่ jest โหลดตรง ๆ ไม่ได้ เทสต์นี้ใช้ JwtService ปลอมอยู่แล้ว
 jest.mock('@nestjs/jwt', () => ({ JwtService: class JwtService {} }));
@@ -18,6 +19,7 @@ describe('AuthService', () => {
   let passwordHash: string;
   let usersService: Record<string, jest.Mock>;
   let jwtService: { sign: jest.Mock };
+  let googleVerifier: { verify: jest.Mock };
   let service: AuthService;
 
   const user = (overrides: Partial<User> = {}) =>
@@ -50,6 +52,21 @@ describe('AuthService', () => {
         .mockResolvedValue(user({ tokenVersion: 3 })),
       bumpTokenVersion: jest.fn(),
       deleteOwnAccount: jest.fn(),
+      hasPassword: jest.fn().mockResolvedValue(true),
+      findByIdentity: jest.fn().mockResolvedValue(null),
+      linkIdentity: jest.fn(),
+      createWithIdentity: jest.fn((input: Partial<User>) =>
+        Promise.resolve(user({ ...input, id: 'new-user' })),
+      ),
+    };
+    googleVerifier = {
+      verify: jest.fn().mockResolvedValue({
+        sub: 'g-1',
+        email: 'cook@example.com',
+        emailVerified: true,
+        name: 'Google Cook',
+        picture: 'https://example.com/p.png',
+      }),
     };
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
     // salt rounds ต่ำ ให้เทสต์เร็ว
@@ -62,6 +79,7 @@ describe('AuthService', () => {
       usersService as unknown as UsersService,
       jwtService as unknown as JwtService,
       config as unknown as ConfigService,
+      googleVerifier as unknown as GoogleTokenVerifier,
     );
   });
 
@@ -180,5 +198,117 @@ describe('AuthService', () => {
     expect(jwtService.sign).toHaveBeenCalledWith(
       expect.objectContaining({ ver: 0 }),
     );
+  });
+  describe('Google sign-in', () => {
+    it('signs in the user already linked to the Google account', async () => {
+      usersService.findByIdentity.mockResolvedValue(user());
+
+      const result = await service.loginWithGoogle('id-token');
+
+      expect(googleVerifier.verify).toHaveBeenCalledWith('id-token');
+      expect(usersService.linkIdentity).not.toHaveBeenCalled();
+      expect(result.user.id).toBe('u1');
+    });
+
+    it('links Google to an existing account with the same verified email', async () => {
+      usersService.findByEmail.mockResolvedValue(user());
+
+      await service.loginWithGoogle('id-token');
+
+      expect(usersService.linkIdentity).toHaveBeenCalledWith(
+        'u1',
+        'google',
+        'g-1',
+        'cook@example.com',
+      );
+      expect(usersService.createWithIdentity).not.toHaveBeenCalled();
+    });
+
+    it('refuses to link when Google has not verified the email', async () => {
+      usersService.findByEmail.mockResolvedValue(user());
+      googleVerifier.verify.mockResolvedValue({
+        sub: 'g-1',
+        email: 'cook@example.com',
+        emailVerified: false,
+        name: null,
+        picture: null,
+      });
+
+      await expect(service.loginWithGoogle('id-token')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(usersService.linkIdentity).not.toHaveBeenCalled();
+    });
+
+    it('creates a new account from the Google profile', async () => {
+      const result = await service.loginWithGoogle('id-token');
+
+      expect(usersService.createWithIdentity).toHaveBeenCalledWith(
+        {
+          email: 'cook@example.com',
+          displayName: 'Google Cook',
+          avatarUrl: 'https://example.com/p.png',
+          role: UserRole.USER,
+        },
+        'google',
+        'g-1',
+      );
+      expect(result.user.id).toBe('new-user');
+    });
+
+    it('uses the email name when Google has no display name', async () => {
+      googleVerifier.verify.mockResolvedValue({
+        sub: 'g-2',
+        email: 'chef.mook@gmail.com',
+        emailVerified: true,
+        name: null,
+        picture: null,
+      });
+
+      await service.loginWithGoogle('id-token');
+
+      expect(usersService.createWithIdentity).toHaveBeenCalledWith(
+        expect.objectContaining({ displayName: 'chef.mook' }),
+        'google',
+        'g-2',
+      );
+    });
+
+    it('blocks disabled accounts', async () => {
+      usersService.findByIdentity.mockResolvedValue(
+        user({ status: UserStatus.DISABLED }),
+      );
+      await expect(service.loginWithGoogle('id-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  describe('accounts without a password', () => {
+    beforeEach(() => {
+      usersService.hasPassword.mockResolvedValue(false);
+      usersService.findByEmailWithPassword.mockResolvedValue(
+        user({ passwordHash: null }),
+      );
+    });
+
+    it('cannot sign in with a password', async () => {
+      await expect(
+        service.validateUser('cook@example.com', 'anything1'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('can set a first password without the current one', async () => {
+      await service.changePassword('u1', { newPassword: 'first-pass1' });
+      expect(usersService.updatePasswordHash).toHaveBeenCalledWith(
+        'u1',
+        expect.any(String),
+      );
+    });
+
+    it('can delete the account without a password', async () => {
+      await service.deleteAccount('u1');
+      expect(usersService.deleteOwnAccount).toHaveBeenCalled();
+    });
   });
 });

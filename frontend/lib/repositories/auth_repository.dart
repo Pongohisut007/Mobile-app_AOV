@@ -14,21 +14,36 @@ abstract interface class AuthRepository {
     required String displayName,
   });
 
+  /// เข้าสู่ระบบ/สมัครด้วย ID token จาก Google Sign-In
+  Future<AuthResponse> loginWithGoogle({required String idToken});
+
   /// เปลี่ยนรหัสผ่านของคนที่ login อยู่ (ต้องยืนยันรหัสเดิม)
+  /// ยังไม่เคยมีรหัสผ่าน (สมัครผ่าน Google) ไม่ต้องส่ง currentPassword = ตั้งรหัสผ่านครั้งแรก
   /// เครื่องอื่นหลุดทันที เครื่องนี้ได้ token ใบใหม่กลับมา ต้องบันทึกแทนใบเดิม
   Future<AuthResponse> changePassword({
     required String accessToken,
-    required String currentPassword,
+    String? currentPassword,
     required String newPassword,
   });
 
   /// ทำให้ token ทุกใบของบัญชีนี้ใช้ไม่ได้ (รวมเครื่องนี้)
   Future<void> logoutAll({required String accessToken});
 
-  /// ปิดบัญชีและลบข้อมูลส่วนตัว (ต้องยืนยันรหัสผ่าน)
-  Future<void> deleteAccount({
-    required String accessToken,
-    required String password,
+  /// ปิดบัญชีและลบข้อมูลส่วนตัว (ต้องยืนยันรหัสผ่าน ถ้าบัญชีมีรหัสผ่าน)
+  Future<void> deleteAccount({required String accessToken, String? password});
+
+  /// ลืมรหัสผ่าน ขั้นที่ 1: ขอรหัส 6 หลักทางอีเมล
+  /// สำเร็จเสมอแม้อีเมลนี้ไม่มีบัญชี (backend ไม่บอก กันคนนอกเดาอีเมล)
+  Future<void> requestPasswordReset({
+    required String email,
+    required String language,
+  });
+
+  /// ลืมรหัสผ่าน ขั้นที่ 2: รหัสถูก = ตั้งรหัสใหม่และได้ session กลับมาเลย
+  Future<AuthResponse> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
   });
 }
 
@@ -95,15 +110,20 @@ class HttpAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<AuthResponse> loginWithGoogle({required String idToken}) {
+    return _sendAuthRequest(path: '/auth/google', body: {'idToken': idToken});
+  }
+
+  @override
   Future<AuthResponse> changePassword({
     required String accessToken,
-    required String currentPassword,
+    String? currentPassword,
     required String newPassword,
   }) async {
     final decoded = await _postWithToken(
       '/auth/change-password',
       accessToken,
-      body: {'currentPassword': currentPassword, 'newPassword': newPassword},
+      body: {'currentPassword': ?currentPassword, 'newPassword': newPassword},
     );
     if (decoded is! Map<String, dynamic>) {
       throw AuthRepositoryException(appL10n.errorInvalidResponse);
@@ -119,19 +139,48 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<void> deleteAccount({
     required String accessToken,
-    required String password,
+    String? password,
   }) async {
     await _postWithToken(
       '/auth/delete-account',
       accessToken,
-      body: {'password': password},
+      body: {'password': ?password},
     );
   }
 
-  /// POST พร้อม token คืน JSON ที่ได้ (204 = null)
+  @override
+  Future<void> requestPasswordReset({
+    required String email,
+    required String language,
+  }) async {
+    await _postWithToken(
+      '/auth/forgot-password',
+      null,
+      body: {'email': email.trim(), 'language': language},
+    );
+  }
+
+  @override
+  Future<AuthResponse> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) {
+    return _sendAuthRequest(
+      path: '/auth/reset-password',
+      body: {
+        'email': email.trim(),
+        'code': code.trim(),
+        'newPassword': newPassword,
+      },
+    );
+  }
+
+  /// POST คืน JSON ที่ได้ (204 = null)
+  /// accessToken เป็น null = endpoint ที่ไม่ต้อง login (เช่น ลืมรหัสผ่าน)
   Future<Object?> _postWithToken(
     String path,
-    String accessToken, {
+    String? accessToken, {
     Map<String, String> body = const {},
   }) async {
     try {
@@ -140,13 +189,14 @@ class HttpAuthRepository implements AuthRepository {
             Uri.parse('$_baseUrl$path'),
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ${accessToken.trim()}',
+              if (accessToken != null)
+                'Authorization': 'Bearer ${accessToken.trim()}',
             },
             body: jsonEncode(body),
           )
           .timeout(requestTimeout);
 
-      if (response.statusCode == 401) {
+      if (accessToken != null && response.statusCode == 401) {
         throw AuthRepositoryException(appL10n.sessionExpired);
       }
       final decoded = response.bodyBytes.isEmpty

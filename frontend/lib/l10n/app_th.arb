@@ -117,7 +117,6 @@
   "signIn": "เข้าสู่ระบบ",
   "editProfile": "แก้ไขโปรไฟล์",
   "yourKitchenTitle": "ครัวของคุณ",
-  "yourKitchenSubtitle": "ทุกเมนูที่คุณทำและสะสมไว้",
   "appVersionFooter": "{appName} · เวอร์ชัน {version}",
   "@appVersionFooter": {
     "placeholders": {
@@ -129,7 +128,6 @@
       }
     }
   },
-  "profileHeaderSubtitle": "สูตร คำสั่งซื้อ และการตั้งค่าของคุณ",
   "settingsTitle": "ตั้งค่า",
   "cartTooltip": "ตะกร้า",
   "myRecipes": "สูตรของฉัน",
@@ -168,9 +166,6 @@
       }
     }
   },
-  "statRecipes": "สูตร",
-  "statSaved": "บันทึก",
-  "statRating": "คะแนน",
   "guest": "ผู้เยี่ยมชม",
   "fieldName": "ชื่อ",
   "fieldEmail": "อีเมล",
@@ -230,8 +225,6 @@
   "showPassword": "แสดงรหัสผ่าน",
   "hidePassword": "ซ่อนรหัสผ่าน",
   "forgotPassword": "ลืมรหัสผ่าน?",
-  "orSignInWith": "หรือเข้าสู่ระบบด้วย",
-  "orSignUpWith": "หรือสมัครด้วย",
   "acceptTermsRequired": "กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว",
   "displayName": "ชื่อที่แสดง",
   "displayNameHint": "กรอกชื่อที่แสดง",
@@ -883,7 +876,7 @@
   "faqProfileTitle": "เปลี่ยนรูปโปรไฟล์หรือชื่อ",
   "faqProfileBody": "โปรไฟล์ → แก้ไขโปรไฟล์ เปลี่ยนรูปและชื่อที่แสดงได้ อีเมลใช้เข้าสู่ระบบจึงเปลี่ยนไม่ได้",
   "faqForgotTitle": "ลืมรหัสผ่าน",
-  "faqForgotBody": "ตอนนี้ยังไม่มีระบบรีเซ็ตรหัสผ่านผ่านอีเมล ถ้ายังเข้าสู่ระบบอยู่ เปลี่ยนรหัสได้ที่ ตั้งค่า → เปลี่ยนรหัสผ่าน ถ้าเข้าไม่ได้แล้วโปรดติดต่อทีมงาน",
+  "faqForgotBody": "กด \"ลืมรหัสผ่าน?\" ในหน้าเข้าสู่ระบบ กรอกอีเมล แล้วใส่รหัส 6 หลักที่ได้ทางอีเมลเพื่อตั้งรหัสผ่านใหม่ ถ้าไม่เห็นอีเมลให้ดูในจดหมายขยะ",
   "faqLostTitle": "มือถือหาย หรือสงสัยว่ามีคนใช้บัญชีของฉัน",
   "faqLostBody": "ตั้งค่า → ออกจากระบบทุกอุปกรณ์ แล้วเปลี่ยนรหัสผ่าน ทุกเครื่องที่เข้าสู่ระบบอยู่จะหลุดออกทันที",
   "privacyCollectTitle": "ข้อมูลที่เราเก็บ",
@@ -914,5 +907,68 @@
   "language": "ภาษา",
   "chooseLanguage": "เลือกภาษา",
   "englishNameHint": "เช่น Spicy basil chicken",
-  "englishNameHelper": "ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ"
+  "englishNameHelper": "ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ",
+  "statRecipeRating": "คะแนนสูตร",
+  "reviewsCountShort": "{count} รีวิว",
+  "@reviewsCountShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statSales": "ขายได้",
+  "statOfficialSaves": "บันทึกสูตร Official",
+  "statCommunitySaves": "บันทึกสูตรคอมมูนิตี้",
+  "statSavesReceived": "ถูกบันทึก",
+  "statCommentsReceived": "ความคิดเห็น",
+  "statReviewsWritten": "รีวิวที่เขียน",
+  "recentPurchases": "ซื้อล่าสุด",
+  "continueDraftTitle": "เขียนต่อจากที่ค้างไว้",
+  "continueDraftSubtitle": "มีฉบับร่าง {count} สูตร",
+  "@continueDraftSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "firstRecipeTitle": "แบ่งปันสูตรแรกของคุณ",
+  "firstRecipeSubtitleCreator": "สร้างสูตร Official และตั้งราคาขายได้",
+  "firstRecipeSubtitleUser": "สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้",
+  "authTagline": "วันนี้ทำอะไรอร่อยดี",
+  "continueWithGoogle": "เข้าสู่ระบบด้วย Google",
+  "orDivider": "หรือ",
+  "googleSignInUnavailable": "ยังไม่เปิดใช้การเข้าสู่ระบบด้วย Google",
+  "googleSignInFailed": "เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองอีกครั้ง",
+  "setPassword": "ตั้งรหัสผ่าน",
+  "setPasswordHint": "ตั้งรหัสผ่านไว้เข้าสู่ระบบด้วยอีเมลได้ด้วย",
+  "passwordSet": "ตั้งรหัสผ่านแล้ว",
+  "forgotPasswordTitle": "ลืมรหัสผ่าน",
+  "forgotPasswordIntro": "กรอกอีเมลที่ใช้สมัคร เราจะส่งรหัสยืนยัน 6 หลักไปให้",
+  "resetPasswordTitle": "ตั้งรหัสผ่านใหม่",
+  "sendResetCode": "ส่งรหัสยืนยัน",
+  "resetCodeSentTo": "ถ้า {email} มีบัญชีอยู่ เราส่งรหัส 6 หลักไปแล้ว ดูในกล่องจดหมาย (และจดหมายขยะ)",
+  "@resetCodeSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "changeEmail": "เปลี่ยนอีเมล",
+  "resetCode": "รหัสยืนยัน",
+  "resetCodeHint": "ตัวเลข 6 หลัก",
+  "resetCodeInvalid": "กรอกรหัสตัวเลข 6 หลัก",
+  "resendCode": "ส่งรหัสอีกครั้ง",
+  "resendCodeIn": "ส่งรหัสอีกครั้งได้ใน {seconds} วินาที",
+  "@resendCodeIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resetCodeResent": "ส่งรหัสใหม่แล้ว",
+  "resetPasswordSubmit": "ตั้งรหัสผ่านใหม่"
 }

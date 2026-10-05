@@ -28,7 +28,35 @@ build, Checkout lets a tester choose success, failure, or cancellation. A
 successful purchase calls `POST /iap/mock/purchases`; the backend creates a paid
 order and payment, grants recipe access, and removes that recipe from the cart.
 
-The backend always rejects mock purchases when `NODE_ENV=production`. Set
-`IAP_MOCK_ENABLED=false` to disable them in another environment. Flutter release
+The backend always rejects mock purchases when `APP_ENV=production`. On
+`development` and `staging` they are allowed; set `IAP_MOCK_ENABLED=false` to
+disable them there.
+
+`APP_ENV` (`development` | `staging` | `production`) controls app behavior and is
+separate from `NODE_ENV` (the Docker image always sets `NODE_ENV=production`).
+Only `development` auto-syncs the database schema; `staging` and `production`
+must run `npm run migration:run`. If `APP_ENV` is not set, `NODE_ENV=production`
+counts as `production` and anything else as `development`. Flutter release
 builds hide the successful mock path by default; for a non-production release
 test build, pass `--dart-define=ENABLE_MOCK_IAP=true` explicitly.
+
+## Flutter config (dev / prod)
+
+The app has no hardcoded URLs or IDs. Each environment's values live in
+`frontend/config/*.json`, chosen with `--dart-define-from-file`:
+
+```sh
+cd frontend
+flutter run --dart-define-from-file=config/dev.json                   # emulator -> backend on your machine
+flutter build apk --release --dart-define-from-file=config/staging.json  # staging backend for testing
+flutter build apk --release --dart-define-from-file=config/prod.json  # release build
+```
+
+| Key | Purpose |
+| --- | --- |
+| `API_BASE_URL` | backend URL (the emulator reaches the host machine at `10.0.2.2`; a real phone needs the computer's IP) |
+| `GOOGLE_SERVER_CLIENT_ID` | Web client ID, same value as `GOOGLE_CLIENT_IDS` in the backend |
+| `GOOGLE_IOS_CLIENT_ID` | iOS client ID (iOS builds only) |
+| `ENABLE_MOCK_IAP` | optional; defaults to on for debug and off for release |
+
+Running without a config file makes the app stop at startup and say that `API_BASE_URL` is not set.

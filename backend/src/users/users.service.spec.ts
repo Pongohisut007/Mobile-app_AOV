@@ -6,6 +6,10 @@ import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccess } from '../recipe-access/entities/recipe-access.entity';
 import { Recipe, RecipeStatus } from '../recipes/entities/recipe.entity';
 import { Review } from '../reviews/entities/review.entity';
+import {
+  IdentityProvider,
+  UserIdentity,
+} from './entities/user-identity.entity';
 import { User, UserRole, UserStatus } from './entities/user.entity';
 import { UsersService } from './users.service';
 
@@ -44,6 +48,7 @@ describe('UsersService', () => {
   let reviewQuery: ReturnType<typeof queryBuilder>;
   let manager: Record<string, jest.Mock>;
   let cache: { invalidate: jest.Mock };
+  let identityRepository: Record<string, jest.Mock>;
   let service: UsersService;
 
   beforeEach(() => {
@@ -53,6 +58,15 @@ describe('UsersService', () => {
       delete: jest.fn(),
       update: jest.fn(),
       increment: jest.fn(),
+      create: jest.fn((_entity: unknown, value: object) => value),
+      save: jest.fn((value: object) =>
+        Promise.resolve({ id: 'new', ...value }),
+      ),
+    };
+    identityRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn((value: object) => value),
+      save: jest.fn(),
     };
     userRepository = {
       find: jest.fn().mockResolvedValue([user]),
@@ -63,6 +77,17 @@ describe('UsersService', () => {
       save: jest.fn((value: User) => Promise.resolve({ ...value, id: 'u1' })),
       create: jest.fn((value: Partial<User>) => value),
       remove: jest.fn(),
+      // COUNT จาก postgres กลับมาเป็น string
+      query: jest.fn().mockResolvedValue([
+        {
+          reviewCount: '12',
+          salesCount: '58',
+          officialSavedCount: '40',
+          communitySavedCount: '7',
+          commentsReceivedCount: '3',
+          reviewsWrittenCount: '5',
+        },
+      ]),
       manager: {
         transaction: jest.fn((run: (m: typeof manager) => Promise<void>) =>
           run(manager),
@@ -84,6 +109,7 @@ describe('UsersService', () => {
       {
         createQueryBuilder: jest.fn().mockReturnValue(reviewQuery),
       } as unknown as Repository<Review>,
+      identityRepository as unknown as Repository<UserIdentity>,
       cache as unknown as AppCacheService,
     );
   });
@@ -170,6 +196,42 @@ describe('UsersService', () => {
     });
   });
 
+  it('includes activity counts as numbers', async () => {
+    const profile = await service.findProfile('u1');
+
+    expect(profile).toEqual(
+      expect.objectContaining({
+        reviewCount: 12,
+        salesCount: 58,
+        officialSavedCount: 40,
+        communitySavedCount: 7,
+        commentsReceivedCount: 3,
+        reviewsWrittenCount: 5,
+      }),
+    );
+    const [sql, params] = (userRepository.query as jest.Mock).mock.calls[0] as [
+      string,
+      unknown[],
+    ];
+    // นับเฉพาะจากคนอื่น ไม่นับเจ้าของสูตรเอง
+    expect(sql).toContain('t.user_id <> $1');
+    expect(params).toEqual([
+      'u1',
+      'published',
+      'published',
+      'purchase',
+      'official',
+      'community',
+    ]);
+  });
+
+  it('treats missing activity rows as zero', async () => {
+    (userRepository.query as jest.Mock).mockResolvedValue([]);
+    await expect(service.findProfile('u1')).resolves.toEqual(
+      expect.objectContaining({ salesCount: 0, reviewsWrittenCount: 0 }),
+    );
+  });
+
   it('reports a zero rating when there are no reviews', async () => {
     reviewQuery.getRawOne.mockResolvedValue(undefined);
     await expect(service.findProfile('u1')).resolves.toEqual(
@@ -202,6 +264,72 @@ describe('UsersService', () => {
     saved = (userRepository.save as jest.Mock).mock.calls[1][0] as User;
     expect(saved).toMatchObject({ displayName: 'Cook', avatarUrl: null });
     expect(cache.invalidate).toHaveBeenCalledTimes(6);
+  });
+
+  it('finds users by their linked Google account', async () => {
+    await expect(
+      service.findByIdentity(IdentityProvider.GOOGLE, 'g-1'),
+    ).resolves.toBeNull();
+
+    identityRepository.findOne.mockResolvedValue({ user });
+    await expect(
+      service.findByIdentity(IdentityProvider.GOOGLE, 'g-1'),
+    ).resolves.toBe(user);
+    expect(identityRepository.findOne).toHaveBeenCalledWith({
+      where: { provider: IdentityProvider.GOOGLE, providerUserId: 'g-1' },
+      relations: { user: true },
+    });
+  });
+
+  it('links a Google account to an existing user', async () => {
+    await service.linkIdentity(
+      'u1',
+      IdentityProvider.GOOGLE,
+      'g-1',
+      'cook@example.com',
+    );
+    expect(identityRepository.save).toHaveBeenCalledWith({
+      userId: 'u1',
+      provider: IdentityProvider.GOOGLE,
+      providerUserId: 'g-1',
+      email: 'cook@example.com',
+    });
+  });
+
+  it('creates a password-less user together with the Google link', async () => {
+    await service.createWithIdentity(
+      { email: 'New@Gmail.com', displayName: 'New', avatarUrl: 'p.png' },
+      IdentityProvider.GOOGLE,
+      'g-2',
+    );
+
+    expect(manager.create).toHaveBeenCalledWith(
+      User,
+      expect.objectContaining({ email: 'new@gmail.com', passwordHash: null }),
+    );
+    expect(manager.create).toHaveBeenCalledWith(
+      UserIdentity,
+      expect.objectContaining({ userId: 'new', providerUserId: 'g-2' }),
+    );
+  });
+
+  it('knows whether a user has a password', async () => {
+    (userRepository.findOne as jest.Mock).mockResolvedValueOnce({
+      id: 'u1',
+      passwordHash: 'hash',
+    });
+    await expect(service.hasPassword('u1')).resolves.toBe(true);
+
+    (userRepository.findOne as jest.Mock).mockResolvedValueOnce({
+      id: 'u1',
+      passwordHash: null,
+    });
+    await expect(service.hasPassword('u1')).resolves.toBe(false);
+  });
+
+  it('unlinks Google when the account is deleted', async () => {
+    await service.deleteOwnAccount('u1', 'random-hash');
+    expect(manager.delete).toHaveBeenCalledWith(UserIdentity, { userId: 'u1' });
   });
 
   it('updates and removes users by id', async () => {

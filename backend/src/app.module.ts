@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppCacheModule } from './cache/app-cache.module';
+import appConfig from '../config/app.config';
 import databaseConfig from '../config/database.config';
+import googleConfig from '../config/google.config';
 import jwtConfig from '../config/jwt.config';
+import mailConfig from '../config/mail.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -30,7 +33,14 @@ import r2ClientConfig from '../config/r2.client.config';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.production', '.env', '.env.development.local'],
-      load: [databaseConfig, jwtConfig, r2ClientConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        r2ClientConfig,
+        googleConfig,
+        mailConfig,
+      ],
     }),
     DatabaseModule,
     UsersModule,

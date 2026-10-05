@@ -19,30 +19,17 @@ class ProfilePageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        // หัวหน้าแถวเดียว: ชื่อหน้าซ้าย ปุ่มตะกร้า/ตั้งค่าขวา
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.navProfile,
-                style: TextStyle(
-                  color: ProfileColors.ink,
-                  fontSize: 30,
-                  height: 1,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.8,
-                ),
-              ),
-              SizedBox(height: 7),
-              Text(
-                context.l10n.profileHeaderSubtitle,
-                style: TextStyle(
-                  color: ProfileColors.muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          child: Text(
+            context.l10n.navProfile,
+            style: const TextStyle(
+              color: ProfileColors.ink,
+              fontSize: 30,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.8,
+            ),
           ),
         ),
         _CartButton(onPressed: onCartPressed),
