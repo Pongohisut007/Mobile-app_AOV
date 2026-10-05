@@ -75,6 +75,8 @@ class _FoodDetailPageState extends State<FoodDetailPage>
   bool _isStartingCooking = false;
   // สูตร community ต้อง login ก่อนถึงจะเห็นปุ่มเริ่มทำอาหาร
   bool _isLoggedIn = false;
+  // คนที่ login อยู่ (ซ่อนปุ่มซื้อสูตรของตัวเอง backend ไม่ให้ซื้ออยู่แล้ว)
+  String? _currentUserId;
 
   // เพิ่มทุกครั้งที่ดึงลง refresh ใช้เป็น key ให้รีวิว/คอมเมนต์โหลดใหม่ด้วย
   int _refreshCount = 0;
@@ -102,10 +104,13 @@ class _FoodDetailPageState extends State<FoodDetailPage>
   }
 
   Future<void> _loadLoginState() async {
-    final accessToken = await TokenStorage().readAccessToken();
+    final storage = TokenStorage();
+    final accessToken = await storage.readAccessToken();
+    final userId = await storage.readUserId();
     if (!mounted) return;
     setState(() {
       _isLoggedIn = accessToken != null && accessToken.trim().isNotEmpty;
+      _currentUserId = _isLoggedIn ? userId : null;
     });
   }
 
@@ -172,8 +177,9 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                 initialData: _cachedFood,
                 builder: (context, snapshot) {
                   final food = snapshot.data;
-                  // สูตร community ฟรี ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
-                  if (food != null && _isCommunity(food)) {
+                  // สูตร community ฟรี และสูตรของตัวเอง ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
+                  if (food != null &&
+                      (_isCommunity(food) || _isOwnRecipe(food))) {
                     return const SizedBox.shrink();
                   }
 
@@ -236,6 +242,9 @@ class _FoodDetailPageState extends State<FoodDetailPage>
   // สูตร community ใช้คอมเมนต์ ส่วน official ใช้รีวิว
   // ดูจาก type ของสูตรเอง เพราะเข้าหน้านี้ได้จากหลายที่ (Profile, Home ฯลฯ)
   bool _isCommunity(Food food) => food.type == 'community';
+
+  bool _isOwnRecipe(Food food) =>
+      _currentUserId != null && food.creatorId == _currentUserId;
 
   Widget _buildBody(Food food, {required bool isPurchased}) {
     // official ที่ยังไม่ได้ซื้อ ไม่ให้เริ่มทำอาหาร

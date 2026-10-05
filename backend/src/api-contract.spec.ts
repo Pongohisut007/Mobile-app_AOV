@@ -596,18 +596,40 @@ describe('Recipe API HTTP contracts', () => {
     expect(chat.reset).toHaveBeenCalledWith(userId);
   });
 
-  it('passes category type/status filters through both list and detail routes', async () => {
+  it('passes category filters but only ever attaches published recipes', async () => {
     await request(app.getHttpServer())
       .get('/categories?type=community&status=published')
       .expect(200);
-    expect(categories.findAll).toHaveBeenCalledWith('community', 'published');
+    expect(categories.findAll).toHaveBeenLastCalledWith(
+      'community',
+      'published',
+    );
     await request(app.getHttpServer())
-      .get(`/categories/${recipeId}?type=official&status=draft`)
+      .get('/categories?type=community')
       .expect(200);
-    expect(categories.findOne).toHaveBeenCalledWith(
+    expect(categories.findAll).toHaveBeenLastCalledWith(
+      'community',
+      'published',
+    );
+    await request(app.getHttpServer()).get('/categories').expect(200);
+    expect(categories.findAll).toHaveBeenLastCalledWith();
+
+    await request(app.getHttpServer())
+      .get(`/categories/${recipeId}?type=official`)
+      .expect(200);
+    expect(categories.findOne).toHaveBeenLastCalledWith(
       recipeId,
       'official',
-      'draft',
+      'published',
     );
+
+    categories.findOne.mockClear();
+    await request(app.getHttpServer())
+      .get(`/categories/${recipeId}?type=official&status=draft`)
+      .expect(403);
+    await request(app.getHttpServer())
+      .get('/categories?status=hidden')
+      .expect(403);
+    expect(categories.findOne).not.toHaveBeenCalled();
   });
 });

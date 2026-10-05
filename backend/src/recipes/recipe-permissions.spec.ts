@@ -1,9 +1,11 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { UserRole } from '../users/entities/user.entity';
 import { RecipeStatus, RecipeType } from './entities/recipe.entity';
 import {
   assertCanManageRecipe,
+  assertPurchasable,
   assertRecipeFieldsAllowed,
+  canFavorite,
   visibleRecipeFilters,
 } from './recipe-permissions';
 
@@ -116,5 +118,36 @@ describe('recipe permissions', () => {
     expect(() =>
       assertCanManageRecipe(recipe, { id: 'x', role: UserRole.CREATOR }),
     ).toThrow(ForbiddenException);
+  });
+
+  it('assertPurchasable sells only published official recipes of others', () => {
+    const forSale = {
+      status: RecipeStatus.PUBLISHED,
+      type: RecipeType.OFFICIAL,
+      creatorId: 'chef',
+    };
+    expect(() => assertPurchasable(forSale, 'u1')).not.toThrow();
+    for (const recipe of [
+      { ...forSale, status: RecipeStatus.DRAFT },
+      { ...forSale, status: RecipeStatus.REJECTED },
+      { ...forSale, type: RecipeType.COMMUNITY },
+      { ...forSale, creatorId: 'u1' },
+    ]) {
+      expect(() => assertPurchasable(recipe, 'u1')).toThrow(
+        BadRequestException,
+      );
+    }
+  });
+
+  it('canFavorite allows published recipes and your own drafts', () => {
+    expect(
+      canFavorite({ status: RecipeStatus.PUBLISHED, creatorId: 'a' }, 'u1'),
+    ).toBe(true);
+    expect(
+      canFavorite({ status: RecipeStatus.DRAFT, creatorId: 'u1' }, 'u1'),
+    ).toBe(true);
+    expect(
+      canFavorite({ status: RecipeStatus.DRAFT, creatorId: 'a' }, 'u1'),
+    ).toBe(false);
   });
 });

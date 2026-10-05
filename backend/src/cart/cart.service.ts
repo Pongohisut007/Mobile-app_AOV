@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
+import { Recipe } from '../recipes/entities/recipe.entity';
+import { assertPurchasable } from '../recipes/recipe-permissions';
 import { CartItem } from './entities/cart-item.entity';
 import { Cart } from './entities/cart.entity';
 
@@ -83,6 +85,13 @@ export class CartService {
     recipeId: string,
   ): Promise<CartItem> {
     await this.findOne(cartId, userId);
+
+    const recipe = await this.cartItemRepository.manager.findOne(Recipe, {
+      where: { id: recipeId },
+      select: { id: true, status: true, type: true, creatorId: true },
+    });
+    if (!recipe) throw new NotFoundException(`Recipe ${recipeId} not found`);
+    assertPurchasable(recipe, userId);
 
     const existing = await this.cartItemRepository.findOne({
       where: { cartId, recipeId },

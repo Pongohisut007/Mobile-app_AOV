@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { AuthUser } from '../auth/interfaces/jwt-payload.interface';
 import { UserRole } from '../users/entities/user.entity';
 import { RecipeStatus, RecipeType } from './entities/recipe.entity';
@@ -57,4 +57,33 @@ export function assertCanManageRecipe(
   if (recipe.creatorId !== user.id) {
     throw new ForbiddenException('You can only change your own recipes');
   }
+}
+
+/**
+ * ใส่ตะกร้า/ซื้อได้เฉพาะสูตร official ที่เผยแพร่อยู่ และไม่ใช่ของตัวเอง
+ * (กันซื้อ draft/สูตรที่ถูกซ่อนด้วยการเดา id และกันจ่ายเงินซื้อสูตรฟรี)
+ */
+export function assertPurchasable(
+  recipe: { status: RecipeStatus; type: RecipeType; creatorId: string },
+  userId: string,
+): void {
+  if (recipe.status !== RecipeStatus.PUBLISHED) {
+    throw new BadRequestException('สูตรนี้ยังไม่เปิดขาย');
+  }
+  if (recipe.type !== RecipeType.OFFICIAL) {
+    throw new BadRequestException('สูตรนี้ดูได้ฟรี ไม่ต้องซื้อ');
+  }
+  if (recipe.creatorId === userId) {
+    throw new BadRequestException('ซื้อสูตรของตัวเองไม่ได้');
+  }
+}
+
+/** บันทึกเป็นรายการโปรดได้เฉพาะสูตรที่เผยแพร่แล้ว หรือสูตรของตัวเอง */
+export function canFavorite(
+  recipe: { status: RecipeStatus; creatorId: string },
+  userId: string,
+): boolean {
+  return (
+    recipe.status === RecipeStatus.PUBLISHED || recipe.creatorId === userId
+  );
 }
