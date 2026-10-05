@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/models/banner_item.dart';
 import 'package:flutter_application_1/widgets/banner_detail/banner_detail_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// หน้ารายละเอียดของแบนเนอร์ (AppBar ใช้ชื่อว่า Event)
 /// รูปขนาดคงที่ใต้ AppBar แล้วเนื้อหาเป็นการ์ดขอบมนซ้อนขึ้นมา
@@ -16,7 +17,11 @@ class BannerDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final period = _formatPeriod(banner.startDate, banner.endDate);
+    final period = _formatPeriod(
+      context.l10n,
+      banner.startDate,
+      banner.endDate,
+    );
 
     // ความสูงรูปคงที่ทุกแบนเนอร์ (มือถือ / iPad)
     final imageHeight = MediaQuery.sizeOf(context).width >= 600 ? 320.0 : 230.0;
@@ -32,9 +37,9 @@ class BannerDetailPage extends StatelessWidget {
             backgroundColor: BannerDetailColors.primaryRed,
             foregroundColor: Colors.white,
             surfaceTintColor: Colors.transparent,
-            title: const Text(
-              'Event',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            title: Text(
+              context.l10n.event,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
@@ -100,7 +105,7 @@ class BannerDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    banner.title.isNotEmpty ? banner.title : 'Event',
+                    banner.title.isNotEmpty ? banner.title : context.l10n.event,
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -112,12 +117,12 @@ class BannerDetailPage extends StatelessWidget {
                     _InfoChip(icon: Icons.event_rounded, label: period),
                   ],
                   const SizedBox(height: 24),
-                  const _SectionTitle('รายละเอียด'),
+                  _SectionTitle(context.l10n.details),
                   const SizedBox(height: 10),
                   Text(
                     banner.description.isNotEmpty
                         ? banner.description
-                        : 'ยังไม่มีรายละเอียดของกิจกรรมนี้',
+                        : context.l10n.eventNoDetails,
                     style: TextStyle(
                       fontSize: 16,
                       height: 1.7,
@@ -134,14 +139,18 @@ class BannerDetailPage extends StatelessWidget {
   }
 
   /// แสดงช่วงวันที่ของ event เช่น 1/10/2026 - 31/10/2026
-  static String? _formatPeriod(DateTime? start, DateTime? end) {
+  static String? _formatPeriod(
+    AppLocalizations l10n,
+    DateTime? start,
+    DateTime? end,
+  ) {
     String format(DateTime d) => '${d.day}/${d.month}/${d.year}';
 
     if (start != null && end != null) {
       return '${format(start)} - ${format(end)}';
     }
-    if (start != null) return 'เริ่ม ${format(start)}';
-    if (end != null) return 'ถึง ${format(end)}';
+    if (start != null) return l10n.periodStarts(format(start));
+    if (end != null) return l10n.periodEnds(format(end));
     return null;
   }
 }

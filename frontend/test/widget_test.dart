@@ -4,6 +4,8 @@ import 'package:flutter_application_1/views/pages/checkout_failure_page.dart';
 import 'package:flutter_application_1/views/pages/checkout_success_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/localized_app.dart';
+
 void main() {
   testWidgets('cart checkout button triggers purchase and shows progress', (
     tester,
@@ -11,7 +13,7 @@ void main() {
     var checkoutPressed = false;
 
     await tester.pumpWidget(
-      MaterialApp(
+      localizedApp(
         home: Scaffold(
           bottomNavigationBar: CartSummaryBar(
             itemCount: 2,
@@ -22,14 +24,14 @@ void main() {
       ),
     );
 
-    expect(find.text('2 items'), findsOneWidget);
+    expect(find.text('2 รายการ'), findsOneWidget);
     expect(find.text('฿258'), findsOneWidget);
-    await tester.tap(find.text('Checkout'));
+    await tester.tap(find.text('ชำระเงิน'));
     expect(checkoutPressed, isTrue);
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
+      localizedApp(
+        home: const Scaffold(
           bottomNavigationBar: CartSummaryBar(
             itemCount: 2,
             subtotal: 258,
@@ -41,7 +43,7 @@ void main() {
     );
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('Checkout'), findsNothing);
+    expect(find.text('ชำระเงิน'), findsNothing);
   });
 
   testWidgets('checkout success shows purchase count and actions', (
@@ -50,7 +52,7 @@ void main() {
     var viewedRecipes = false;
     var wentHome = false;
     await tester.pumpWidget(
-      MaterialApp(
+      localizedApp(
         home: CheckoutSuccessPage(
           purchasedCount: 2,
           onViewRecipes: () => viewedRecipes = true,
@@ -72,7 +74,7 @@ void main() {
     var retried = false;
     var backToCart = false;
     await tester.pumpWidget(
-      MaterialApp(
+      localizedApp(
         home: CheckoutFailurePage(
           message: 'ทดสอบชำระไม่สำเร็จ',
           purchasedCount: 1,

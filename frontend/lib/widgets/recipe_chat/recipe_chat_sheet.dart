@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/repositories/chat_repository.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class ChatBubbleMessage {
   const ChatBubbleMessage({
@@ -165,12 +166,12 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('เลือกจากคลังรูป'),
+              title: Text(context.l10n.pickFromGallery),
               onTap: () => Navigator.of(context).pop(ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('ถ่ายรูป'),
+              title: Text(context.l10n.takePhoto),
               onTap: () => Navigator.of(context).pop(ImageSource.camera),
             ),
           ],
@@ -192,7 +193,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
       if (!mounted) return;
       setState(() => _image = ChatImage(bytes: bytes, filename: file.name));
     } catch (error) {
-      _showError('เปิดรูปไม่ได้: $error');
+      _showError(appL10n.imageOpenFailed('$error'));
     }
   }
 
@@ -265,14 +266,14 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
             color: FoodDetailColors.purple,
           ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
-              'ถาม AI เกี่ยวกับสูตรนี้',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              context.l10n.askAiAboutRecipe,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ),
           IconButton(
-            tooltip: 'เริ่มแชทใหม่',
+            tooltip: context.l10n.newChat,
             onPressed: _isSending || _isResetting || _messages.isEmpty
                 ? null
                 : _reset,
@@ -285,7 +286,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
                 : const Icon(Icons.refresh_rounded),
           ),
           IconButton(
-            tooltip: 'ปิด',
+            tooltip: context.l10n.close,
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.close_rounded),
           ),
@@ -299,7 +300,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'ถามอะไรก็ได้เกี่ยวกับสูตรนี้\nเช่น "ใช้อะไรแทนน้ำปลาได้บ้าง"',
+          context.l10n.chatEmptyHint,
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
         ),
@@ -332,7 +333,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
             child: Text(message, style: TextStyle(color: Colors.red.shade900)),
           ),
           IconButton(
-            tooltip: 'ปิด',
+            tooltip: context.l10n.close,
             visualDensity: VisualDensity.compact,
             onPressed: () => setState(() => _errorText = null),
             icon: Icon(Icons.close_rounded, color: Colors.red.shade700),
@@ -354,7 +355,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
           ),
           const SizedBox(width: 10),
           Text(
-            'AI กำลังพิมพ์...',
+            context.l10n.aiTyping,
             style: TextStyle(color: Colors.grey.shade600),
           ),
         ],
@@ -417,7 +418,7 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
       child: Row(
         children: [
           IconButton(
-            tooltip: 'แนบรูป',
+            tooltip: context.l10n.attachImage,
             onPressed: _isSending ? null : _pickImage,
             color: FoodDetailColors.purple,
             icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -433,8 +434,8 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
               onSubmitted: (_) => _send(),
               decoration: InputDecoration(
                 hintText: _image == null
-                    ? 'พิมพ์คำถาม...'
-                    : 'ถามเกี่ยวกับรูปนี้ (ไม่พิมพ์ก็ได้)',
+                    ? context.l10n.chatInputHint
+                    : context.l10n.chatImageHint,
                 counterText: '',
                 filled: true,
                 fillColor: FoodDetailColors.softPurple,

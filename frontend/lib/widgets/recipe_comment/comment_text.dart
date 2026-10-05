@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CommentText extends StatefulWidget {
   const CommentText({super.key, required this.comment});
@@ -12,7 +13,7 @@ class CommentText extends StatefulWidget {
 class _CommentTextState extends State<CommentText> {
   bool _expanded = false;
 
-  static const String _moreText = '...เพิ่มเติม';
+  String get _moreText => context.l10n.commentMore;
 
   final TextStyle _textStyle = TextStyle(
     color: Colors.grey.shade800,
@@ -33,7 +34,7 @@ class _CommentTextState extends State<CommentText> {
             children: [
               TextSpan(text: widget.comment, style: _textStyle),
               TextSpan(
-                text: '  ย่อ',
+                text: context.l10n.commentLess,
                 style: TextStyle(
                   color: Colors.blue.shade700,
                   fontWeight: FontWeight.w500,

@@ -8,6 +8,8 @@ import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_sect
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/localized_app.dart';
+
 void main() {
   testWidgets('closing the edit dialog with cancel does not throw', (
     tester,
@@ -134,7 +136,7 @@ Future<_FakeRecipeCommentRepository> _pumpCommentSection(
         recipeId: 'recipe-id',
         tokenStorage: _FakeTokenStorage(),
       )..add(const RecipeCommentsRequested()),
-      child: MaterialApp(
+      child: localizedApp(
         home: Scaffold(
           body: RecipeCommentSection(
             onCommentCountChanged: onCommentCountChanged,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CartSummaryBar extends StatelessWidget {
   const CartSummaryBar({
@@ -32,7 +33,7 @@ class CartSummaryBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+                    context.l10n.itemCount(itemCount),
                     style: const TextStyle(
                       color: ProfileColors.muted,
                       fontSize: 12,
@@ -44,7 +45,7 @@ class CartSummaryBar extends StatelessWidget {
                     itemCount == 0
                         ? '฿0'
                         : subtotal == 0
-                        ? 'Free'
+                        ? context.l10n.priceFree
                         : '฿${subtotal.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: ProfileColors.ink,
@@ -78,9 +79,9 @@ class CartSummaryBar extends StatelessWidget {
                         strokeWidth: 2.5,
                       ),
                     )
-                  : const Text(
-                      'Checkout',
-                      style: TextStyle(
+                  : Text(
+                      context.l10n.checkout,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// จัดการหัวใจบนการ์ดอาหาร ผูกกับตาราง favorites
 /// backend อ่านว่าเป็นรายการโปรดของใครจาก accessToken ไม่ได้รับ userId ทาง query
@@ -33,13 +34,11 @@ class HttpFavoriteRepository implements FavoriteRepository {
         Uri.parse('$_baseUrl/favorites'),
         headers: _headers(accessToken),
       ),
-      'load your favorites',
+      appL10n.actionLoadFavorites,
     );
 
     if (decoded is! List) {
-      throw const FavoriteException(
-        'Backend returned an invalid favorite list.',
-      );
+      throw FavoriteException(appL10n.errorInvalidResponse);
     }
 
     return decoded
@@ -57,7 +56,7 @@ class HttpFavoriteRepository implements FavoriteRepository {
         headers: _headers(accessToken),
         body: jsonEncode({'recipeId': recipeId}),
       ),
-      'save this recipe',
+      appL10n.actionSaveRecipe,
     );
   }
 
@@ -70,14 +69,14 @@ class HttpFavoriteRepository implements FavoriteRepository {
 
     return _send(
       () => _client.delete(uri, headers: _headers(accessToken)),
-      'unsave this recipe',
+      appL10n.actionUnsaveRecipe,
     );
   }
 
   Map<String, String> _headers(String accessToken) {
     final token = accessToken.trim();
     if (token.isEmpty) {
-      throw const FavoriteException('Please sign in to save recipes.');
+      throw FavoriteException(appL10n.favoriteSignInRequired);
     }
     return {
       'Content-Type': 'application/json',
@@ -93,28 +92,22 @@ class HttpFavoriteRepository implements FavoriteRepository {
       final response = await request().timeout(requestTimeout);
 
       if (response.statusCode == 401) {
-        throw const FavoriteException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw FavoriteException(appL10n.sessionExpired);
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw FavoriteException(
-          'Could not $action (HTTP ${response.statusCode}).',
+          appL10n.errorActionFailed(action, response.statusCode),
         );
       }
       if (response.bodyBytes.isEmpty) return null;
 
       return jsonDecode(utf8.decode(response.bodyBytes));
     } on TimeoutException {
-      throw const FavoriteException(
-        'The request timed out. Check the backend connection.',
-      );
+      throw FavoriteException(appL10n.errorTimeout);
     } on FormatException {
-      throw const FavoriteException('Backend returned malformed JSON.');
+      throw FavoriteException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw FavoriteException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw FavoriteException(appL10n.errorConnection(error.message));
     }
   }
 }

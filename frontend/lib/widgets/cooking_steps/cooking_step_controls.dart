@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CookingStepControls extends StatelessWidget {
   const CookingStepControls({
@@ -26,7 +27,7 @@ class CookingStepControls extends StatelessWidget {
             width: 58,
             height: 58,
             child: IconButton.filledTonal(
-              tooltip: 'ขั้นตอนก่อนหน้า',
+              tooltip: context.l10n.previousStep,
               onPressed: currentIndex == 0 ? null : onPrevious,
               icon: const Icon(Icons.arrow_back_rounded),
             ),
@@ -49,7 +50,7 @@ class CookingStepControls extends StatelessWidget {
                   isLast ? Icons.done_all_rounded : Icons.check_rounded,
                 ),
                 label: Text(
-                  isLast ? 'ทำอาหารเสร็จแล้ว' : 'เสร็จขั้นตอนนี้',
+                  isLast ? context.l10n.finishCooking : context.l10n.finishStep,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,

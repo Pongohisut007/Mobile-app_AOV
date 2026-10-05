@@ -14,6 +14,7 @@ import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// แก้โปรไฟล์: เปลี่ยนรูปและชื่อได้ อีเมลแสดงอย่างเดียว
 /// บันทึกสำเร็จจะ pop พร้อม [UserProfile] ตัวใหม่ (ยกเลิก = null)
@@ -87,7 +88,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (!mounted) return;
       setState(() => _newAvatar = prepared);
     } catch (error) {
-      _showMessage('เปิดรูปไม่ได้: $error');
+      _showMessage(appL10n.imageOpenFailed('$error'));
     } finally {
       if (mounted) setState(() => _isPicking = false);
     }
@@ -101,7 +102,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final token = await TokenStorage().readAccessToken();
       if (token == null || token.trim().isEmpty) {
-        throw Exception('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+        throw Exception(appL10n.sessionExpired);
       }
 
       String? avatarPath;
@@ -151,7 +152,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       canPop: !_isSaving,
       child: Scaffold(
         backgroundColor: ProfileColors.background,
-        appBar: RecipeFormStyle.appBar(title: 'Edit profile'),
+        appBar: RecipeFormStyle.appBar(title: context.l10n.editProfile),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: FilledButton.icon(
@@ -173,7 +174,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                   )
                 : const Icon(Icons.check_rounded),
-            label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
+            label: Text(_isSaving ? context.l10n.saving : context.l10n.save),
           ),
         ),
         body: Form(
@@ -196,8 +197,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   style: TextButton.styleFrom(
                     foregroundColor: ProfileColors.ink,
                   ),
-                  child: const Text(
-                    'เปลี่ยนรูปโปรไฟล์',
+                  child: Text(
+                    context.l10n.changeProfilePhoto,
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -213,7 +214,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       maxLength: 150,
                       textInputAction: TextInputAction.done,
                       decoration: RecipeFormStyle.input(
-                        label: 'ชื่อที่แสดง',
+                        label: context.l10n.displayName,
                         prefixIcon: const Icon(
                           Icons.person_outline_rounded,
                           color: RecipeFormStyle.muted,
@@ -221,7 +222,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                       validator: (value) =>
                           (value == null || value.trim().isEmpty)
-                          ? 'กรอกชื่อที่แสดง'
+                          ? context.l10n.displayNameRequired
                           : null,
                     ),
                     const SizedBox(height: 4),
@@ -232,7 +233,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       enabled: false,
                       decoration:
                           RecipeFormStyle.input(
-                            label: 'อีเมล',
+                            label: context.l10n.fieldEmail,
                             prefixIcon: const Icon(
                               Icons.mail_outline_rounded,
                               color: RecipeFormStyle.muted,
@@ -243,7 +244,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               size: 18,
                               color: RecipeFormStyle.muted,
                             ),
-                            helperText: 'อีเมลใช้สำหรับเข้าสู่ระบบ แก้ไขไม่ได้',
+                            helperText: context.l10n.emailCannotChange,
                           ),
                     ),
                   ],

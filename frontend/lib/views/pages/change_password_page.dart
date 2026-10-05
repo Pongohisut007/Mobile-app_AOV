@@ -5,6 +5,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// เปลี่ยนรหัสผ่าน: ยืนยันรหัสเดิม + รหัสใหม่ 2 ครั้ง
 /// สำเร็จแล้ว pop กลับพร้อม true
@@ -44,9 +45,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     try {
       final token = await TokenStorage().readAccessToken();
       if (token == null || token.trim().isEmpty) {
-        throw const AuthRepositoryException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw AuthRepositoryException(appL10n.sessionExpired);
       }
       final response = await _repository.changePassword(
         accessToken: token,
@@ -73,7 +72,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       canPop: !_isSaving,
       child: Scaffold(
         backgroundColor: ProfileColors.background,
-        appBar: RecipeFormStyle.appBar(title: 'เปลี่ยนรหัสผ่าน'),
+        appBar: RecipeFormStyle.appBar(title: context.l10n.changePassword),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: FilledButton.icon(
@@ -95,7 +94,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     ),
                   )
                 : const Icon(Icons.lock_reset_rounded),
-            label: Text(_isSaving ? 'กำลังบันทึก...' : 'เปลี่ยนรหัสผ่าน'),
+            label: Text(
+              _isSaving ? context.l10n.saving : context.l10n.changePassword,
+            ),
           ),
         ),
         body: Form(
@@ -109,20 +110,20 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   children: [
                     _PasswordField(
                       controller: _currentController,
-                      label: 'รหัสผ่านปัจจุบัน',
+                      label: context.l10n.currentPassword,
                       visible: _showCurrent,
                       enabled: !_isSaving,
                       onToggle: () =>
                           setState(() => _showCurrent = !_showCurrent),
                       validator: (value) => (value == null || value.isEmpty)
-                          ? 'กรอกรหัสผ่านปัจจุบัน'
+                          ? context.l10n.currentPasswordRequired
                           : null,
                     ),
                     const SizedBox(height: 12),
                     _PasswordField(
                       controller: _newController,
-                      label: 'รหัสผ่านใหม่',
-                      helperText: '8-72 ตัวอักษร',
+                      label: context.l10n.newPassword,
+                      helperText: context.l10n.passwordLengthHelper,
                       visible: _showNew,
                       enabled: !_isSaving,
                       onToggle: () => setState(() => _showNew = !_showNew),
@@ -130,13 +131,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       validator: (value) {
                         final password = value ?? '';
                         if (password.length < 8) {
-                          return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+                          return context.l10n.passwordTooShort;
                         }
                         if (password.length > 72) {
-                          return 'รหัสผ่านต้องไม่เกิน 72 ตัวอักษร';
+                          return context.l10n.passwordTooLong;
                         }
                         if (password == _currentController.text) {
-                          return 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม';
+                          return context.l10n.newPasswordSameAsOld;
                         }
                         return null;
                       },
@@ -144,7 +145,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     const SizedBox(height: 12),
                     _PasswordField(
                       controller: _confirmController,
-                      label: 'ยืนยันรหัสผ่านใหม่',
+                      label: context.l10n.confirmNewPassword,
                       visible: _showConfirm,
                       enabled: !_isSaving,
                       textInputAction: TextInputAction.done,
@@ -152,7 +153,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       onToggle: () =>
                           setState(() => _showConfirm = !_showConfirm),
                       validator: (value) => value != _newController.text
-                          ? 'รหัสผ่านใหม่ไม่ตรงกัน'
+                          ? context.l10n.newPasswordsDoNotMatch
                           : null,
                     ),
                   ],
@@ -211,7 +212,9 @@ class _PasswordField extends StatelessWidget {
             helperText: helperText,
             suffixIcon: IconButton(
               onPressed: onToggle,
-              tooltip: visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน',
+              tooltip: visible
+                  ? context.l10n.hidePassword
+                  : context.l10n.showPassword,
               color: RecipeFormStyle.muted,
               icon: Icon(
                 visible

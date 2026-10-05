@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CookingStepsHeader extends StatelessWidget {
   const CookingStepsHeader({
@@ -24,9 +25,9 @@ class CookingStepsHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'กำลังทำอาหาร',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                Text(
+                  context.l10n.cookingNow,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -41,7 +42,7 @@ class CookingStepsHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '$currentStep / $totalSteps ขั้นตอน',
+                  context.l10n.stepProgress(currentStep, totalSteps),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontWeight: FontWeight.w600,
@@ -51,7 +52,7 @@ class CookingStepsHeader extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'ปิด',
+            tooltip: context.l10n.close,
             onPressed: onClose,
             icon: const Icon(
               Icons.close_rounded,

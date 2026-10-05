@@ -3,6 +3,7 @@ import 'package:flutter_application_1/bloc/food/food_state.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/widgets/community/post_card.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CommunityPostList extends StatelessWidget {
   const CommunityPostList({
@@ -31,7 +32,9 @@ class CommunityPostList extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(top: 32),
         child: Center(
-          child: Text('Error: ${(foodState as FoodError).message}'),
+          child: Text(
+            context.l10n.errorWithMessage((foodState as FoodError).message),
+          ),
         ),
       );
     }
@@ -49,8 +52,8 @@ class CommunityPostList extends StatelessWidget {
         child: Center(
           child: Text(
             query == null
-                ? 'ยังไม่มีโพสต์ในหมวดนี้'
-                : 'ไม่พบโพสต์ที่ชื่อ "$query"',
+                ? context.l10n.noPostsInCategory
+                : context.l10n.noPostsNamed(query),
             style: const TextStyle(color: ProfileColors.muted),
           ),
         ),
@@ -88,8 +91,8 @@ class CommunityPostList extends StatelessWidget {
                       )
                     : Text(
                         loaded.loadMoreError != null
-                            ? 'โหลดไม่สำเร็จ ลองอีกครั้ง'
-                            : 'แสดงเพิ่ม',
+                            ? context.l10n.loadFailedTryAgain
+                            : context.l10n.showMore,
                       ),
               ),
             ),

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class BottomBuyBar extends StatelessWidget {
   const BottomBuyBar({
     super.key,
     required this.onCartPressed,
     required this.onBuyPressed,
-    this.buyLabel = 'Buy Now',
+    this.buyLabel,
     this.cartKey,
     this.isLoading = false,
   });
@@ -18,7 +19,9 @@ class BottomBuyBar extends StatelessWidget {
   final VoidCallback onCartPressed;
   // null = ยังกดไม่ได้ (โหลดเมนูไม่เสร็จ หรือกำลังเพิ่มลงตะกร้า)
   final VoidCallback? onBuyPressed;
-  final String buyLabel;
+
+  /// ไม่ส่ง = "ซื้อเลย"
+  final String? buyLabel;
 
   /// ปลายทางของรูปที่ลอยลงตะกร้า และใช้สั่งปุ่มตะกร้าเด้ง
   final GlobalKey<CartBounceState>? cartKey;
@@ -96,7 +99,7 @@ class BottomBuyBar extends StatelessWidget {
                           ),
                         )
                       : Text(
-                          buyLabel,
+                          buyLabel ?? context.l10n.buyNow,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

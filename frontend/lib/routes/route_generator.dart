@@ -32,6 +32,7 @@ import 'package:flutter_application_1/views/pages/recipe_collection_page.dart';
 import 'package:flutter_application_1/views/pages/login_page.dart';
 import 'package:flutter_application_1/views/pages/register_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RoutesGenerator {
   static Route<dynamic> generateRoute(RouteSettings setting) {
@@ -151,8 +152,8 @@ class RoutesGenerator {
 
   static Route<dynamic> _errorRoute() {
     return MaterialPageRoute(
-      builder: (_) {
-        return const Scaffold(body: Center(child: Text('No route defined')));
+      builder: (context) {
+        return Scaffold(body: Center(child: Text(context.l10n.routeNotFound)));
       },
     );
   }

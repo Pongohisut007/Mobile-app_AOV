@@ -8,6 +8,7 @@ import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_review/star_rating.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ป๊อปอัปให้คะแนน: ดาว 5 ดวง, ชิป "ชอบอะไรในสูตรนี้", ช่องเล่าเพิ่มเติม
 /// ส่งสำเร็จแล้วจะปิดตัวเองพร้อมคืนคะแนนที่ให้ (ยกเลิก = null)
@@ -34,8 +35,15 @@ class RecipeRateDialog extends StatefulWidget {
 }
 
 class _RecipeRateDialogState extends State<RecipeRateDialog> {
-  static const _starLabels = ['แย่มาก', 'พอใช้', 'ดี', 'ดีมาก', 'ยอดเยี่ยม!'];
   static const _maxCommentLength = 500;
+
+  static String _starLabel(AppLocalizations l10n, int stars) => switch (stars) {
+    1 => l10n.starLabel1,
+    2 => l10n.starLabel2,
+    3 => l10n.starLabel3,
+    4 => l10n.starLabel4,
+    _ => l10n.starLabel5,
+  };
 
   late int _stars = widget.initial?.rating ?? 0;
   late final Set<String> _tags = {...?widget.initial?.tags};
@@ -56,7 +64,7 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
         rating: _stars,
         comment: _commentController.text,
         // เรียงตามลำดับชิปบนจอ ไม่ใช่ลำดับที่กด
-        tags: ReviewTag.options.keys.where(_tags.contains).toList(),
+        tags: ReviewTag.keys.where(_tags.contains).toList(),
       ),
     );
   }
@@ -101,9 +109,9 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                       onPressed: busy ? null : () => Navigator.pop(context),
                     ),
                   ),
-                  const Center(
+                  Center(
                     child: Text(
-                      'ให้คะแนนสูตรนี้',
+                      context.l10n.rateThisRecipe,
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -112,7 +120,7 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'ความคิดเห็นของคุณช่วยให้เราพัฒนาสูตรอาหารให้ดียิ่งขึ้น',
+                    context.l10n.rateDialogSubtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey.shade600, height: 1.4),
                   ),
@@ -129,8 +137,8 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                       duration: const Duration(milliseconds: 200),
                       child: Text(
                         _stars == 0
-                            ? 'แตะดาวเพื่อให้คะแนน'
-                            : _starLabels[_stars - 1],
+                            ? context.l10n.tapStarsToRate
+                            : _starLabel(context.l10n, _stars),
                         key: ValueKey(_stars),
                         style: TextStyle(
                           color: _stars == 0
@@ -142,8 +150,8 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  const Text(
-                    'ชอบอะไรในสูตรนี้',
+                  Text(
+                    context.l10n.whatDidYouLike,
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
@@ -151,10 +159,9 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final MapEntry(key: key, value: label)
-                          in ReviewTag.options.entries)
+                      for (final key in ReviewTag.keys)
                         _TagChip(
-                          label: label,
+                          label: ReviewTag.labelOf(context.l10n, key),
                           selected: _tags.contains(key),
                           onTap: busy
                               ? null
@@ -167,11 +174,11 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                   const SizedBox(height: 20),
                   Text.rich(
                     TextSpan(
-                      text: 'เล่าเพิ่มเติม ',
+                      text: context.l10n.tellMore,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                       children: [
                         TextSpan(
-                          text: '(ไม่บังคับ)',
+                          text: context.l10n.optional,
                           style: TextStyle(
                             fontWeight: FontWeight.normal,
                             color: Colors.grey.shade500,
@@ -188,7 +195,7 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                     maxLines: 5,
                     maxLength: _maxCommentLength,
                     decoration: InputDecoration(
-                      hintText: 'เล่าว่าทำสูตรนี้แล้วเป็นยังไงบ้าง',
+                      hintText: context.l10n.reviewCommentHint,
                       filled: true,
                       fillColor: const Color(0xFFF8F7FC),
                       contentPadding: const EdgeInsets.all(14),
@@ -229,8 +236,8 @@ class _RecipeRateDialogState extends State<RecipeRateDialog> {
                             )
                           : Text(
                               widget.initial == null
-                                  ? 'ส่งคะแนน'
-                                  : 'อัปเดตคะแนน',
+                                  ? context.l10n.submitRating
+                                  : context.l10n.updateRating,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -293,16 +300,15 @@ class ReviewThanksDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'ขอบคุณสำหรับคะแนน!',
+              Text(
+                context.l10n.thanksForRating,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               StarRatingDisplay(rating: stars.toDouble(), size: 26),
               const SizedBox(height: 10),
               Text(
-                'รีวิวของคุณถูกเพิ่มในหน้าสูตรแล้ว\n'
-                'แก้ไขได้ทุกเมื่อจากปุ่ม "แก้ไขคะแนน"',
+                context.l10n.ratingAddedMessage,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey.shade600, height: 1.5),
               ),
@@ -316,8 +322,8 @@ class ReviewThanksDialog extends StatelessWidget {
                     backgroundColor: FoodDetailColors.purple,
                     shape: const StadiumBorder(),
                   ),
-                  child: const Text(
-                    'กลับไปที่สูตร',
+                  child: Text(
+                    context.l10n.backToRecipe,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -339,7 +345,7 @@ class _CloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onPressed,
-      tooltip: 'ปิด',
+      tooltip: context.l10n.close,
       style: IconButton.styleFrom(
         backgroundColor: Colors.grey.shade100,
         minimumSize: const Size(36, 36),

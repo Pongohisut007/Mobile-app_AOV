@@ -6,6 +6,7 @@ import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/paged_result.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class FoodRepository {
   static const String baseUrl = ApiConfig.apiBaseUrl;
@@ -25,12 +26,14 @@ class FoodRepository {
 
   // =========================== เรียกใช้ตรงนี้ ==================================
 
-  /// รายการสูตรทีละหน้า เรียงจากเผยแพร่ล่าสุด
+  /// รายการสูตรทีละหน้า ค่าเริ่มต้นเรียงจากเผยแพร่ล่าสุด
+  /// sort: 'rating' = คะแนนรีวิวสูงสุดก่อน (สูตรที่ยังไม่มีรีวิวอยู่ท้าย)
   /// categoryId ว่าง/null = ทุกหมวด
   Future<PagedResult<Food>> fetchRecipesPage({
     String? type,
     String? status,
     String? categoryId,
+    String? sort,
     int page = 1,
   }) async {
     final uri = Uri.parse('$baseUrl/recipes').replace(
@@ -39,6 +42,7 @@ class FoodRepository {
         'status': ?status,
         if (categoryId != null && categoryId.isNotEmpty)
           'categoryId': categoryId,
+        'sort': ?sort,
         'page': '$page',
         'limit': '$pageSize',
       },
@@ -95,7 +99,7 @@ class FoodRepository {
       final message = body is Map<String, dynamic>
           ? body['message']?.toString()
           : null;
-      throw Exception(message ?? 'สร้างสูตรอาหารไม่สำเร็จ');
+      throw Exception(message ?? appL10n.createRecipeFailed);
     }
   }
 
@@ -119,7 +123,7 @@ class FoodRepository {
       final message = body is Map<String, dynamic>
           ? body['message']?.toString()
           : null;
-      throw Exception(message ?? 'แก้ไขสูตรอาหารไม่สำเร็จ');
+      throw Exception(message ?? appL10n.updateRecipeFailed);
     }
   }
 
@@ -135,7 +139,7 @@ class FoodRepository {
       );
     }
     debugPrint('Failed to load foods: ${response.statusCode}');
-    throw Exception('Failed to load foods');
+    throw Exception(appL10n.loadRecipesFailed);
   }
 
   Future<Food> _getFoodById(String url) async {
@@ -157,10 +161,10 @@ class FoodRepository {
       debugPrint('Parsed food: ${food.idfoods} - ${food.name}');
       return food;
     } else if (response.statusCode == 404) {
-      throw Exception('ไม่พบเมนูนี้');
+      throw Exception(appL10n.recipeNotFoundShort);
     } else {
       debugPrint('Failed to load food: ${response.statusCode}');
-      throw Exception('Failed to load food');
+      throw Exception(appL10n.loadRecipeFailed);
     }
   }
 
@@ -179,7 +183,7 @@ class FoodRepository {
       return const PagedResult(items: [], page: 1, totalPages: 0, total: 0);
     } else {
       debugPrint('Failed to search foods: ${response.statusCode}');
-      throw Exception('Failed to search foods');
+      throw Exception(appL10n.searchRecipesFailed);
     }
   }
 
@@ -189,7 +193,7 @@ class FoodRepository {
     // สูตรที่ลบอาจอยู่ในหลายคลัง (My recipes, Favorites ของคนอื่นในเครื่องเดียวกัน ฯลฯ)
     RecipeLibraryCache.invalidateAll();
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete food');
+      throw Exception(appL10n.deleteRecipeFailed);
     }
   }
 

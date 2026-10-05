@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_application_1/models/recipe_comment.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeCommentPermission {
   const RecipeCommentPermission({required this.canComment, this.userAvatarUrl});
@@ -78,9 +79,12 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
     final uri = _commentsUri(
       recipeId,
     ).replace(queryParameters: {'page': '$page', 'limit': '$limit'});
-    final decoded = await _send(() => _client.get(uri), 'load comments');
+    final decoded = await _send(
+      () => _client.get(uri),
+      appL10n.actionLoadComments,
+    );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeCommentException('Backend returned an invalid list.');
+      throw RecipeCommentException(appL10n.errorInvalidResponse);
     }
     return RecipeCommentPage.fromJson(decoded);
   }
@@ -95,12 +99,10 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
         _commentsUri(recipeId, '/me'),
         headers: _headers(accessToken),
       ),
-      'check comment permission',
+      appL10n.actionCheckCommentPermission,
     );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeCommentException(
-        'Backend returned an invalid comment permission.',
-      );
+      throw RecipeCommentException(appL10n.errorInvalidResponse);
     }
     return RecipeCommentPermission.fromJson(decoded);
   }
@@ -117,13 +119,11 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
         headers: _headers(accessToken),
         body: jsonEncode({'comment': comment.trim()}),
       ),
-      'save comment',
-      forbiddenMessage: 'ต้องซื้อสูตรนี้ก่อนจึงจะแสดงความคิดเห็นได้',
+      appL10n.actionSaveComment,
+      forbiddenMessage: appL10n.buyToComment,
     );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeCommentException(
-        'Backend returned an invalid comment.',
-      );
+      throw RecipeCommentException(appL10n.errorInvalidResponse);
     }
     return RecipeComment.fromJson(decoded);
   }
@@ -141,13 +141,11 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
         headers: _headers(accessToken),
         body: jsonEncode({'comment': comment.trim()}),
       ),
-      'update comment',
-      forbiddenMessage: 'แก้ไขได้เฉพาะความคิดเห็นของตัวเอง',
+      appL10n.actionUpdateComment,
+      forbiddenMessage: appL10n.editOwnCommentOnly,
     );
     if (decoded is! Map<String, dynamic>) {
-      throw const RecipeCommentException(
-        'Backend returned an invalid comment.',
-      );
+      throw RecipeCommentException(appL10n.errorInvalidResponse);
     }
     return RecipeComment.fromJson(decoded);
   }
@@ -163,15 +161,15 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
         _commentUri(recipeId, commentId),
         headers: _headers(accessToken),
       ),
-      'delete comment',
-      forbiddenMessage: 'ลบได้เฉพาะความคิดเห็นของตัวเอง',
+      appL10n.actionDeleteComment,
+      forbiddenMessage: appL10n.deleteOwnCommentOnly,
     );
   }
 
   Map<String, String> _headers(String accessToken) {
     final token = accessToken.trim();
     if (token.isEmpty) {
-      throw const RecipeCommentException('Please sign in to comment.');
+      throw RecipeCommentException(appL10n.commentSignInRequired);
     }
     return {
       'Content-Type': 'application/json',
@@ -187,32 +185,26 @@ class HttpRecipeCommentRepository implements RecipeCommentRepository {
     try {
       final response = await request().timeout(requestTimeout);
       if (response.statusCode == 401) {
-        throw const RecipeCommentException(
-          'Your session has expired. Please sign in again.',
-        );
+        throw RecipeCommentException(appL10n.sessionExpired);
       }
       if (response.statusCode == 403) {
         throw RecipeCommentException(
-          forbiddenMessage ?? 'You do not have permission to $action.',
+          forbiddenMessage ?? appL10n.errorNoPermission(action),
         );
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw RecipeCommentException(
-          'Could not $action (HTTP ${response.statusCode}).',
+          appL10n.errorActionFailed(action, response.statusCode),
         );
       }
       if (response.bodyBytes.isEmpty) return null;
       return jsonDecode(utf8.decode(response.bodyBytes));
     } on TimeoutException {
-      throw const RecipeCommentException(
-        'The request timed out. Check the backend connection.',
-      );
+      throw RecipeCommentException(appL10n.errorTimeout);
     } on FormatException {
-      throw const RecipeCommentException('Backend returned malformed JSON.');
+      throw RecipeCommentException(appL10n.errorInvalidResponse);
     } on http.ClientException catch (error) {
-      throw RecipeCommentException(
-        'Could not connect to the backend: ${error.message}',
-      );
+      throw RecipeCommentException(appL10n.errorConnection(error.message));
     }
   }
 }

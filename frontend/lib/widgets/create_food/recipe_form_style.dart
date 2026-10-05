@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 
 /// สีและหน้าตาที่ใช้ร่วมกันในหน้าสร้าง/แก้ไขสูตร และหน้าขั้นตอนข้างใน
@@ -129,6 +130,7 @@ class RecipeFormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(RecipeFormStyle.cardRadius),
+        boxShadow: AppShadows.card,
       ),
       child: child,
     );

@@ -1,3 +1,5 @@
+import 'package:flutter_application_1/l10n/l10n.dart';
+
 class AuthResponse {
   const AuthResponse({
     required this.accessToken,
@@ -13,9 +15,7 @@ class AuthResponse {
     if (accessToken is! String ||
         expiresIn is! String ||
         user is! Map<String, dynamic>) {
-      throw const FormatException(
-        'Backend returned an invalid login response.',
-      );
+      throw FormatException(appL10n.errorInvalidResponse);
     }
 
     return AuthResponse(
@@ -49,7 +49,7 @@ class AuthUser {
         email is! String ||
         displayName is! String ||
         role is! String) {
-      throw const FormatException('Backend returned an invalid user response.');
+      throw FormatException(appL10n.errorInvalidResponse);
     }
 
     return AuthUser(

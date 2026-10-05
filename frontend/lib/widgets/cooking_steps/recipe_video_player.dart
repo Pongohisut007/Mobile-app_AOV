@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class RecipeVideoPlayer extends StatefulWidget {
   const RecipeVideoPlayer({
@@ -19,7 +21,8 @@ class RecipeVideoPlayer extends StatefulWidget {
   State<RecipeVideoPlayer> createState() => _RecipeVideoPlayerState();
 }
 
-class _RecipeVideoPlayerState extends State<RecipeVideoPlayer> {
+class _RecipeVideoPlayerState extends State<RecipeVideoPlayer>
+    with RouteTransitionAware {
   VideoPlayerController? _controller;
   Object? _error;
   int _loadGeneration = 0;
@@ -27,7 +30,12 @@ class _RecipeVideoPlayerState extends State<RecipeVideoPlayer> {
   @override
   void initState() {
     super.initState();
-    unawaited(_loadVideo());
+    // เตรียมวิดีโอ (ถอดรหัส/ต่อ native player) หนักเครื่อง รอเลื่อนหน้าเสร็จก่อน
+    unawaited(
+      routeTransitionDone.then((_) {
+        if (mounted) return _loadVideo();
+      }),
+    );
   }
 
   @override
@@ -101,16 +109,16 @@ class _RecipeVideoPlayerState extends State<RecipeVideoPlayer> {
       return _VideoMessage(
         icon: Icons.videocam_off_outlined,
         message: _errorMessage(_error!),
-        actionLabel: 'ลองอีกครั้ง',
+        actionLabel: context.l10n.tryAgain,
         onAction: _loadVideo,
       );
     }
 
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) {
-      return const _VideoMessage(
+      return _VideoMessage(
         icon: Icons.play_circle_outline_rounded,
-        message: 'กำลังโหลดวิดีโอ...',
+        message: context.l10n.loadingVideo,
       );
     }
 
@@ -129,9 +137,9 @@ class _RecipeVideoPlayerState extends State<RecipeVideoPlayer> {
   String _errorMessage(Object error) {
     if (kDebugMode) {
       final details = error.toString().replaceFirst('PlatformException(', '');
-      return 'เล่นวิดีโอไม่ได้\n$details';
+      return context.l10n.videoPlayFailedDetails(details);
     }
-    return 'ไม่สามารถเล่นวิดีโอนี้ได้';
+    return context.l10n.videoPlayFailed;
   }
 }
 
@@ -337,13 +345,15 @@ class _VideoSurfaceState extends State<_VideoSurface> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _RoundControlButton(
-                tooltip: 'ย้อนกลับ 10 วินาที',
+                tooltip: context.l10n.rewind10,
                 icon: Icons.replay_10_rounded,
                 onPressed: () => _seekBy(const Duration(seconds: -10)),
               ),
               const SizedBox(width: 16),
               _RoundControlButton(
-                tooltip: value.isPlaying ? 'หยุดชั่วคราว' : 'เล่น',
+                tooltip: value.isPlaying
+                    ? context.l10n.pause
+                    : context.l10n.play,
                 icon: value.isPlaying
                     ? Icons.pause_rounded
                     : Icons.play_arrow_rounded,
@@ -352,7 +362,7 @@ class _VideoSurfaceState extends State<_VideoSurface> {
               ),
               const SizedBox(width: 16),
               _RoundControlButton(
-                tooltip: 'เดินหน้า 10 วินาที',
+                tooltip: context.l10n.forward10,
                 icon: Icons.forward_10_rounded,
                 onPressed: () => _seekBy(const Duration(seconds: 10)),
               ),
@@ -406,7 +416,9 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                     ),
                     const Spacer(),
                     IconButton(
-                      tooltip: value.volume == 0 ? 'เปิดเสียง' : 'ปรับเสียง',
+                      tooltip: value.volume == 0
+                          ? context.l10n.unmute
+                          : context.l10n.adjustVolume,
                       visualDensity: VisualDensity.compact,
                       onPressed: () {
                         setState(() {
@@ -425,7 +437,7 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                       ),
                     ),
                     PopupMenuButton<double>(
-                      tooltip: 'ความเร็วการเล่น',
+                      tooltip: context.l10n.playbackSpeed,
                       initialValue: value.playbackSpeed,
                       onSelected: _setSpeed,
                       color: const Color(0xFF292733),
@@ -447,7 +459,7 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                     ),
                     if (widget.onRotate != null)
                       IconButton(
-                        tooltip: 'หมุนหน้าจอ',
+                        tooltip: context.l10n.rotateScreen,
                         visualDensity: VisualDensity.compact,
                         onPressed: widget.onRotate,
                         icon: const Icon(
@@ -456,7 +468,9 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                         ),
                       ),
                     IconButton(
-                      tooltip: widget.isFullscreen ? 'ออกจากเต็มจอ' : 'เต็มจอ',
+                      tooltip: widget.isFullscreen
+                          ? context.l10n.exitFullscreen
+                          : context.l10n.fullscreen,
                       visualDensity: VisualDensity.compact,
                       onPressed: widget.onFullscreen,
                       icon: Icon(
@@ -615,7 +629,7 @@ class _VolumePanel extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            tooltip: volume == 0 ? 'เปิดเสียง' : 'ปิดเสียง',
+            tooltip: volume == 0 ? context.l10n.unmute : context.l10n.mute,
             onPressed: onMute,
             icon: Icon(
               volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded,
@@ -623,7 +637,7 @@ class _VolumePanel extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'ลดเสียง',
+            tooltip: context.l10n.volumeDown,
             onPressed: onDecrease,
             icon: const Icon(Icons.remove_rounded, color: Colors.white),
           ),
@@ -636,7 +650,7 @@ class _VolumePanel extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'เพิ่มเสียง',
+            tooltip: context.l10n.volumeUp,
             onPressed: onIncrease,
             icon: const Icon(Icons.add_rounded, color: Colors.white),
           ),

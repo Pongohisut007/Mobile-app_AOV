@@ -3,6 +3,7 @@ import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_state.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class ProfilePageHeader extends StatelessWidget {
   const ProfilePageHeader({
@@ -18,12 +19,12 @@ class ProfilePageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Profile',
+                context.l10n.navProfile,
                 style: TextStyle(
                   color: ProfileColors.ink,
                   fontSize: 30,
@@ -34,7 +35,7 @@ class ProfilePageHeader extends StatelessWidget {
               ),
               SizedBox(height: 7),
               Text(
-                'Your recipes, orders and preferences',
+                context.l10n.profileHeaderSubtitle,
                 style: TextStyle(
                   color: ProfileColors.muted,
                   fontSize: 13,
@@ -54,7 +55,7 @@ class ProfilePageHeader extends StatelessWidget {
             fixedSize: const Size(46, 46),
           ),
           icon: const Icon(Icons.tune_rounded),
-          tooltip: 'Settings',
+          tooltip: context.l10n.settingsTitle,
         ),
       ],
     );
@@ -76,7 +77,7 @@ class _CartButton extends StatelessWidget {
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            _button,
+            _button(context),
             if (count > 0)
               Positioned(
                 top: -2,
@@ -110,7 +111,7 @@ class _CartButton extends StatelessWidget {
     );
   }
 
-  Widget get _button => IconButton.filled(
+  Widget _button(BuildContext context) => IconButton.filled(
     onPressed: onPressed,
     style: IconButton.styleFrom(
       backgroundColor: Colors.white,
@@ -118,6 +119,6 @@ class _CartButton extends StatelessWidget {
       fixedSize: const Size(46, 46),
     ),
     icon: const Icon(Icons.shopping_bag_outlined),
-    tooltip: 'Cart',
+    tooltip: context.l10n.cartTooltip,
   );
 }

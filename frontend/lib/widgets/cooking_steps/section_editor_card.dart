@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/models/recipe_section_draft.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class SectionEditorCard extends StatelessWidget {
   const SectionEditorCard({
@@ -32,128 +34,131 @@ class SectionEditorCard extends StatelessWidget {
     return Container(
       key: ObjectKey(section),
       margin: const EdgeInsets.only(bottom: 14),
-      child: Material(
-        color: Colors.white,
+      child: ShadowBox(
         borderRadius: BorderRadius.circular(RecipeFormStyle.cardRadius),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // หัวการ์ด: ป้ายลำดับชุด + จำนวนขั้นตอน + ปุ่มพับ/ลบ
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
-                      decoration: const ShapeDecoration(
-                        color: RecipeFormStyle.ink,
-                        shape: StadiumBorder(),
-                      ),
-                      child: Text(
-                        'ชุดที่ ${index + 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(RecipeFormStyle.cardRadius),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // หัวการ์ด: ป้ายลำดับชุด + จำนวนขั้นตอน + ปุ่มพับ/ลบ
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '$stepCount ขั้นตอน',
-                      style: const TextStyle(
-                        color: RecipeFormStyle.muted,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: onToggleExpanded,
-                      visualDensity: VisualDensity.compact,
-                      color: RecipeFormStyle.muted,
-                      tooltip: section.isExpanded
-                          ? 'พับขั้นตอน'
-                          : 'แสดงขั้นตอน',
-                      icon: Icon(
-                        section.isExpanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: onDelete,
-                      visualDensity: VisualDensity.compact,
-                      color: RecipeFormStyle.muted,
-                      tooltip: 'ลบหัวข้อขั้นตอน',
-                      icon: const Icon(Icons.delete_outline_rounded),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: TextFormField(
-                    controller: section.title,
-                    decoration: RecipeFormStyle.input(
-                      hint: 'หัวข้อขั้นตอน',
-                      isDense: true,
-                    ),
-                    style: const TextStyle(
-                      color: RecipeFormStyle.ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    validator: titleValidator,
-                    onChanged: onTitleChanged,
-                  ),
-                ),
-
-                if (section.isExpanded && section.contents.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(4, 14, 8, 0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.touch_app_outlined,
-                          size: 18,
-                          color: RecipeFormStyle.muted,
+                        decoration: const ShapeDecoration(
+                          color: RecipeFormStyle.ink,
+                          shape: StadiumBorder(),
                         ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'ยังไม่มีขั้นตอนย่อย แตะการ์ดเพื่อเพิ่ม',
-                            style: TextStyle(
-                              color: RecipeFormStyle.muted,
-                              fontSize: 13,
-                            ),
+                        child: Text(
+                          context.l10n.groupNumber(index + 1),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        context.l10n.stepsCount(stepCount),
+                        style: const TextStyle(
+                          color: RecipeFormStyle.muted,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: onToggleExpanded,
+                        visualDensity: VisualDensity.compact,
+                        color: RecipeFormStyle.muted,
+                        tooltip: section.isExpanded
+                            ? context.l10n.collapseSteps
+                            : context.l10n.showSteps,
+                        icon: Icon(
+                          section.isExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: onDelete,
+                        visualDensity: VisualDensity.compact,
+                        color: RecipeFormStyle.muted,
+                        tooltip: context.l10n.deleteStepGroup,
+                        icon: const Icon(Icons.delete_outline_rounded),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: TextFormField(
+                      controller: section.title,
+                      decoration: RecipeFormStyle.input(
+                        hint: context.l10n.stepGroupTitle,
+                        isDense: true,
+                      ),
+                      style: const TextStyle(
+                        color: RecipeFormStyle.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      validator: titleValidator,
+                      onChanged: onTitleChanged,
                     ),
                   ),
 
-                if (section.isExpanded && section.contents.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  for (
-                    var stepIndex = 0;
-                    stepIndex < section.contents.length;
-                    stepIndex++
-                  )
-                    _StepRow(
-                      number: firstStepNumber + stepIndex,
-                      title: section.contents[stepIndex].title,
+                  if (section.isExpanded && section.contents.isEmpty)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(4, 14, 8, 0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.touch_app_outlined,
+                            size: 18,
+                            color: RecipeFormStyle.muted,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              context.l10n.noSubStepsHint,
+                              style: TextStyle(
+                                color: RecipeFormStyle.muted,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+
+                  if (section.isExpanded && section.contents.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    for (
+                      var stepIndex = 0;
+                      stepIndex < section.contents.length;
+                      stepIndex++
+                    )
+                      _StepRow(
+                        number: firstStepNumber + stepIndex,
+                        title: section.contents[stepIndex].title,
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -200,7 +205,7 @@ class _StepRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Text(
-              'ขั้นตอนที่ $number',
+              context.l10n.stepNumber(number),
               style: const TextStyle(
                 color: RecipeFormStyle.ink,
                 fontSize: 13,
@@ -210,7 +215,7 @@ class _StepRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                title.isEmpty ? 'ยังไม่มีชื่อขั้นตอนย่อย' : title,
+                title.isEmpty ? context.l10n.untitledStep : title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 class SearchBarWidget extends StatefulWidget {
   const SearchBarWidget({
@@ -9,6 +10,7 @@ class SearchBarWidget extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.showNotificationButton = true,
+    this.initialQuery = '',
   });
 
   // ส่งคำค้นหาออกไปหลังผู้ใช้หยุดพิมพ์ ถ้าได้ค่าว่างคือยกเลิกการค้นหา
@@ -24,6 +26,10 @@ class SearchBarWidget extends StatefulWidget {
 
   final bool showNotificationButton;
 
+  /// คำค้นหาที่ใส่ไว้ในช่องตั้งแต่เปิดหน้า (ถือว่าค้นหาไปแล้ว ไม่ยิงซ้ำ)
+  /// ใช้เฉพาะตอนไม่ได้ส่ง controller มา
+  final String initialQuery;
+
   @override
   State<SearchBarWidget> createState() => _SearchBarWidgetState();
 }
@@ -34,9 +40,10 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
 
   TextEditingController? _ownController;
   TextEditingController get _controller =>
-      widget.controller ?? (_ownController ??= TextEditingController());
+      widget.controller ??
+      (_ownController ??= TextEditingController(text: widget.initialQuery));
   Timer? _debounce;
-  String _lastSent = '';
+  late String _lastSent = widget.initialQuery.trim();
 
   @override
   void dispose() {
@@ -97,8 +104,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     textInputAction: TextInputAction.search,
                     onChanged: _onChanged,
                     onSubmitted: _onSubmitted,
-                    decoration: const InputDecoration(
-                      hintText: "search for a recipe",
+                    decoration: InputDecoration(
+                      hintText: context.l10n.searchRecipeHint,
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                       isCollapsed: true,

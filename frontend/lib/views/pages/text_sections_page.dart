@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/content/app_texts.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// หน้าข้อความยาว (นโยบายความเป็นส่วนตัว / ข้อกำหนดการใช้งาน)
 class TextSectionsPage extends StatelessWidget {
@@ -66,14 +68,14 @@ class HelpSupportPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ProfileColors.background,
-      appBar: RecipeFormStyle.appBar(title: 'Help & support'),
+      appBar: RecipeFormStyle.appBar(title: context.l10n.helpAndSupport),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(6, 4, 6, 10),
             child: Text(
-              'คำถามที่พบบ่อย',
+              context.l10n.faqTitle,
               style: TextStyle(
                 color: ProfileColors.muted,
                 fontSize: 13,
@@ -81,48 +83,58 @@ class HelpSupportPage extends StatelessWidget {
               ),
             ),
           ),
-          Material(
-            color: Colors.white,
+          ShadowBox(
             borderRadius: BorderRadius.circular(24),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (final (index, section) in faqSections.indexed) ...[
-                  if (index > 0)
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                  Theme(
-                    // เอาเส้นขอบของ ExpansionTile ออก ให้กลืนกับการ์ด
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      iconColor: ProfileColors.ink,
-                      collapsedIconColor: ProfileColors.muted,
-                      expandedAlignment: Alignment.centerLeft,
-                      title: Text(
-                        section.title,
-                        style: const TextStyle(
-                          color: ProfileColors.ink,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (final (index, section) in faqSections(
+                    context.l10n,
+                  ).indexed) ...[
+                    if (index > 0)
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                    Theme(
+                      // เอาเส้นขอบของ ExpansionTile ออก ให้กลืนกับการ์ด
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                        childrenPadding: const EdgeInsets.fromLTRB(
+                          16,
+                          0,
+                          16,
+                          16,
                         ),
-                      ),
-                      children: [
-                        Text(
-                          section.body,
+                        iconColor: ProfileColors.ink,
+                        collapsedIconColor: ProfileColors.muted,
+                        expandedAlignment: Alignment.centerLeft,
+                        title: Text(
+                          section.title,
                           style: const TextStyle(
                             color: ProfileColors.ink,
-                            fontSize: 13.5,
-                            height: 1.55,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
+                        children: [
+                          Text(
+                            section.body,
+                            style: const TextStyle(
+                              color: ProfileColors.ink,
+                              fontSize: 13.5,
+                              height: 1.55,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           // ยังไม่ได้ตั้งอีเมลทีมงาน = ไม่แสดงช่องทางติดต่อ
@@ -143,35 +155,38 @@ class _ContactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
+    return ShadowBox(
       borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        minTileHeight: 64,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        leading: const Icon(
-          Icons.mail_outline_rounded,
-          color: ProfileColors.ink,
-        ),
-        title: const Text(
-          'ติดต่อทีมงาน',
-          style: TextStyle(
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          minTileHeight: 64,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          leading: const Icon(
+            Icons.mail_outline_rounded,
             color: ProfileColors.ink,
-            fontWeight: FontWeight.w700,
           ),
+          title: Text(
+            context.l10n.contactTeam,
+            style: TextStyle(
+              color: ProfileColors.ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(email),
+          trailing: const Icon(Icons.copy_rounded, color: ProfileColors.muted),
+          onTap: () async {
+            await Clipboard.setData(ClipboardData(text: email));
+            if (!context.mounted) return;
+            showAppSnackBar(
+              context,
+              context.l10n.emailCopied,
+              type: AppSnackType.success,
+            );
+          },
         ),
-        subtitle: Text(email),
-        trailing: const Icon(Icons.copy_rounded, color: ProfileColors.muted),
-        onTap: () async {
-          await Clipboard.setData(ClipboardData(text: email));
-          if (!context.mounted) return;
-          showAppSnackBar(
-            context,
-            'คัดลอกอีเมลแล้ว',
-            type: AppSnackType.success,
-          );
-        },
       ),
     );
   }

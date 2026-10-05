@@ -16,6 +16,7 @@ import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { UserStatus } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
+import { RecipeSort } from './dto/list-recipes-query.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { RecipeContent } from './entities/recipe-content.entity';
@@ -89,16 +90,22 @@ export class RecipesService {
     return this.attachRecipeCounts(await query.getMany());
   }
 
-  // เหมือน findAll แต่แบ่งหน้า เรียงจากเผยแพร่ล่าสุด (ฉบับร่างใช้วันที่สร้าง)
+  // น้ำหนักของค่าเฉลี่ยทั้งระบบตอนจัดอันดับตามคะแนน
+  // = นับเหมือนทุกสูตรมีรีวิวคะแนนกลางๆ ติดตัวอยู่ 5 อัน
+  // สูตรที่ได้ 5 ดาวแค่ 1 รีวิวจะได้ไม่แซงสูตรที่ได้ 4.8 จาก 50 รีวิว
+  private static readonly ratingPriorWeight = 5;
+
+  // เหมือน findAll แต่แบ่งหน้า ค่าเริ่มต้นเรียงจากเผยแพร่ล่าสุด (ฉบับร่างใช้วันที่สร้าง)
   findPage(
     options: FindRecipesOptions,
     page: number,
     limit: number,
+    sort: RecipeSort = RecipeSort.LATEST,
   ): Promise<PaginatedResult<Recipe>> {
     return this.cached(
-      stableKey('page', { ...options, page, limit }),
+      stableKey('page', { ...options, page, limit, sort }),
       RecipesService.listTtlSeconds,
-      () => this.loadPage(options, page, limit),
+      () => this.loadPage(options, page, limit, sort),
     );
   }
 
@@ -106,6 +113,7 @@ export class RecipesService {
     options: FindRecipesOptions,
     page: number,
     limit: number,
+    sort: RecipeSort,
   ): Promise<PaginatedResult<Recipe>> {
     // หา id ของหน้านี้ก่อน แล้วค่อยโหลด relation
     // เพราะถ้า limit บน query ที่ join categories แถวจะถูกนับซ้ำ
@@ -115,10 +123,16 @@ export class RecipesService {
     const total = await idQuery.getCount();
     if (total === 0) return toPaginated([], total, page, limit);
 
-    const rows = await idQuery
+    idQuery
       .select('recipe.id', 'id')
-      .addSelect('COALESCE(recipe.published_at, recipe.created_at)', 'sort_at')
-      .orderBy('sort_at', 'DESC')
+      .addSelect('COALESCE(recipe.published_at, recipe.created_at)', 'sort_at');
+    if (sort === RecipeSort.RATING) {
+      this.orderByRating(idQuery);
+    } else {
+      idQuery.orderBy('sort_at', 'DESC');
+    }
+
+    const rows = await idQuery
       // วันที่เท่ากันต้องเรียงคงที่ ไม่งั้นข้ามหน้าแล้วสูตรซ้ำ/หาย
       .addOrderBy('recipe.id', 'ASC')
       .offset((page - 1) * limit)
@@ -168,8 +182,10 @@ export class RecipesService {
       // ชื่อตรงเป๊ะมาก่อน ตามด้วยชื่อที่ขึ้นต้นด้วยคำค้นหา แล้วค่อยที่เหลือ
       .addSelect(
         `CASE
-           WHEN recipe.title ILIKE :exactTerm ESCAPE '\\' THEN 0
-           WHEN recipe.title ILIKE :prefixTerm ESCAPE '\\' THEN 1
+           WHEN recipe.title ILIKE :exactTerm ESCAPE '\\'
+             OR recipe.titleEn ILIKE :exactTerm ESCAPE '\\' THEN 0
+           WHEN recipe.title ILIKE :prefixTerm ESCAPE '\\'
+             OR recipe.titleEn ILIKE :prefixTerm ESCAPE '\\' THEN 1
            ELSE 2
          END`,
         'relevance',
@@ -197,19 +213,44 @@ export class RecipesService {
     return toPaginated(await this.attachRecipeCounts(data), total, page, limit);
   }
 
+  // Bayesian average: (C × ค่าเฉลี่ยทั้งระบบ + ผลรวมดาว) / (C + จำนวนรีวิว)
+  // สูตรที่ยังไม่มีรีวิวไปต่อท้าย เรียงกันเองตามวันที่เผยแพร่ล่าสุด
+  private orderByRating(query: SelectQueryBuilder<Recipe>): void {
+    const weight = RecipesService.ratingPriorWeight;
+    const recipeReviews = `FROM reviews rv
+      WHERE rv.recipe_id = recipe.id AND rv.status = :publishedReview`;
+    query
+      .addSelect(`EXISTS (SELECT 1 ${recipeReviews})`, 'has_reviews')
+      .addSelect(
+        `(SELECT (${weight} * COALESCE(
+             (SELECT AVG(g.rating) FROM reviews g WHERE g.status = :publishedReview),
+             3
+           ) + COALESCE(SUM(rv.rating), 0)) / (${weight} + COUNT(rv.id))
+          ${recipeReviews})`,
+        'rating_score',
+      )
+      .setParameters({ publishedReview: ReviewStatus.PUBLISHED })
+      .orderBy('has_reviews', 'DESC')
+      .addOrderBy('rating_score', 'DESC')
+      .addOrderBy('sort_at', 'DESC');
+  }
+
   private applyFilters(
     query: SelectQueryBuilder<Recipe>,
     options: FindRecipesOptions,
   ): void {
     if (options.search) {
       const search = `%${escapeLikeTerm(options.search)}%`;
+      // ค้นได้ทั้งชื่อไทยและชื่ออังกฤษ
+      const titleMatch =
+        "recipe.title ILIKE :search ESCAPE '\\' OR recipe.titleEn ILIKE :search ESCAPE '\\'";
       if (options.type === RecipeType.COMMUNITY) {
         query.andWhere(
-          "(recipe.title ILIKE :search ESCAPE '\\' OR recipe.shortDescription ILIKE :search ESCAPE '\\')",
+          `(${titleMatch} OR recipe.shortDescription ILIKE :search ESCAPE '\\')`,
           { search },
         );
       } else {
-        query.andWhere("recipe.title ILIKE :search ESCAPE '\\'", { search });
+        query.andWhere(`(${titleMatch})`, { search });
       }
     }
 
@@ -335,10 +376,11 @@ export class RecipesService {
         .createQueryBuilder('review')
         .select('review.recipeId', 'recipeId')
         .addSelect('COUNT(*)', 'count')
+        .addSelect('AVG(review.rating)', 'average')
         .where('review.recipeId IN (:...recipeIds)', { recipeIds })
         .andWhere('review.status = :status', { status: ReviewStatus.PUBLISHED })
         .groupBy('review.recipeId')
-        .getRawMany<{ recipeId: string; count: string }>(),
+        .getRawMany<{ recipeId: string; count: string; average: string }>(),
       this.commentRepository
         .createQueryBuilder('comment')
         .select('comment.recipeId', 'recipeId')
@@ -354,6 +396,13 @@ export class RecipesService {
     const reviewCounts = new Map(
       reviewRows.map((row) => [row.recipeId, Number(row.count)]),
     );
+    // ค่าเฉลี่ยดาวจริง (ไม่ถ่วงน้ำหนัก) ปัดทศนิยม 1 ตำแหน่งไว้โชว์บนการ์ด
+    const reviewAverages = new Map(
+      reviewRows.map((row) => [
+        row.recipeId,
+        Math.round(Number(row.average) * 10) / 10,
+      ]),
+    );
     const commentCounts = new Map(
       commentRows.map((row) => [row.recipeId, Number(row.count)]),
     );
@@ -361,6 +410,8 @@ export class RecipesService {
     for (const recipe of recipes) {
       recipe.favoriteCount = favoriteCounts.get(recipe.id) ?? 0;
       recipe.reviewCount = reviewCounts.get(recipe.id) ?? 0;
+      // ยังไม่มีรีวิว = null แยกจากได้คะแนนต่ำ
+      recipe.averageRating = reviewAverages.get(recipe.id) ?? null;
       recipe.commentCount = commentCounts.get(recipe.id) ?? 0;
     }
 
