@@ -674,18 +674,6 @@ abstract class AppLocalizations {
   /// **'ลืมรหัสผ่าน?'**
   String get forgotPassword;
 
-  /// No description provided for @orSignInWith.
-  ///
-  /// In th, this message translates to:
-  /// **'หรือเข้าสู่ระบบด้วย'**
-  String get orSignInWith;
-
-  /// No description provided for @orSignUpWith.
-  ///
-  /// In th, this message translates to:
-  /// **'หรือสมัครด้วย'**
-  String get orSignUpWith;
-
   /// No description provided for @acceptTermsRequired.
   ///
   /// In th, this message translates to:
@@ -3253,6 +3241,48 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'วันนี้ทำอะไรอร่อยดี'**
   String get authTagline;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบด้วย Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @orDivider.
+  ///
+  /// In th, this message translates to:
+  /// **'หรือ'**
+  String get orDivider;
+
+  /// No description provided for @googleSignInUnavailable.
+  ///
+  /// In th, this message translates to:
+  /// **'ยังไม่เปิดใช้การเข้าสู่ระบบด้วย Google'**
+  String get googleSignInUnavailable;
+
+  /// No description provided for @googleSignInFailed.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองอีกครั้ง'**
+  String get googleSignInFailed;
+
+  /// No description provided for @setPassword.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่าน'**
+  String get setPassword;
+
+  /// No description provided for @setPasswordHint.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านไว้เข้าสู่ระบบด้วยอีเมลได้ด้วย'**
+  String get setPasswordHint;
+
+  /// No description provided for @passwordSet.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านแล้ว'**
+  String get passwordSet;
 }
 
 class _AppLocalizationsDelegate

@@ -225,8 +225,6 @@
   "showPassword": "แสดงรหัสผ่าน",
   "hidePassword": "ซ่อนรหัสผ่าน",
   "forgotPassword": "ลืมรหัสผ่าน?",
-  "orSignInWith": "หรือเข้าสู่ระบบด้วย",
-  "orSignUpWith": "หรือสมัครด้วย",
   "acceptTermsRequired": "กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว",
   "displayName": "ชื่อที่แสดง",
   "displayNameHint": "กรอกชื่อที่แสดง",
@@ -938,5 +936,12 @@
   "firstRecipeTitle": "แบ่งปันสูตรแรกของคุณ",
   "firstRecipeSubtitleCreator": "สร้างสูตร Official และตั้งราคาขายได้",
   "firstRecipeSubtitleUser": "สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้",
-  "authTagline": "วันนี้ทำอะไรอร่อยดี"
+  "authTagline": "วันนี้ทำอะไรอร่อยดี",
+  "continueWithGoogle": "เข้าสู่ระบบด้วย Google",
+  "orDivider": "หรือ",
+  "googleSignInUnavailable": "ยังไม่เปิดใช้การเข้าสู่ระบบด้วย Google",
+  "googleSignInFailed": "เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองอีกครั้ง",
+  "setPassword": "ตั้งรหัสผ่าน",
+  "setPasswordHint": "ตั้งรหัสผ่านไว้เข้าสู่ระบบด้วยอีเมลได้ด้วย",
+  "passwordSet": "ตั้งรหัสผ่านแล้ว"
 }

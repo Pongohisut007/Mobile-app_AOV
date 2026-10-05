@@ -17,6 +17,10 @@ import {
 } from '../recipes/entities/recipe.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import type { UserProfileResponse } from './dto/user-profile-response.dto';
+import {
+  IdentityProvider,
+  UserIdentity,
+} from './entities/user-identity.entity';
 import { User, UserRole, UserStatus } from './entities/user.entity';
 
 type ActivityCountKey =
@@ -56,6 +60,8 @@ export class UsersService {
     private readonly accessRepository: Repository<RecipeAccess>,
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+    @InjectRepository(UserIdentity)
+    private readonly identityRepository: Repository<UserIdentity>,
     @Optional()
     private readonly cache?: AppCacheService,
   ) {}
@@ -104,6 +110,67 @@ export class UsersService {
     });
   }
 
+  /** ผู้ใช้ที่ผูกบัญชีภายนอกนี้ไว้ (เช่น บัญชี Google ตาม sub) */
+  async findByIdentity(
+    provider: IdentityProvider,
+    providerUserId: string,
+  ): Promise<User | null> {
+    const identity = await this.identityRepository.findOne({
+      where: { provider, providerUserId },
+      relations: { user: true },
+    });
+    return identity?.user ?? null;
+  }
+
+  /** ผูกบัญชีภายนอกเข้ากับผู้ใช้ที่มีอยู่แล้ว (เช่น อีเมลตรงกับบัญชี Google) */
+  async linkIdentity(
+    userId: string,
+    provider: IdentityProvider,
+    providerUserId: string,
+    email: string | null,
+  ): Promise<void> {
+    await this.identityRepository.save(
+      this.identityRepository.create({
+        userId,
+        provider,
+        providerUserId,
+        email,
+      }),
+    );
+  }
+
+  /** สมัครผ่านบัญชีภายนอก: สร้างผู้ใช้ไม่มีรหัสผ่าน + ผูกบัญชีในครั้งเดียว */
+  async createWithIdentity(
+    input: Omit<CreateUserInput, 'passwordHash'>,
+    provider: IdentityProvider,
+    providerUserId: string,
+  ): Promise<User> {
+    const email = input.email.toLowerCase();
+    const id = await this.userRepository.manager.transaction(
+      async (manager) => {
+        const user = await manager.save(
+          manager.create(User, { ...input, email, passwordHash: null }),
+        );
+        await manager.save(
+          manager.create(UserIdentity, {
+            userId: user.id,
+            provider,
+            providerUserId,
+            email,
+          }),
+        );
+        return user.id;
+      },
+    );
+    return this.findOne(id);
+  }
+
+  /** มีรหัสผ่านไหม (สมัครผ่าน Google แล้วยังไม่ตั้ง = ไม่มี) */
+  async hasPassword(id: string): Promise<boolean> {
+    const user = await this.findByIdWithPassword(id);
+    return Boolean(user?.passwordHash);
+  }
+
   /** เปลี่ยนรหัสผ่าน + เพิ่ม token_version ให้เครื่องอื่นหลุด คืน user ล่าสุดไว้ออก token ใหม่ */
   async updatePasswordHash(id: string, passwordHash: string): Promise<User> {
     await this.userRepository.update({ id }, { passwordHash });
@@ -144,6 +211,8 @@ export class UsersService {
         .where(`recipe_id IN ${ownRecipeIds}`, { id })
         .execute();
       await manager.delete(Cart, { userId: id });
+      // ปลดบัญชี Google ออก เจ้าของสมัครใหม่ด้วยบัญชีเดิมได้
+      await manager.delete(UserIdentity, { userId: id });
 
       await manager.update(
         User,
@@ -177,6 +246,7 @@ export class UsersService {
       purchasedCount,
       ratingRow,
       activity,
+      hasPassword,
     ] = await Promise.all([
       this.recipeRepository.count({
         where: { creatorId: id, status: RecipeStatus.PUBLISHED },
@@ -209,6 +279,7 @@ export class UsersService {
         })
         .getRawOne<{ rating: string | number | null }>(),
       this.loadActivityCounts(id),
+      this.hasPassword(id),
     ]);
 
     const rating = Number(ratingRow?.rating ?? 0);
@@ -226,6 +297,7 @@ export class UsersService {
       draftCount,
       rating: Number.isFinite(rating) ? Number(rating.toFixed(1)) : 0,
       ...activity,
+      hasPassword,
     };
   }
 

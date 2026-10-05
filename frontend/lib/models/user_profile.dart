@@ -19,6 +19,7 @@ class UserProfile {
     this.communitySavedCount = 0,
     this.commentsReceivedCount = 0,
     this.reviewsWrittenCount = 0,
+    this.hasPassword = true,
   });
 
   static const fallbackAvatarAsset = 'assets/images/Profile1.jpg';
@@ -53,6 +54,9 @@ class UserProfile {
 
   /// รีวิวที่คนนี้เขียนให้สูตรที่ซื้อมา
   final int reviewsWrittenCount;
+
+  /// false = สมัครผ่าน Google และยังไม่ได้ตั้งรหัสผ่าน
+  final bool hasPassword;
 
   bool get isCreator => role == 'creator';
 
@@ -110,6 +114,8 @@ class UserProfile {
       communitySavedCount: _count(json['communitySavedCount']),
       commentsReceivedCount: _count(json['commentsReceivedCount']),
       reviewsWrittenCount: _count(json['reviewsWrittenCount']),
+      // backend เก่าไม่ส่งมา = ถือว่ามีรหัสผ่าน (ทุกบัญชีสมัครด้วยรหัสผ่าน)
+      hasPassword: json['hasPassword'] as bool? ?? true,
       avatarUrl: _resolveAvatarUrl(rawAvatarUrl, apiBaseUrl),
     );
   }

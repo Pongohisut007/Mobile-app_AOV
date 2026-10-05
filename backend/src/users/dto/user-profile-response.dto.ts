@@ -27,4 +27,6 @@ export interface UserProfileResponse {
   commentsReceivedCount: number;
   /** รีวิวที่คนนี้เขียนให้สูตรที่ซื้อมา */
   reviewsWrittenCount: number;
+  /** false = สมัครผ่าน Google และยังไม่ได้ตั้งรหัสผ่าน (แอปแสดง "ตั้งรหัสผ่าน") */
+  hasPassword: boolean;
 }

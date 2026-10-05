@@ -17,10 +17,12 @@ import { RecipeContent } from '../recipes/entities/recipe-content.entity';
 import { RecipeSection } from '../recipes/entities/recipe-section.entity';
 import { Recipe } from '../recipes/entities/recipe.entity';
 import { Review } from '../reviews/entities/review.entity';
+import { UserIdentity } from '../users/entities/user-identity.entity';
 import { User } from '../users/entities/user.entity';
 
 const entities = [
   User,
+  UserIdentity,
   Recipe,
   RecipeSection,
   RecipeContent,

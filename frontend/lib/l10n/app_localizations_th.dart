@@ -337,12 +337,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get forgotPassword => 'ลืมรหัสผ่าน?';
 
   @override
-  String get orSignInWith => 'หรือเข้าสู่ระบบด้วย';
-
-  @override
-  String get orSignUpWith => 'หรือสมัครด้วย';
-
-  @override
   String get acceptTermsRequired =>
       'กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว';
 
@@ -1738,4 +1732,27 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get authTagline => 'วันนี้ทำอะไรอร่อยดี';
+
+  @override
+  String get continueWithGoogle => 'เข้าสู่ระบบด้วย Google';
+
+  @override
+  String get orDivider => 'หรือ';
+
+  @override
+  String get googleSignInUnavailable =>
+      'ยังไม่เปิดใช้การเข้าสู่ระบบด้วย Google';
+
+  @override
+  String get googleSignInFailed =>
+      'เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองอีกครั้ง';
+
+  @override
+  String get setPassword => 'ตั้งรหัสผ่าน';
+
+  @override
+  String get setPasswordHint => 'ตั้งรหัสผ่านไว้เข้าสู่ระบบด้วยอีเมลได้ด้วย';
+
+  @override
+  String get passwordSet => 'ตั้งรหัสผ่านแล้ว';
 }

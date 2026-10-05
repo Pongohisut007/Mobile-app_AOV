@@ -4,7 +4,6 @@ import 'package:flutter_application_1/bloc/auth/auth_state.dart';
 import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/widgets/register/register_form_fields.dart';
-import 'package:flutter_application_1/widgets/register/register_social_buttons.dart';
 import 'package:flutter_application_1/widgets/register/register_submit_button.dart';
 import 'package:flutter_application_1/widgets/register/register_terms.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
@@ -133,7 +132,7 @@ class _RegisterFormState extends State<RegisterForm> {
                 const SizedBox(height: 18),
                 RegisterSubmitButton(onPressed: _submit),
                 const SizedBox(height: 20),
-                const RegisterSocialButtons(),
+                const AuthGoogleSection(),
                 const SizedBox(height: 20),
                 Center(
                   child: TextButton(

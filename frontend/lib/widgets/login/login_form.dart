@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_application_1/widgets/login/login_footer.dart';
 import 'package:flutter_application_1/widgets/login/login_form_fields.dart';
-import 'package:flutter_application_1/widgets/login/login_social_buttons.dart';
 import 'package:flutter_application_1/widgets/login/login_submit_button.dart';
 
 class LoginForm extends StatelessWidget {
@@ -59,7 +58,7 @@ class LoginForm extends StatelessWidget {
               const SizedBox(height: 22),
               LoginSubmitButton(onPressed: onSubmit),
               const SizedBox(height: 22),
-              const LoginSocialButtons(),
+              const AuthGoogleSection(),
               const SizedBox(height: 26),
               LoginFooter(onSignUp: onSignUp),
             ],

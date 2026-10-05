@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
+import 'package:flutter_application_1/bloc/auth/auth_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/widgets/common/language_picker.dart';
@@ -224,6 +225,88 @@ class AuthLanguageButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "หรือ" + ปุ่มเข้าสู่ระบบด้วย Google (ใช้ทั้งหน้า login และ register)
+/// บัญชีใหม่จะถูกสร้างให้อัตโนมัติ อีเมลตรงกับบัญชีเดิมจะเข้าบัญชีเดิม
+class AuthGoogleSection extends StatelessWidget {
+  const AuthGoogleSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Expanded(child: Divider(color: Color(0xFFE4E4E4))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                context.l10n.orDivider,
+                style: const TextStyle(color: AuthStyle.muted),
+              ),
+            ),
+            const Expanded(child: Divider(color: Color(0xFFE4E4E4))),
+          ],
+        ),
+        const SizedBox(height: 16),
+        BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            final isLoading = state is AuthLoading;
+            return SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                onPressed: isLoading
+                    ? null
+                    : () => context.read<AuthBloc>().add(
+                        const AuthGoogleRequested(),
+                      ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AuthStyle.label,
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFFE0E0E0)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // โลโก้ตัว G สี่สีแบบง่าย (ไม่ต้องเพิ่มไฟล์รูป)
+                    ShaderMask(
+                      shaderCallback: (bounds) => const SweepGradient(
+                        colors: [
+                          Color(0xFFEA4335),
+                          Color(0xFFFBBC05),
+                          Color(0xFF34A853),
+                          Color(0xFF4285F4),
+                          Color(0xFFEA4335),
+                        ],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'G',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      context.l10n.continueWithGoogle,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

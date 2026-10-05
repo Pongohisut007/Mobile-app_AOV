@@ -374,12 +374,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPassword => 'Forgot password?';
 
   @override
-  String get orSignInWith => 'or sign in with';
-
-  @override
-  String get orSignUpWith => 'or sign up with';
-
-  @override
   String get acceptTermsRequired =>
       'Please accept the terms and privacy policy.';
 
@@ -1834,4 +1828,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authTagline => 'Cook something great today';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get orDivider => 'or';
+
+  @override
+  String get googleSignInUnavailable => 'Google sign-in isn\'t available yet';
+
+  @override
+  String get googleSignInFailed =>
+      'Couldn\'t sign in with Google. Please try again';
+
+  @override
+  String get setPassword => 'Set password';
+
+  @override
+  String get setPasswordHint =>
+      'Add a password so you can also sign in with your email';
+
+  @override
+  String get passwordSet => 'Password set';
 }

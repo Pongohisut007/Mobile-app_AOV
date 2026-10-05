@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserRole } from '../users/entities/user.entity';
 import type { UserProfileResponse } from '../users/dto/user-profile-response.dto';
@@ -45,6 +46,12 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto): Promise<AuthResponse> {
     return this.authService.login(dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('google')
+  loginWithGoogle(@Body() dto: GoogleLoginDto): Promise<AuthResponse> {
+    return this.authService.loginWithGoogle(dto.idToken);
   }
 
   @UseGuards(JwtAuthGuard)

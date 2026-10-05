@@ -96,8 +96,6 @@
   "showPassword": "Show password",
   "hidePassword": "Hide password",
   "forgotPassword": "Forgot password?",
-  "orSignInWith": "or sign in with",
-  "orSignUpWith": "or sign up with",
   "acceptTermsRequired": "Please accept the terms and privacy policy.",
   "displayName": "Display name",
   "displayNameHint": "Enter your display name",
@@ -525,5 +523,12 @@
   "firstRecipeTitle": "Share your first recipe",
   "firstRecipeSubtitleCreator": "Create an Official recipe and set your price",
   "firstRecipeSubtitleUser": "Share a free recipe with the community",
-  "authTagline": "Cook something great today"
+  "authTagline": "Cook something great today",
+  "continueWithGoogle": "Continue with Google",
+  "orDivider": "or",
+  "googleSignInUnavailable": "Google sign-in isn't available yet",
+  "googleSignInFailed": "Couldn't sign in with Google. Please try again",
+  "setPassword": "Set password",
+  "setPasswordHint": "Add a password so you can also sign in with your email",
+  "passwordSet": "Password set"
 }

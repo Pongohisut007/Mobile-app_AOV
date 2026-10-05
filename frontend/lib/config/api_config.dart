@@ -3,11 +3,9 @@ import 'package:flutter/foundation.dart';
 class ApiConfig {
   const ApiConfig._();
 
-  static const apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3000',
-    //defaultValue: 'http://localhost:3000',
-  );
+  /// ค่าอยู่ใน config/dev.json, config/prod.json (ไม่ hard code ในโค้ด)
+  /// `flutter run --dart-define-from-file=config/dev.json`
+  static const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   /// Fake purchases are available in debug/profile builds only unless explicitly
   /// enabled. The backend independently blocks them when NODE_ENV=production.

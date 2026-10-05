@@ -25,13 +25,15 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   email!: string;
 
+  // null = สมัครผ่าน Google และยังไม่ได้ตั้งรหัสผ่าน (เข้าได้ทาง Google อย่างเดียว)
   @Column({
     name: 'password_hash',
     type: 'varchar',
     length: 255,
+    nullable: true,
     select: false,
   })
-  passwordHash!: string;
+  passwordHash!: string | null;
 
   @Column({ name: 'display_name', type: 'varchar', length: 150 })
   displayName!: string;

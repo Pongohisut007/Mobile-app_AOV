@@ -1,14 +1,13 @@
 import 'dart:convert';
 // foundation ก็ export ชื่อ Category (annotation) มาด้วย เลยต้อง hide ไว้
 import 'package:flutter/foundation.dart' hide Category;
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/category.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
 
 class CategoryRepository {
-  // Base URL for the API
-  static const String baseUrl = 'http://10.0.2.2:3000';
-  //static const String baseUrl = 'http://localhost:3000';
+  static const String baseUrl = ApiConfig.apiBaseUrl;
 
   // หมวดหมู่แทบไม่เปลี่ยน เก็บใน RAM ไว้ทั้งแอป
   // (หน้าแก้ไข/สร้างสูตรเรียกทุกครั้งที่เปิด จะได้ไม่ต้องรอ API)

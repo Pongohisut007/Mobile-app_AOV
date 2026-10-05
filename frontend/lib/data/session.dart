@@ -6,6 +6,7 @@ import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/data/user_cache.dart';
+import 'package:flutter_application_1/repositories/google_sign_in_service.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +21,8 @@ Future<void> signOutLocally(BuildContext context) async {
   final navigator = Navigator.of(context);
 
   await TokenStorage().clearSession();
+  // ครั้งหน้ากด "เข้าสู่ระบบด้วย Google" จะได้เลือกบัญชีใหม่
+  await GoogleSignInService.instance.signOut();
   clearUserCaches();
   // อ่าน token ไม่เจอแล้ว ทุก bloc จะล้าง state ของคนเก่าทิ้งเอง
   cartBloc.add(const CartRequested());

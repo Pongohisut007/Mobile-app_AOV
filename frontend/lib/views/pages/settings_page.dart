@@ -20,9 +20,16 @@ import 'package:flutter_application_1/l10n/l10n.dart';
 /// (ปุ่ม Sign out มีที่นี่ที่เดียว)
 /// ยังไม่เข้าสู่ระบบก็เปิดได้ แต่ซ่อนเมนูที่ต้องมีบัญชี และมีปุ่มเข้าสู่ระบบแทนออกจากระบบ
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key, this.isSignedIn = true});
+  const SettingsPage({
+    super.key,
+    this.isSignedIn = true,
+    this.hasPassword = true,
+  });
 
   final bool isSignedIn;
+
+  /// false = สมัครผ่าน Google และยังไม่มีรหัสผ่าน (เมนูเป็น "ตั้งรหัสผ่าน")
+  final bool hasPassword;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -39,9 +46,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _openChangePassword() async {
     final messenger = ScaffoldMessenger.of(context);
-    final message = context.l10n.passwordChangedOthersSignedOut;
+    final message = widget.hasPassword
+        ? context.l10n.passwordChangedOthersSignedOut
+        : context.l10n.passwordSet;
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const ChangePasswordPage()),
+      MaterialPageRoute<bool>(
+        builder: (_) => ChangePasswordPage(hasPassword: widget.hasPassword),
+      ),
     );
     if (changed != true) return;
     messenger.showAppSnackBar(message, type: AppSnackType.success);
@@ -148,7 +159,9 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 _SettingsTile(
                   icon: Icons.lock_reset_rounded,
-                  label: context.l10n.changePassword,
+                  label: widget.hasPassword
+                      ? context.l10n.changePassword
+                      : context.l10n.setPassword,
                   onTap: _openChangePassword,
                 ),
                 _SettingsTile(
@@ -227,7 +240,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   label: context.l10n.deleteAccount,
                   subtitle: context.l10n.deleteAccountHint,
                   foregroundColor: _danger,
-                  onTap: () => _push(const DeleteAccountPage()),
+                  onTap: () =>
+                      _push(DeleteAccountPage(hasPassword: widget.hasPassword)),
                 ),
               ],
             ),

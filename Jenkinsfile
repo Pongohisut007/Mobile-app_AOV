@@ -629,7 +629,7 @@ pipeline {
                     steps {
                         container('flutter') {
                             dir('frontend') {
-                                sh 'flutter build apk --debug'
+                                sh 'flutter build apk --debug --dart-define-from-file=config/dev.json'
                             }
                         }
                     }

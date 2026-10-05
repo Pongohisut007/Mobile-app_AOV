@@ -9,6 +9,11 @@ final class AuthLoginRequested extends AuthEvent {
   final String password;
 }
 
+/// กดปุ่ม "เข้าสู่ระบบด้วย Google" (ทั้งหน้า login และ register)
+final class AuthGoogleRequested extends AuthEvent {
+  const AuthGoogleRequested();
+}
+
 final class AuthRegisterRequested extends AuthEvent {
   const AuthRegisterRequested({
     required this.email,

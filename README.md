@@ -32,3 +32,23 @@ The backend always rejects mock purchases when `NODE_ENV=production`. Set
 `IAP_MOCK_ENABLED=false` to disable them in another environment. Flutter release
 builds hide the successful mock path by default; for a non-production release
 test build, pass `--dart-define=ENABLE_MOCK_IAP=true` explicitly.
+
+## Flutter config (dev / prod)
+
+The app has no hardcoded URLs or IDs. Each environment's values live in
+`frontend/config/*.json`, chosen with `--dart-define-from-file`:
+
+```sh
+cd frontend
+flutter run --dart-define-from-file=config/dev.json                   # emulator -> backend on your machine
+flutter build apk --release --dart-define-from-file=config/prod.json  # release build
+```
+
+| Key | Purpose |
+| --- | --- |
+| `API_BASE_URL` | backend URL (the emulator reaches the host machine at `10.0.2.2`; a real phone needs the computer's IP) |
+| `GOOGLE_SERVER_CLIENT_ID` | Web client ID, same value as `GOOGLE_CLIENT_IDS` in the backend |
+| `GOOGLE_IOS_CLIENT_ID` | iOS client ID (iOS builds only) |
+| `ENABLE_MOCK_IAP` | optional; defaults to on for debug and off for release |
+
+Running without a config file makes the app stop at startup and say that `API_BASE_URL` is not set.

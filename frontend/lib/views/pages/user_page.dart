@@ -30,10 +30,15 @@ class UserPage extends StatelessWidget {
   }
 
   // ยังไม่เข้าสู่ระบบก็เปิดได้ (เปลี่ยนภาษา/ดูนโยบาย) แต่ซ่อนเมนูที่ต้องมีบัญชี
-  void _openSettings(BuildContext context, {bool isSignedIn = true}) {
+  void _openSettings(
+    BuildContext context, {
+    bool isSignedIn = true,
+    bool hasPassword = true,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SettingsPage(isSignedIn: isSignedIn),
+        builder: (_) =>
+            SettingsPage(isSignedIn: isSignedIn, hasPassword: hasPassword),
       ),
     );
   }
@@ -124,7 +129,8 @@ class UserPage extends StatelessWidget {
                 profile: profile,
                 onRefresh: () => _refresh(context),
                 onEditProfile: () => _openEditProfile(context, profile),
-                onSettingsPressed: () => _openSettings(context),
+                onSettingsPressed: () =>
+                    _openSettings(context, hasPassword: profile.hasPassword),
                 onRecipeCollectionPressed: (collectionType) =>
                     _openRecipeCollection(context, collectionType),
                 onCartPressed: () => _openCart(context),
