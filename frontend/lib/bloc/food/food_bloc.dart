@@ -98,11 +98,13 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     Emitter<FoodState> emit,
   ) {
     // ไม่ได้เลือก category (ค่าว่าง) = ทุกหมวด
+    // สูตร official (หน้า home / See More) เรียงตามคะแนนรีวิว
     return _loadFirstPage(
       emit,
       (page) => repository.fetchRecipesPage(
         type: 'official',
         categoryId: event.categoryId,
+        sort: 'rating',
         page: page,
       ),
     );

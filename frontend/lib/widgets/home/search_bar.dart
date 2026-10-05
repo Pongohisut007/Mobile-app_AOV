@@ -9,6 +9,7 @@ class SearchBarWidget extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.showNotificationButton = true,
+    this.initialQuery = '',
   });
 
   // ส่งคำค้นหาออกไปหลังผู้ใช้หยุดพิมพ์ ถ้าได้ค่าว่างคือยกเลิกการค้นหา
@@ -24,6 +25,10 @@ class SearchBarWidget extends StatefulWidget {
 
   final bool showNotificationButton;
 
+  /// คำค้นหาที่ใส่ไว้ในช่องตั้งแต่เปิดหน้า (ถือว่าค้นหาไปแล้ว ไม่ยิงซ้ำ)
+  /// ใช้เฉพาะตอนไม่ได้ส่ง controller มา
+  final String initialQuery;
+
   @override
   State<SearchBarWidget> createState() => _SearchBarWidgetState();
 }
@@ -34,9 +39,10 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
 
   TextEditingController? _ownController;
   TextEditingController get _controller =>
-      widget.controller ?? (_ownController ??= TextEditingController());
+      widget.controller ??
+      (_ownController ??= TextEditingController(text: widget.initialQuery));
   Timer? _debounce;
-  String _lastSent = '';
+  late String _lastSent = widget.initialQuery.trim();
 
   @override
   void dispose() {

@@ -7,6 +7,7 @@ import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
+import { RecipeSort } from './dto/list-recipes-query.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
@@ -189,6 +190,40 @@ describe('RecipesService', () => {
       limit: 2,
       totalPages: 2,
     });
+  });
+
+  it('orders a page by newest first unless rating sort is requested', async () => {
+    recipeQuery.getCount.mockResolvedValue(1);
+    recipeQuery.getRawMany.mockResolvedValue([{ id: 'a' }]);
+    recipeRepository.find.mockResolvedValue([{ id: 'a' }]);
+
+    await service.findPage({ type: RecipeType.OFFICIAL }, 1, 6);
+
+    expect(recipeQuery.orderBy).toHaveBeenCalledWith('sort_at', 'DESC');
+    expect(recipeQuery.orderBy).not.toHaveBeenCalledWith('has_reviews', 'DESC');
+  });
+
+  it('ranks rated recipes by weighted average with unrated ones last', async () => {
+    recipeQuery.getCount.mockResolvedValue(2);
+    recipeQuery.getRawMany.mockResolvedValue([{ id: 'b' }, { id: 'a' }]);
+    recipeRepository.find.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+
+    const result = await service.findPage(
+      { type: RecipeType.OFFICIAL },
+      1,
+      6,
+      RecipeSort.RATING,
+    );
+
+    expect(recipeQuery.setParameters).toHaveBeenCalledWith({
+      publishedReview: ReviewStatus.PUBLISHED,
+    });
+    expect(recipeQuery.orderBy).toHaveBeenCalledWith('has_reviews', 'DESC');
+    const orderCalls = recipeQuery.addOrderBy.mock.calls.map(
+      ([column]) => column as string,
+    );
+    expect(orderCalls).toEqual(['rating_score', 'sort_at', 'recipe.id']);
+    expect(result.data.map((recipe) => recipe.id)).toEqual(['b', 'a']);
   });
 
   it('sorts sections and content, and hides non-preview content for unpaid viewers', async () => {

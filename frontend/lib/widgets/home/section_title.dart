@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
 
 class SectionTitle extends StatelessWidget {
-  const SectionTitle({super.key});
+  const SectionTitle({required this.onSeeMore, super.key});
+
+  final VoidCallback onSeeMore;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        const Text(
           "Recommended",
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
-        Text("See More", style: TextStyle(color: Colors.grey)),
+        TextButton(
+          onPressed: onSeeMore,
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.grey,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text("See More"),
+        ),
       ],
     );
   }

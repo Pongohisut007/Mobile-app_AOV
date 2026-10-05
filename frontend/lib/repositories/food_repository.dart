@@ -25,12 +25,14 @@ class FoodRepository {
 
   // =========================== เรียกใช้ตรงนี้ ==================================
 
-  /// รายการสูตรทีละหน้า เรียงจากเผยแพร่ล่าสุด
+  /// รายการสูตรทีละหน้า ค่าเริ่มต้นเรียงจากเผยแพร่ล่าสุด
+  /// sort: 'rating' = คะแนนรีวิวสูงสุดก่อน (สูตรที่ยังไม่มีรีวิวอยู่ท้าย)
   /// categoryId ว่าง/null = ทุกหมวด
   Future<PagedResult<Food>> fetchRecipesPage({
     String? type,
     String? status,
     String? categoryId,
+    String? sort,
     int page = 1,
   }) async {
     final uri = Uri.parse('$baseUrl/recipes').replace(
@@ -39,6 +41,7 @@ class FoodRepository {
         'status': ?status,
         if (categoryId != null && categoryId.isNotEmpty)
           'categoryId': categoryId,
+        'sort': ?sort,
         'page': '$page',
         'limit': '$pageSize',
       },
