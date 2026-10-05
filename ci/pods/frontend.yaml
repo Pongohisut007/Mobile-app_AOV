@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Pod
+
+spec:
+  securityContext:
+    fsGroup: 1000
+
+  containers:
+    - name: ci
+      image: jenkins-ci-agent:1.0.0
+      imagePullPolicy: IfNotPresent
+
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "768Mi"
+        limits:
+          cpu: "2"
+          memory: "2Gi"
+
+      command:
+        - cat
+
+      tty: true
+    - name: flutter
+      image: jenkins-flutter-ci:1.0.0
+      imagePullPolicy: IfNotPresent
+
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "2"
+          memory: "5Gi"
+
+      command:
+        - cat
+
+      tty: true
+
+      env:
+        - name: GRADLE_USER_HOME
+          value: /cache/gradle
+
+        - name: PUB_CACHE
+          value: /cache/pub
+
+      volumeMounts:
+        - name: flutter-cache
+          mountPath: /cache
+
+  volumes:
+    - name: flutter-cache
+      persistentVolumeClaim:
+        claimName: flutter-cache
