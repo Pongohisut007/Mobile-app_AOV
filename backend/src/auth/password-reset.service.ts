@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -27,6 +32,8 @@ const INVALID_CODE = 'รหัสยืนยันไม่ถูกต้อ�
  */
 @Injectable()
 export class PasswordResetService {
+  private readonly logger = new Logger(PasswordResetService.name);
+
   constructor(
     @InjectRepository(PasswordResetCode)
     private readonly codes: Repository<PasswordResetCode>,
@@ -37,39 +44,73 @@ export class PasswordResetService {
   ) {}
 
   /**
-   * ตอบเหมือนกันทุกกรณี (มี/ไม่มีบัญชี, เพิ่งขอไป) คนนอกจะเดาไม่ได้ว่าอีเมลไหนสมัครไว้
+   * ตอบเหมือนกันทุกกรณี ทั้งผลลัพธ์และเวลาที่ใช้ (มี/ไม่มีบัญชี, เพิ่งขอไป, ส่งอีเมลพลาด)
+   * คนนอกจะเดาไม่ได้ว่าอีเมลไหนสมัครไว้ เพราะการสร้างรหัส/ส่งอีเมลทำต่อเบื้องหลัง
+   * หลังตอบกลับไปแล้ว (bcrypt + SMTP ใช้เวลานาน ถ้ารอก่อนตอบ จะจับเวลาแยกได้)
    * บัญชีที่สมัครผ่าน Google ก็ขอได้ = ได้ตั้งรหัสผ่านครั้งแรก
+   *
+   * ข้อยกเว้นเดียว: production ที่ยังไม่ได้ตั้ง SMTP ตอบ 503 ให้ทุกอีเมลเท่ากัน
    */
   async requestCode(
     email: string,
     language: 'th' | 'en' = 'th',
   ): Promise<void> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user || user.status !== UserStatus.ACTIVE) return;
-
-    const existing = await this.codes.findOne({ where: { userId: user.id } });
-    const now = Date.now();
     if (
-      existing &&
-      now - existing.sentAt.getTime() < RESET_CODE_RESEND_SECONDS * 1000
+      this.config.get<string>('app.env') === 'production' &&
+      !this.mailService.isConfigured
     ) {
-      return;
+      throw new ServiceUnavailableException(
+        'ระบบส่งอีเมลยังไม่พร้อม กรุณาลองใหม่ภายหลัง',
+      );
     }
 
-    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
-    await this.codes.save({
-      ...existing,
-      userId: user.id,
-      codeHash: await bcrypt.hash(code, this.saltRounds()),
-      expiresAt: new Date(now + RESET_CODE_TTL_MINUTES * 60 * 1000),
-      attempts: 0,
-      sentAt: new Date(now),
-    });
+    const user = await this.usersService.findByEmail(email);
+    if (!user || user.status !== UserStatus.ACTIVE) return;
+    void this.issueCode(user.id, user.email, language);
+  }
 
-    await this.mailService.send({
-      to: user.email,
-      ...PasswordResetService.email(code, language),
-    });
+  /**
+   * สร้างรหัสใหม่และส่งอีเมล (ทำเบื้องหลัง ไม่ throw)
+   * ส่งอีเมลไม่สำเร็จ = ลบรหัสทิ้ง ผู้ใช้กดขอใหม่ได้ทันที ไม่ต้องรอ 60 วินาที
+   */
+  async issueCode(
+    userId: string,
+    email: string,
+    language: 'th' | 'en',
+  ): Promise<void> {
+    let saved: PasswordResetCode | undefined;
+    try {
+      const existing = await this.codes.findOne({ where: { userId } });
+      const now = Date.now();
+      if (
+        existing &&
+        now - existing.sentAt.getTime() < RESET_CODE_RESEND_SECONDS * 1000
+      ) {
+        return;
+      }
+
+      const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+      saved = await this.codes.save({
+        ...existing,
+        userId,
+        codeHash: await bcrypt.hash(code, this.saltRounds()),
+        expiresAt: new Date(now + RESET_CODE_TTL_MINUTES * 60 * 1000),
+        attempts: 0,
+        sentAt: new Date(now),
+      });
+
+      await this.mailService.send({
+        to: email,
+        ...PasswordResetService.email(code, language),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Could not send a password reset code: ${String(error)}`,
+      );
+      if (saved?.id) {
+        await this.codes.delete({ id: saved.id }).catch(() => undefined);
+      }
+    }
   }
 
   async resetPassword(
