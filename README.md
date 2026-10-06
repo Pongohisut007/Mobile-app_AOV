@@ -40,7 +40,7 @@ counts as `production` and anything else as `development`. Flutter release
 builds hide the successful mock path by default; for a non-production release
 test build, pass `--dart-define=ENABLE_MOCK_IAP=true` explicitly.
 
-## Flutter config (dev / prod)
+## Flutter config (dev / staging / prod)
 
 The app has no hardcoded URLs or IDs. Each environment's values live in
 `frontend/config/*.json`, chosen with `--dart-define-from-file`:
@@ -51,6 +51,11 @@ flutter run --dart-define-from-file=config/dev.json                   # emulator
 flutter build apk --release --dart-define-from-file=config/staging.json  # staging backend for testing
 flutter build apk --release --dart-define-from-file=config/prod.json  # release build
 ```
+
+Frontend CI builds a debug APK when frontend files change. It selects
+`config/prod.json` for `main` or `prod`, `config/staging.json` for `develop`
+or `staging`, and `config/dev.json` for other branches. Pull requests use their
+source branch.
 
 | Key | Purpose |
 | --- | --- |
