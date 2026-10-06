@@ -338,23 +338,11 @@ abstract class AppLocalizations {
   /// **'ครัวของคุณ'**
   String get yourKitchenTitle;
 
-  /// No description provided for @yourKitchenSubtitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ทุกเมนูที่คุณทำและสะสมไว้'**
-  String get yourKitchenSubtitle;
-
   /// No description provided for @appVersionFooter.
   ///
   /// In th, this message translates to:
   /// **'{appName} · เวอร์ชัน {version}'**
   String appVersionFooter(String appName, String version);
-
-  /// No description provided for @profileHeaderSubtitle.
-  ///
-  /// In th, this message translates to:
-  /// **'สูตร คำสั่งซื้อ และการตั้งค่าของคุณ'**
-  String get profileHeaderSubtitle;
 
   /// No description provided for @settingsTitle.
   ///
@@ -415,24 +403,6 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ยังไม่เสร็จ {count} สูตร'**
   String draftsDetail(int count);
-
-  /// No description provided for @statRecipes.
-  ///
-  /// In th, this message translates to:
-  /// **'สูตร'**
-  String get statRecipes;
-
-  /// No description provided for @statSaved.
-  ///
-  /// In th, this message translates to:
-  /// **'บันทึก'**
-  String get statSaved;
-
-  /// No description provided for @statRating.
-  ///
-  /// In th, this message translates to:
-  /// **'คะแนน'**
-  String get statRating;
 
   /// No description provided for @guest.
   ///
@@ -703,18 +673,6 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ลืมรหัสผ่าน?'**
   String get forgotPassword;
-
-  /// No description provided for @orSignInWith.
-  ///
-  /// In th, this message translates to:
-  /// **'หรือเข้าสู่ระบบด้วย'**
-  String get orSignInWith;
-
-  /// No description provided for @orSignUpWith.
-  ///
-  /// In th, this message translates to:
-  /// **'หรือสมัครด้วย'**
-  String get orSignUpWith;
 
   /// No description provided for @acceptTermsRequired.
   ///
@@ -3005,7 +2963,7 @@ abstract class AppLocalizations {
   /// No description provided for @faqForgotBody.
   ///
   /// In th, this message translates to:
-  /// **'ตอนนี้ยังไม่มีระบบรีเซ็ตรหัสผ่านผ่านอีเมล ถ้ายังเข้าสู่ระบบอยู่ เปลี่ยนรหัสได้ที่ ตั้งค่า → เปลี่ยนรหัสผ่าน ถ้าเข้าไม่ได้แล้วโปรดติดต่อทีมงาน'**
+  /// **'กด \"ลืมรหัสผ่าน?\" ในหน้าเข้าสู่ระบบ กรอกอีเมล แล้วใส่รหัส 6 หลักที่ได้ทางอีเมลเพื่อตั้งรหัสผ่านใหม่ ถ้าไม่เห็นอีเมลให้ดูในจดหมายขยะ'**
   String get faqForgotBody;
 
   /// No description provided for @faqLostTitle.
@@ -3193,6 +3151,216 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ'**
   String get englishNameHelper;
+
+  /// No description provided for @statRecipeRating.
+  ///
+  /// In th, this message translates to:
+  /// **'คะแนนสูตร'**
+  String get statRecipeRating;
+
+  /// No description provided for @reviewsCountShort.
+  ///
+  /// In th, this message translates to:
+  /// **'{count} รีวิว'**
+  String reviewsCountShort(int count);
+
+  /// No description provided for @statSales.
+  ///
+  /// In th, this message translates to:
+  /// **'ขายได้'**
+  String get statSales;
+
+  /// No description provided for @statOfficialSaves.
+  ///
+  /// In th, this message translates to:
+  /// **'บันทึกสูตร Official'**
+  String get statOfficialSaves;
+
+  /// No description provided for @statCommunitySaves.
+  ///
+  /// In th, this message translates to:
+  /// **'บันทึกสูตรคอมมูนิตี้'**
+  String get statCommunitySaves;
+
+  /// No description provided for @statSavesReceived.
+  ///
+  /// In th, this message translates to:
+  /// **'ถูกบันทึก'**
+  String get statSavesReceived;
+
+  /// No description provided for @statCommentsReceived.
+  ///
+  /// In th, this message translates to:
+  /// **'ความคิดเห็น'**
+  String get statCommentsReceived;
+
+  /// No description provided for @statReviewsWritten.
+  ///
+  /// In th, this message translates to:
+  /// **'รีวิวที่เขียน'**
+  String get statReviewsWritten;
+
+  /// No description provided for @recentPurchases.
+  ///
+  /// In th, this message translates to:
+  /// **'ซื้อล่าสุด'**
+  String get recentPurchases;
+
+  /// No description provided for @continueDraftTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'เขียนต่อจากที่ค้างไว้'**
+  String get continueDraftTitle;
+
+  /// No description provided for @continueDraftSubtitle.
+  ///
+  /// In th, this message translates to:
+  /// **'มีฉบับร่าง {count} สูตร'**
+  String continueDraftSubtitle(int count);
+
+  /// No description provided for @firstRecipeTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'แบ่งปันสูตรแรกของคุณ'**
+  String get firstRecipeTitle;
+
+  /// No description provided for @firstRecipeSubtitleCreator.
+  ///
+  /// In th, this message translates to:
+  /// **'สร้างสูตร Official และตั้งราคาขายได้'**
+  String get firstRecipeSubtitleCreator;
+
+  /// No description provided for @firstRecipeSubtitleUser.
+  ///
+  /// In th, this message translates to:
+  /// **'สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้'**
+  String get firstRecipeSubtitleUser;
+
+  /// No description provided for @authTagline.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้ทำอะไรอร่อยดี'**
+  String get authTagline;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบด้วย Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @orDivider.
+  ///
+  /// In th, this message translates to:
+  /// **'หรือ'**
+  String get orDivider;
+
+  /// No description provided for @googleSignInUnavailable.
+  ///
+  /// In th, this message translates to:
+  /// **'ยังไม่เปิดใช้การเข้าสู่ระบบด้วย Google'**
+  String get googleSignInUnavailable;
+
+  /// No description provided for @googleSignInFailed.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองอีกครั้ง'**
+  String get googleSignInFailed;
+
+  /// No description provided for @setPassword.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่าน'**
+  String get setPassword;
+
+  /// No description provided for @setPasswordHint.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านไว้เข้าสู่ระบบด้วยอีเมลได้ด้วย'**
+  String get setPasswordHint;
+
+  /// No description provided for @passwordSet.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านแล้ว'**
+  String get passwordSet;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ลืมรหัสผ่าน'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordIntro.
+  ///
+  /// In th, this message translates to:
+  /// **'กรอกอีเมลที่ใช้สมัคร เราจะส่งรหัสยืนยัน 6 หลักไปให้'**
+  String get forgotPasswordIntro;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านใหม่'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @sendResetCode.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสยืนยัน'**
+  String get sendResetCode;
+
+  /// No description provided for @resetCodeSentTo.
+  ///
+  /// In th, this message translates to:
+  /// **'ถ้า {email} มีบัญชีอยู่ เราส่งรหัส 6 หลักไปแล้ว ดูในกล่องจดหมาย (และจดหมายขยะ)'**
+  String resetCodeSentTo(String email);
+
+  /// No description provided for @changeEmail.
+  ///
+  /// In th, this message translates to:
+  /// **'เปลี่ยนอีเมล'**
+  String get changeEmail;
+
+  /// No description provided for @resetCode.
+  ///
+  /// In th, this message translates to:
+  /// **'รหัสยืนยัน'**
+  String get resetCode;
+
+  /// No description provided for @resetCodeHint.
+  ///
+  /// In th, this message translates to:
+  /// **'ตัวเลข 6 หลัก'**
+  String get resetCodeHint;
+
+  /// No description provided for @resetCodeInvalid.
+  ///
+  /// In th, this message translates to:
+  /// **'กรอกรหัสตัวเลข 6 หลัก'**
+  String get resetCodeInvalid;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสอีกครั้ง'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสอีกครั้งได้ใน {seconds} วินาที'**
+  String resendCodeIn(int seconds);
+
+  /// No description provided for @resetCodeResent.
+  ///
+  /// In th, this message translates to:
+  /// **'ส่งรหัสใหม่แล้ว'**
+  String get resetCodeResent;
+
+  /// No description provided for @resetPasswordSubmit.
+  ///
+  /// In th, this message translates to:
+  /// **'ตั้งรหัสผ่านใหม่'**
+  String get resetPasswordSubmit;
 }
 
 class _AppLocalizationsDelegate

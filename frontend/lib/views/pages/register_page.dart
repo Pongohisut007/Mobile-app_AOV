@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/data/user_cache.dart';
-import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter/services.dart' show TextInput;
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
@@ -23,6 +24,8 @@ class RegisterPage extends StatelessWidget {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          // ให้ password manager บันทึกบัญชีที่เพิ่งสมัครได้
+          TextInput.finishAutofillContext();
           clearUserCaches();
           // secure storage ไม่มี stream บอกว่า token เปลี่ยน
           // ต้องสั่งให้ตะกร้ากับหัวใจโหลดของคนนี้เองหลัง AuthBloc เขียน token แล้ว
@@ -37,9 +40,7 @@ class RegisterPage extends StatelessWidget {
             (route) => false,
           );
         }
-        if (state is AuthFailure) {
-          showAppSnackBar(context, state.message, type: AppSnackType.error);
-        }
+        // AuthFailure แสดงเป็นแถบ error ในฟอร์ม (RegisterForm ฟังเอง)
       },
       // ย้อนกลับ (ทั้งปุ่มบนจอและปุ่ม back ของระบบ) ให้กลับไปหน้า login
       // ใช้ replace แทน push จะได้ไม่มีหน้า login/register ซ้อนกันใน stack
@@ -50,36 +51,41 @@ class RegisterPage extends StatelessWidget {
           Navigator.pushReplacementNamed(context, AppRoutes.login);
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFFD96868),
-          body: SafeArea(
-            bottom: false,
-            // โลโก้ย่อตามการเลื่อน ส่วนฟอร์มสีขาวยืดถึงล่างสุดเสมอ
-            child: CustomScrollView(
-              slivers: [
-                const RegisterLogoHeader(),
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: RegisterForm(
-                    onSubmit:
-                        ({
-                          required email,
-                          required password,
-                          required displayName,
-                        }) {
-                          context.read<AuthBloc>().add(
-                            AuthRegisterRequested(
-                              email: email,
-                              password: password,
-                              displayName: displayName,
-                            ),
-                          );
-                        },
-                    onSignIn: () {
-                      Navigator.pushReplacementNamed(context, AppRoutes.login);
-                    },
+          backgroundColor: AuthStyle.primary,
+          body: AuthBackground(
+            child: SafeArea(
+              bottom: false,
+              // โลโก้ย่อตามการเลื่อน ส่วนฟอร์มสีขาวยืดถึงล่างสุดเสมอ
+              child: CustomScrollView(
+                slivers: [
+                  const RegisterLogoHeader(),
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: RegisterForm(
+                      onSubmit:
+                          ({
+                            required email,
+                            required password,
+                            required displayName,
+                          }) {
+                            context.read<AuthBloc>().add(
+                              AuthRegisterRequested(
+                                email: email,
+                                password: password,
+                                displayName: displayName,
+                              ),
+                            );
+                          },
+                      onSignIn: () {
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.login,
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

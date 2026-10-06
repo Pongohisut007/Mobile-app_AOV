@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { UploadsModule } from '../uploads/uploads.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
@@ -13,6 +14,7 @@ import { Recipe } from './entities/recipe.entity';
 
 @Module({
   imports: [
+    UploadsModule,
     TypeOrmModule.forFeature([
       Recipe,
       RecipeSection,

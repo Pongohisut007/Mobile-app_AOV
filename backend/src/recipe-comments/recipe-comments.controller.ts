@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { RateLimit } from '../common/throttle/rate-limits';
 import { CreateRecipeCommentDto } from './dto/create-recipe-comment.dto';
 import { ListRecipeCommentsQueryDto } from './dto/list-recipe-comments-query.dto';
 import {
@@ -25,12 +27,15 @@ import {
 export class RecipeCommentsController {
   constructor(private readonly commentsService: RecipeCommentsService) {}
 
+  // login ไม่บังคับ: สูตรที่ยังไม่เผยแพร่ เจ้าของ/คนที่ซื้อแล้วต้องแนบ token มา
+  @UseGuards(OptionalJwtAuthGuard)
   @Get()
   list(
     @Param('recipeId', ParseUUIDPipe) recipeId: string,
     @Query() query: ListRecipeCommentsQueryDto,
+    @CurrentUser('id') viewerId?: string,
   ): Promise<RecipeCommentPage> {
-    return this.commentsService.list(recipeId, query);
+    return this.commentsService.list(recipeId, query, viewerId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -43,6 +48,7 @@ export class RecipeCommentsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @RateLimit('write')
   @Post()
   create(
     @Param('recipeId', ParseUUIDPipe) recipeId: string,
@@ -53,6 +59,7 @@ export class RecipeCommentsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @RateLimit('write')
   @Patch(':commentId')
   update(
     @Param('recipeId', ParseUUIDPipe) recipeId: string,

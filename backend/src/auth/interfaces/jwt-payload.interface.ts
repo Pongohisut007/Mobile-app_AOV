@@ -7,6 +7,11 @@ export interface JwtPayload {
   role: UserRole;
   // token_version ตอนออก token (token ที่ออกก่อนมีฟิลด์นี้ถือเป็น 0)
   ver?: number;
+  // id ของ token ใบนี้ ใช้ยกเลิกเฉพาะใบ (ออกจากระบบเครื่องเดียว)
+  // token ที่ออกก่อนมีฟิลด์นี้ ยกเลิกได้ด้วย "ออกจากระบบทุกอุปกรณ์" เท่านั้น
+  jti?: string;
+  // เวลาหมดอายุ (วินาที) jsonwebtoken ใส่ให้เอง
+  exp?: number;
 }
 
 export interface AuthUser {

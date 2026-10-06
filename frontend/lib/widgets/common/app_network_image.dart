@@ -37,6 +37,7 @@ class AppNetworkImage extends StatelessWidget {
       builder: (context, constraints) {
         return CachedNetworkImage(
           imageUrl: url,
+          cacheKey: imageCacheKey(url),
           fit: fit,
           width: width,
           height: height,
@@ -96,7 +97,7 @@ ImageProvider appNetworkImageProviderForBox(
   return ResizeImage.resizeIfNeeded(
     AppNetworkImage.decodeWidth(context, logicalSize.width, logicalSize.height),
     null,
-    CachedNetworkImageProvider(url),
+    CachedNetworkImageProvider(url, cacheKey: imageCacheKey(url)),
   );
 }
 
@@ -107,8 +108,19 @@ ImageProvider appNetworkImageProvider(
   String url, {
   double? logicalSize,
 }) {
-  final provider = CachedNetworkImageProvider(url);
+  final provider = CachedNetworkImageProvider(
+    url,
+    cacheKey: imageCacheKey(url),
+  );
   if (logicalSize == null) return provider;
   final pixels = (logicalSize * MediaQuery.devicePixelRatioOf(context)).round();
   return ResizeImage(provider, width: pixels, policy: ResizeImagePolicy.fit);
+}
+
+/// key ของรูปใน cache: ตัด ?exp=&sig= ของไฟล์ที่ต้องซื้อออก
+/// ลายเซ็นเปลี่ยนทุกไม่กี่ชั่วโมง แต่ไฟล์เดิม ไม่ต้องโหลดใหม่ทุกครั้งที่ลายเซ็นเปลี่ยน
+String imageCacheKey(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null || !uri.queryParameters.containsKey('sig')) return url;
+  return uri.replace(query: '').toString().replaceFirst(RegExp(r'\?$'), '');
 }

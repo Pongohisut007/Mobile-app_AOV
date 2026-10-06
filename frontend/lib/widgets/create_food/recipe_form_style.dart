@@ -124,15 +124,19 @@ class RecipeFormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: margin,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(RecipeFormStyle.cardRadius),
-        boxShadow: AppShadows.card,
+    final radius = BorderRadius.circular(RecipeFormStyle.cardRadius);
+    // พื้นการ์ดเป็น Material: ListTile/CheckboxListTile ข้างในวาด ink splash บนการ์ดได้
+    // (ถ้าเป็นกล่องสีธรรมดา Flutter เตือนว่า ink splash จะถูกบังมองไม่เห็น)
+    return Padding(
+      padding: margin,
+      child: ShadowBox(
+        borderRadius: radius,
+        child: Material(
+          color: Colors.white,
+          borderRadius: radius,
+          child: Padding(padding: padding, child: child),
+        ),
       ),
-      child: child,
     );
   }
 }

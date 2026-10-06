@@ -25,13 +25,15 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   email!: string;
 
+  // null = สมัครผ่าน Google และยังไม่ได้ตั้งรหัสผ่าน (เข้าได้ทาง Google อย่างเดียว)
   @Column({
     name: 'password_hash',
     type: 'varchar',
     length: 255,
+    nullable: true,
     select: false,
   })
-  passwordHash!: string;
+  passwordHash!: string | null;
 
   @Column({ name: 'display_name', type: 'varchar', length: 150 })
   displayName!: string;
@@ -67,4 +69,23 @@ export class User extends BaseEntity {
 
   @OneToOne(() => Cart, (cart) => cart.user)
   cart!: Cart | null;
+
+  /**
+   * user ที่ติดไปกับสูตร/คอมเมนต์/รีวิว/ตะกร้า ฯลฯ เป็นข้อมูลสาธารณะ
+   * ส่งออกได้แค่ช่องที่ปลอดภัย (ไม่มีอีเมล สถานะบัญชี หรือ tokenVersion)
+   * ใช้ทั้งตอนตอบ HTTP และตอนเก็บลง cache (ทั้งคู่ผ่าน JSON.stringify)
+   * ข้อมูลของตัวเอง (อีเมล ฯลฯ) ส่งผ่าน /auth/profile ที่สร้าง object เองแยกต่างหาก
+   */
+  toJSON(): Pick<
+    User,
+    'id' | 'displayName' | 'avatarUrl' | 'role' | 'createdAt'
+  > {
+    return {
+      id: this.id,
+      displayName: this.displayName,
+      avatarUrl: this.avatarUrl,
+      role: this.role,
+      createdAt: this.createdAt,
+    };
+  }
 }

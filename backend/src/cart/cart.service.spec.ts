@@ -1,5 +1,7 @@
-import { NotFoundException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment -- repository manager is a Jest mock. */
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { QueryFailedError, Repository } from 'typeorm';
+import { RecipeStatus, RecipeType } from '../recipes/entities/recipe.entity';
 import { CartService } from './cart.service';
 import { CartItem } from './entities/cart-item.entity';
 import { Cart } from './entities/cart.entity';
@@ -16,7 +18,22 @@ describe('CartService', () => {
   const cart = { id: 'c1', userId: 'u1' } as Cart;
   const item = { id: 'i1', cartId: 'c1', recipeId: 'r1' } as CartItem;
   let carts: Record<string, jest.Mock>;
-  let items: Record<string, jest.Mock>;
+  let items: Record<
+    | 'find'
+    | 'findOne'
+    | 'findOneOrFail'
+    | 'create'
+    | 'save'
+    | 'remove'
+    | 'delete',
+    jest.Mock
+  > & { manager: { findOne: jest.Mock } };
+  const forSale = {
+    id: 'r1',
+    status: RecipeStatus.PUBLISHED,
+    type: RecipeType.OFFICIAL,
+    creatorId: 'chef',
+  };
   let service: CartService;
 
   beforeEach(() => {
@@ -36,6 +53,7 @@ describe('CartService', () => {
       save: jest.fn().mockResolvedValue(item),
       remove: jest.fn(),
       delete: jest.fn(),
+      manager: { findOne: jest.fn().mockResolvedValue(forSale) },
     };
     service = new CartService(
       carts as unknown as Repository<Cart>,
@@ -96,6 +114,25 @@ describe('CartService', () => {
     items.findOne.mockResolvedValue(item);
     items.save.mockClear();
     await expect(service.addItem('c1', 'u1', 'r1')).resolves.toBe(item);
+    expect(items.save).not.toHaveBeenCalled();
+  });
+
+  it('only adds official recipes that are on sale and not your own', async () => {
+    items.manager.findOne.mockResolvedValueOnce(null);
+    await expect(service.addItem('c1', 'u1', 'r1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    for (const recipe of [
+      { ...forSale, status: RecipeStatus.DRAFT },
+      { ...forSale, status: RecipeStatus.HIDDEN },
+      { ...forSale, type: RecipeType.COMMUNITY },
+      { ...forSale, creatorId: 'u1' },
+    ]) {
+      items.manager.findOne.mockResolvedValueOnce(recipe);
+      await expect(service.addItem('c1', 'u1', 'r1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    }
     expect(items.save).not.toHaveBeenCalled();
   });
 

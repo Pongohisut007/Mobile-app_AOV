@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 
 class LoginFooter extends StatelessWidget {
   const LoginFooter({this.onSignUp, super.key});
@@ -14,15 +15,9 @@ class LoginFooter extends StatelessWidget {
         child: Text.rich(
           TextSpan(
             text: context.l10n.noAccountPrompt,
-            style: TextStyle(color: Color(0xFF8A8A8A)),
+            style: const TextStyle(color: AuthStyle.muted),
             children: [
-              TextSpan(
-                text: context.l10n.signUp,
-                style: TextStyle(
-                  color: Color(0xFFF20D13),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              TextSpan(text: context.l10n.signUp, style: AuthStyle.linkStyle),
             ],
           ),
         ),

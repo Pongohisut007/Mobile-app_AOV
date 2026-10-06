@@ -9,8 +9,11 @@ import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// ลบบัญชี: อธิบายผลที่จะเกิด + ยืนยันรหัสผ่าน + ติ๊กยอมรับ
+/// บัญชีที่ไม่มีรหัสผ่าน (สมัครผ่าน Google) ยืนยันด้วยการติ๊กอย่างเดียว
 class DeleteAccountPage extends StatefulWidget {
-  const DeleteAccountPage({super.key});
+  const DeleteAccountPage({super.key, this.hasPassword = true});
+
+  final bool hasPassword;
 
   @override
   State<DeleteAccountPage> createState() => _DeleteAccountPageState();
@@ -46,7 +49,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       }
       await _repository.deleteAccount(
         accessToken: token,
-        password: _passwordController.text,
+        password: widget.hasPassword ? _passwordController.text : null,
       );
       if (!mounted) return;
       await signOutLocally(context);
@@ -134,40 +137,43 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextFormField(
-                      controller: _passwordController,
-                      enabled: !_isDeleting,
-                      obscureText: !_showPassword,
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      decoration:
-                          RecipeFormStyle.input(
-                            label: context.l10n.confirmWithPassword,
-                            prefixIcon: const Icon(
-                              Icons.lock_outline_rounded,
-                              color: RecipeFormStyle.muted,
-                            ),
-                          ).copyWith(
-                            suffixIcon: IconButton(
-                              onPressed: () => setState(
-                                () => _showPassword = !_showPassword,
+                    // บัญชีที่ไม่มีรหัสผ่าน (สมัครผ่าน Google) ยืนยันด้วยการติ๊กอย่างเดียว
+                    if (widget.hasPassword) ...[
+                      TextFormField(
+                        controller: _passwordController,
+                        enabled: !_isDeleting,
+                        obscureText: !_showPassword,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        decoration:
+                            RecipeFormStyle.input(
+                              label: context.l10n.confirmWithPassword,
+                              prefixIcon: const Icon(
+                                Icons.lock_outline_rounded,
+                                color: RecipeFormStyle.muted,
                               ),
-                              tooltip: _showPassword
-                                  ? context.l10n.hidePassword
-                                  : context.l10n.showPassword,
-                              color: RecipeFormStyle.muted,
-                              icon: Icon(
-                                _showPassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
+                            ).copyWith(
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(
+                                  () => _showPassword = !_showPassword,
+                                ),
+                                tooltip: _showPassword
+                                    ? context.l10n.hidePassword
+                                    : context.l10n.showPassword,
+                                color: RecipeFormStyle.muted,
+                                icon: Icon(
+                                  _showPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
                               ),
                             ),
-                          ),
-                      validator: (value) => (value == null || value.isEmpty)
-                          ? context.l10n.passwordEnter
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? context.l10n.passwordEnter
+                            : null,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     CheckboxListTile(
                       value: _confirmed,
                       onChanged: _isDeleting

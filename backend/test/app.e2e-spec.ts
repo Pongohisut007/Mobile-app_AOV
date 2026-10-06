@@ -15,7 +15,8 @@ interface AuthResponse {
 }
 
 describe('Built API image (e2e)', () => {
-  let createdUserId: string | undefined;
+  // บัญชีที่เทสต์สมัครไว้ ลบทิ้งตอนจบด้วยการลบบัญชีตัวเอง (ไม่มี /users ให้ลบแทนกันแล้ว)
+  let createdAccount: { token: string; password: string } | undefined;
 
   it('/ (GET)', () => {
     return api.get('/').expect(200).expect('Hello World!');
@@ -49,7 +50,8 @@ describe('Built API image (e2e)', () => {
       })
       .expect(201);
     const registered = registration.body as AuthResponse;
-    createdUserId = registered.user.id;
+    const createdUserId = registered.user.id;
+    createdAccount = { token: registered.accessToken, password };
     expect(registered.user.email).toBe(email);
     expect(typeof registered.accessToken).toBe('string');
 
@@ -70,9 +72,23 @@ describe('Built API image (e2e)', () => {
       });
   });
 
+  it("keeps admin and other users' data behind authentication", async () => {
+    await api.get('/users').expect(404);
+    await api.get('/orders').expect(404);
+    await api.post('/recipe-access').send({}).expect(404);
+    await api.get('/recipe-access/me').expect(401);
+    await api.post('/recipes').send({}).expect(401);
+    await api.post('/categories').send({ name: 'x', slug: 'x' }).expect(401);
+    await api.get('/recipes?status=draft').expect(403);
+  });
+
   afterAll(async () => {
-    if (createdUserId) {
-      await api.delete(`/users/${createdUserId}`).expect(200);
+    if (createdAccount) {
+      await api
+        .post('/auth/delete-account')
+        .set('Authorization', `Bearer ${createdAccount.token}`)
+        .send({ password: createdAccount.password })
+        .expect(204);
     }
   });
 });

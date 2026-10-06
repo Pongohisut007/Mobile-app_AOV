@@ -181,15 +181,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourKitchenTitle => 'Your kitchen';
 
   @override
-  String get yourKitchenSubtitle => 'Everything you cook and collect';
-
-  @override
   String appVersionFooter(String appName, String version) {
     return '$appName · Version $version';
   }
-
-  @override
-  String get profileHeaderSubtitle => 'Your recipes, orders and preferences';
 
   @override
   String get settingsTitle => 'Settings';
@@ -234,15 +228,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String draftsDetail(int count) {
     return '$count unfinished';
   }
-
-  @override
-  String get statRecipes => 'Recipes';
-
-  @override
-  String get statSaved => 'Saved';
-
-  @override
-  String get statRating => 'Rating';
 
   @override
   String get guest => 'Guest';
@@ -387,12 +372,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forgotPassword => 'Forgot password?';
-
-  @override
-  String get orSignInWith => 'or sign in with';
-
-  @override
-  String get orSignUpWith => 'or sign up with';
 
   @override
   String get acceptTermsRequired =>
@@ -1678,7 +1657,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get faqForgotBody =>
-      'Password reset by email isn\'t available yet. If you\'re still signed in, change it in Settings → Change password. If you can\'t sign in, please contact the team';
+      'Tap \"Forgot password?\" on the sign-in screen, enter your email, then use the 6-digit code we email you to set a new password. If you don\'t see the email, check your spam folder';
 
   @override
   String get faqLostTitle =>
@@ -1786,4 +1765,134 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get englishNameHelper => 'Optional. Shown when the app is in English';
+
+  @override
+  String get statRecipeRating => 'Recipe rating';
+
+  @override
+  String reviewsCountShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reviews',
+      one: '1 review',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statSales => 'Sold';
+
+  @override
+  String get statOfficialSaves => 'Official saves';
+
+  @override
+  String get statCommunitySaves => 'Community saves';
+
+  @override
+  String get statSavesReceived => 'Saves';
+
+  @override
+  String get statCommentsReceived => 'Comments';
+
+  @override
+  String get statReviewsWritten => 'Reviews written';
+
+  @override
+  String get recentPurchases => 'Recently purchased';
+
+  @override
+  String get continueDraftTitle => 'Pick up where you left off';
+
+  @override
+  String continueDraftSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count drafts waiting',
+      one: '1 draft waiting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get firstRecipeTitle => 'Share your first recipe';
+
+  @override
+  String get firstRecipeSubtitleCreator =>
+      'Create an Official recipe and set your price';
+
+  @override
+  String get firstRecipeSubtitleUser =>
+      'Share a free recipe with the community';
+
+  @override
+  String get authTagline => 'Cook something great today';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get orDivider => 'or';
+
+  @override
+  String get googleSignInUnavailable => 'Google sign-in isn\'t available yet';
+
+  @override
+  String get googleSignInFailed =>
+      'Couldn\'t sign in with Google. Please try again';
+
+  @override
+  String get setPassword => 'Set password';
+
+  @override
+  String get setPasswordHint =>
+      'Add a password so you can also sign in with your email';
+
+  @override
+  String get passwordSet => 'Password set';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot password';
+
+  @override
+  String get forgotPasswordIntro =>
+      'Enter the email you signed up with and we\'ll send you a 6-digit code';
+
+  @override
+  String get resetPasswordTitle => 'Set a new password';
+
+  @override
+  String get sendResetCode => 'Send code';
+
+  @override
+  String resetCodeSentTo(String email) {
+    return 'If $email has an account, we\'ve sent it a 6-digit code. Check your inbox (and spam)';
+  }
+
+  @override
+  String get changeEmail => 'Change email';
+
+  @override
+  String get resetCode => 'Code';
+
+  @override
+  String get resetCodeHint => '6-digit code';
+
+  @override
+  String get resetCodeInvalid => 'Enter the 6-digit code';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'Resend code in ${seconds}s';
+  }
+
+  @override
+  String get resetCodeResent => 'New code sent';
+
+  @override
+  String get resetPasswordSubmit => 'Reset password';
 }

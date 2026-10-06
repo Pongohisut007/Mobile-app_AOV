@@ -1,12 +1,23 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment -- repository manager is a Jest mock. */
 import { NotFoundException } from '@nestjs/common';
 import { QueryFailedError, Repository } from 'typeorm';
 import { AppCacheService } from '../cache/app-cache.service';
+import { RecipeStatus } from '../recipes/entities/recipe.entity';
 import { Favorite } from './entities/favorite.entity';
 import { FavoritesService } from './favorites.service';
 
 describe('FavoritesService', () => {
   const favorite = { id: 'f1', userId: 'u1', recipeId: 'r1' } as Favorite;
-  let repository: Record<string, jest.Mock>;
+  let repository: Record<
+    | 'find'
+    | 'findAndCount'
+    | 'findOne'
+    | 'findOneOrFail'
+    | 'create'
+    | 'save'
+    | 'remove',
+    jest.Mock
+  > & { manager: { findOne: jest.Mock } };
   let cache: { invalidate: jest.Mock };
   let service: FavoritesService;
 
@@ -19,6 +30,13 @@ describe('FavoritesService', () => {
       create: jest.fn((value: Partial<Favorite>) => value),
       save: jest.fn().mockResolvedValue(favorite),
       remove: jest.fn(),
+      manager: {
+        findOne: jest.fn().mockResolvedValue({
+          id: 'r1',
+          status: RecipeStatus.PUBLISHED,
+          creatorId: 'someone',
+        }),
+      },
     };
     cache = { invalidate: jest.fn() };
     service = new FavoritesService(
@@ -96,6 +114,30 @@ describe('FavoritesService', () => {
     await expect(service.removeByRecipe('u1', 'r1')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it("refuses missing recipes and other people's drafts", async () => {
+    repository.manager.findOne.mockResolvedValueOnce(null);
+    await expect(service.create('u1', 'r1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    repository.manager.findOne.mockResolvedValueOnce({
+      id: 'r1',
+      status: RecipeStatus.DRAFT,
+      creatorId: 'someone',
+    });
+    await expect(service.create('u1', 'r1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(repository.save).not.toHaveBeenCalled();
+
+    // draft ของตัวเองบันทึกได้
+    repository.manager.findOne.mockResolvedValueOnce({
+      id: 'r1',
+      status: RecipeStatus.DRAFT,
+      creatorId: 'u1',
+    });
+    await expect(service.create('u1', 'r1')).resolves.toBe(favorite);
   });
 
   it('works without a cache', async () => {

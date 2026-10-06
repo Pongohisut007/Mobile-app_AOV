@@ -8,9 +8,12 @@ import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 
 /// เปลี่ยนรหัสผ่าน: ยืนยันรหัสเดิม + รหัสใหม่ 2 ครั้ง
+/// ยังไม่เคยมีรหัสผ่าน (สมัครผ่าน Google) = "ตั้งรหัสผ่าน" ไม่มีช่องรหัสเดิม
 /// สำเร็จแล้ว pop กลับพร้อม true
 class ChangePasswordPage extends StatefulWidget {
-  const ChangePasswordPage({super.key});
+  const ChangePasswordPage({super.key, this.hasPassword = true});
+
+  final bool hasPassword;
 
   @override
   State<ChangePasswordPage> createState() => _ChangePasswordPageState();
@@ -49,7 +52,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       }
       final response = await _repository.changePassword(
         accessToken: token,
-        currentPassword: _currentController.text,
+        currentPassword: widget.hasPassword ? _currentController.text : null,
         newPassword: _newController.text,
       );
       // token ใบเดิมใช้ไม่ได้แล้ว (เครื่องอื่นหลุด) เก็บใบใหม่ไว้ให้เครื่องนี้ใช้ต่อ
@@ -66,13 +69,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     }
   }
 
+  String _title(BuildContext context) => widget.hasPassword
+      ? context.l10n.changePassword
+      : context.l10n.setPassword;
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !_isSaving,
       child: Scaffold(
         backgroundColor: ProfileColors.background,
-        appBar: RecipeFormStyle.appBar(title: context.l10n.changePassword),
+        appBar: RecipeFormStyle.appBar(title: _title(context)),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: FilledButton.icon(
@@ -94,9 +101,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     ),
                   )
                 : const Icon(Icons.lock_reset_rounded),
-            label: Text(
-              _isSaving ? context.l10n.saving : context.l10n.changePassword,
-            ),
+            label: Text(_isSaving ? context.l10n.saving : _title(context)),
           ),
         ),
         body: Form(
@@ -108,18 +113,29 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _PasswordField(
-                      controller: _currentController,
-                      label: context.l10n.currentPassword,
-                      visible: _showCurrent,
-                      enabled: !_isSaving,
-                      onToggle: () =>
-                          setState(() => _showCurrent = !_showCurrent),
-                      validator: (value) => (value == null || value.isEmpty)
-                          ? context.l10n.currentPasswordRequired
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
+                    if (widget.hasPassword) ...[
+                      _PasswordField(
+                        controller: _currentController,
+                        label: context.l10n.currentPassword,
+                        visible: _showCurrent,
+                        enabled: !_isSaving,
+                        onToggle: () =>
+                            setState(() => _showCurrent = !_showCurrent),
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? context.l10n.currentPasswordRequired
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                    ] else ...[
+                      Text(
+                        context.l10n.setPasswordHint,
+                        style: const TextStyle(
+                          color: ProfileColors.muted,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     _PasswordField(
                       controller: _newController,
                       label: context.l10n.newPassword,
@@ -136,7 +152,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         if (password.length > 72) {
                           return context.l10n.passwordTooLong;
                         }
-                        if (password == _currentController.text) {
+                        if (widget.hasPassword &&
+                            password == _currentController.text) {
                           return context.l10n.newPasswordSameAsOld;
                         }
                         return null;
