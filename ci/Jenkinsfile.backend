@@ -10,8 +10,15 @@ pipeline {
         APP_NAME = 'taskflow-api'
         NODE_ENV = 'test'
 
+        // Public Docker Hub repository pulled by the k3s cluster.
+        // Pushing needs the Jenkins credential 'dockerhub' (username + access token).
+        IMAGE_REPO = 'docker.io/pongphisut/taskflow-api'
+
         GITOPS_REPO   = 'https://github.com/aovPro/Mobile-app_AOV-Gitops.git'
-        GITOPS_BRANCH = 'main'
+        // TEMPORARY: the k3s Argo CD apps track this branch while the
+        // k3s/Docker Hub migration is tested on staging. Set back to 'main'
+        // after migrate-k3s-dockerhub is merged into the GitOps main.
+        GITOPS_BRANCH = 'migrate-k3s-dockerhub'
         GITOPS_DIR    = 'gitops'
 
         TASKFLOW_CHART = 'taskflow-chart'
@@ -448,13 +455,45 @@ pipeline {
                     env.IMAGE_TAG = buildCommit
 
                     env.IMAGE_NAME =
-                        "registry:5000/taskflow-api:${env.IMAGE_TAG}"
+                        "${env.IMAGE_REPO}:${env.IMAGE_TAG}"
 
                     echo """
                     Current commit : ${env.GIT_COMMIT.take(7)}
                     Build commit   : ${env.IMAGE_TAG}
                     Image          : ${env.IMAGE_NAME}
                     """.stripIndent()
+                }
+            }
+        }
+
+        stage('Docker Hub Login') {
+            when {
+                allOf {
+                    expression {
+                        env.CI_MODE == 'FULL'
+                    }
+
+                    expression { env.BACKEND_CHANGED == 'true' }
+                }
+            }
+
+            steps {
+                // Writes ~/.docker/config.json in the ci container. buildx, docker
+                // compose (E2E pulls), Trivy and Syft all read credentials from it,
+                // which also avoids anonymous Docker Hub pull rate limits.
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+                        printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io \
+                            --username "$DOCKERHUB_USER" \
+                            --password-stdin
+                    '''
                 }
             }
         }
@@ -472,26 +511,22 @@ pipeline {
 
             steps {
                 script {
-                    def status = sh(
-                        script: """
-                            curl \
-                                --connect-timeout 5 \
-                                --max-time 10 \
-                                -s \
-                                -o /dev/null \
-                                -w "%{http_code}" \
-                                -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json' \
-                                http://registry:5000/v2/taskflow-api/manifests/${env.IMAGE_TAG}
-                        """,
+                    def output = sh(
+                        script: '''
+                            # A missing tag exits non-zero; classify it below instead
+                            # of failing the stage.
+                            { docker buildx imagetools inspect "$IMAGE_NAME" 2>&1 \
+                                && echo "__IMAGE_EXISTS__"; } || true
+                        ''',
                         returnStdout: true
                     ).trim()
 
-                    if (status == '200') {
+                    if (output.contains('__IMAGE_EXISTS__')) {
                         env.NEED_IMAGE_BUILD = 'false'
 
                         echo "Image exists: ${env.IMAGE_NAME}"
                     }
-                    else if (status == '404') {
+                    else if (output.toLowerCase().contains('not found')) {
                         env.NEED_IMAGE_BUILD = 'true'
 
                         echo "Image does not exist: ${env.IMAGE_NAME}"
@@ -500,7 +535,7 @@ pipeline {
                     else {
                         error """
                         Unable to check registry.
-                        HTTP status: ${status}
+                        ${output}
                         """
                     }
                 }
@@ -541,7 +576,6 @@ pipeline {
                                 docker buildx create \
                                     --name jenkins-builder \
                                     --driver docker-container \
-                                    --buildkitd-config ../ci/buildkit/buildkitd.toml \
                                     --use
                             else
                                 echo "Using existing BuildKit builder..."
@@ -563,8 +597,8 @@ pipeline {
                                 --builder jenkins-builder \
                                 --push \
                                 -t "$IMAGE_NAME" \
-                                --cache-from type=registry,ref=registry:5000/taskflow-api:buildcache \
-                                --cache-to type=registry,ref=registry:5000/taskflow-api:buildcache,mode=max \
+                                --cache-from "type=registry,ref=$IMAGE_REPO:buildcache" \
+                                --cache-to "type=registry,ref=$IMAGE_REPO:buildcache,mode=max,image-manifest=true,oci-mediatypes=true" \
                                 .
 
                             echo "========================================"
@@ -615,7 +649,6 @@ pipeline {
                                 trivy image \
                                     --cache-dir "$TRIVY_CACHE_DIR" \
                                     --image-src remote \
-                                    --insecure \
                                     --format json \
                                     --output reports/trivy-image.json \
                                     "$IMAGE_NAME"
@@ -695,12 +728,19 @@ pipeline {
                                     "API_IMAGE=${env.IMAGE_NAME}"
                                 ]) {
                                     sh '''
+                                        # Buildx --push publishes to Docker Hub but does not
+                                        # load the image into the DinD daemon used by Compose.
+                                        # Pull it explicitly so Compose's --no-build path has
+                                        # the exact published image selected for E2E.
+                                        docker pull "$API_IMAGE"
+                                        docker image inspect "$API_IMAGE" >/dev/null
+
                                         docker compose \
                                             -f docker-compose.yaml \
                                             -f docker-compose.ci.yaml \
                                             -p "$COMPOSE_PROJECT_NAME" \
                                             up -d --wait --wait-timeout 120 \
-                                            --no-build --remove-orphans
+                                            --pull missing --no-build --remove-orphans
 
                                         docker compose \
                                             -f docker-compose.yaml \
@@ -783,7 +823,6 @@ pipeline {
                                     sh '''
                                     mkdir -p reports
 
-                                    SYFT_REGISTRY_INSECURE_USE_HTTP=true \
                                     syft "$IMAGE_NAME" \
                                         --from registry \
                                         -o cyclonedx-json=reports/taskflow-api.cdx.json
@@ -991,9 +1030,10 @@ pipeline {
                         echo "Updating:"
                         echo "$GITOPS_VALUES"
 
+                        # Only bump the tag. The repository comes from the chart's
+                        # values.yaml (Docker Hub); writing it here would override it.
                         yq -i \
-                            '.image.repository = "registry:5000/taskflow-api" |
-                            .image.tag = strenv(IMAGE_TAG)' \
+                            '.image.tag = strenv(IMAGE_TAG)' \
                             "$GITOPS_VALUES"
 
                         echo "Updated image:"
