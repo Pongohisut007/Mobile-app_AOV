@@ -95,11 +95,15 @@ class HttpProfileRepository implements ProfileRepository {
         'Authorization': 'Bearer $normalizedAccessToken',
       }).timeout(requestTimeout);
 
+      if (response.statusCode == 401) {
+        throw ProfileRepositoryException(
+          appL10n.sessionExpired,
+          sessionExpired: true,
+        );
+      }
       if (response.statusCode != 200) {
         throw ProfileRepositoryException(
-          response.statusCode == 401
-              ? appL10n.sessionExpired
-              : appL10n.errorActionFailed(failureLabel, response.statusCode),
+          appL10n.errorActionFailed(failureLabel, response.statusCode),
         );
       }
 
@@ -128,9 +132,12 @@ class HttpProfileRepository implements ProfileRepository {
 }
 
 class ProfileRepositoryException implements Exception {
-  const ProfileRepositoryException(this.message);
+  const ProfileRepositoryException(this.message, {this.sessionExpired = false});
 
   final String message;
+
+  /// backend ตอบ 401: token ในเครื่องใช้ไม่ได้แล้ว (หมดอายุ/ออกจากระบบจากที่อื่น/บัญชีถูกลบ)
+  final bool sessionExpired;
 
   @override
   String toString() => message;

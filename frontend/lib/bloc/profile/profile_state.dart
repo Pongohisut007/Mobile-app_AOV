@@ -9,7 +9,10 @@ final class ProfileInitial extends ProfileState {
 }
 
 final class ProfileGuest extends ProfileState {
-  const ProfileGuest();
+  const ProfileGuest({this.sessionExpired = false});
+
+  /// true = เคย login แต่ session หมดอายุ (เพิ่งล้าง token ทิ้ง) ให้แจ้งผู้ใช้ด้วย
+  final bool sessionExpired;
 }
 
 final class ProfileLoading extends ProfileState {
