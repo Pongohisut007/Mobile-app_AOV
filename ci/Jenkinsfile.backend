@@ -78,7 +78,13 @@ pipeline {
                     }
                     def pipelineChanged = changedPaths.any {
                         it == 'Makefile' ||
-                        it == '.gitleaks.toml' || it.startsWith('ci/') ||
+                        it == '.gitleaks.toml' ||
+                        (it.startsWith('ci/') && !(it in [
+                            'ci/Jenkinsfile.frontend',
+                            'ci/pods/frontend.yaml',
+                            'ci/pvc/flutter-cache-pvc.yaml',
+                            'ci/Dockerfiles/dockerfile.flutter'
+                        ])) ||
                         it.startsWith('policy/')
                     }
                     env.BACKEND_CHANGED = (runAll || pipelineChanged ||

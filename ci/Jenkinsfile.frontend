@@ -63,7 +63,13 @@ pipeline {
                     }
                     def pipelineChanged = changedPaths.any {
                         it == 'Makefile' ||
-                        it == '.gitleaks.toml' || it.startsWith('ci/') ||
+                        it == '.gitleaks.toml' ||
+                        (it.startsWith('ci/') && !(it in [
+                            'ci/Jenkinsfile.backend',
+                            'ci/pods/backend.yaml',
+                            'ci/pvc/trivy-cache-pvc.yaml',
+                            'ci/scripts/push-gitops.sh'
+                        ])) ||
                         it.startsWith('policy/')
                     }
                     env.FRONTEND_CHANGED = (runAll || pipelineChanged ||

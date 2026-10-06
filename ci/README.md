@@ -8,6 +8,11 @@
 การจัดคิว build ด้วย `disableConcurrentBuilds()` มีผลแยกตามงานและ branch
 ไม่ได้จัดคิวข้ามงาน
 
+เมื่อมีการ push ทั้งสอง Multibranch jobs อาจเริ่มทำงาน แต่การแก้ไฟล์ CI เฉพาะ
+frontend จะไม่ตั้ง `BACKEND_CHANGED` และการแก้ไฟล์ CI เฉพาะ backend จะไม่ตั้ง
+`FRONTEND_CHANGED` ไฟล์ CI ที่ใช้ร่วมกันยังทำให้ทั้งสองส่วนรัน ส่วนขั้นตรวจหา
+ความลับยังรันในทุก build ตามหัวข้อถัดไป
+
 ## การตรวจหาความลับ
 
 Pipeline ทั้งสองส่วนรัน Gitleaks ในทุก branch และ PR รวมถึงโหมด FAST
