@@ -608,4 +608,56 @@ describe('RecipesService', () => {
       expect(recipeRepo.save).not.toHaveBeenCalled();
     });
   });
+
+  it('shows ingredient amounts only to people who can see the full recipe', async () => {
+    const recipe = () => ({
+      id: 'r',
+      type: RecipeType.OFFICIAL,
+      status: RecipeStatus.PUBLISHED,
+      creatorId: 'owner',
+      sections: [],
+      recipeIngredients: [
+        {
+          sortOrder: 1,
+          amount: '2.000',
+          unit: 'ช้อน',
+          preparationNote: null,
+          ingredient: { name: 'น้ำปลา' },
+        },
+        {
+          sortOrder: 0,
+          amount: '200.000',
+          unit: 'กรัม',
+          preparationNote: 'สับ',
+          ingredient: { name: 'หมูสับ' },
+        },
+      ],
+    });
+
+    recipeRepository.findOne.mockResolvedValue(recipe());
+    access.hasActiveAccess.mockResolvedValue(false);
+    const preview = await service.findOneForViewer('r', 'stranger');
+    expect(
+      preview.recipeIngredients.map((item) => [
+        item.ingredient.name,
+        item.amount,
+        item.unit,
+        item.preparationNote,
+      ]),
+    ).toEqual([
+      ['หมูสับ', null, null, null],
+      ['น้ำปลา', null, null, null],
+    ]);
+
+    recipeRepository.findOne.mockResolvedValue(recipe());
+    access.hasActiveAccess.mockResolvedValue(true);
+    const bought = await service.findOneForViewer('r', 'buyer');
+    expect(bought.recipeIngredients[0]).toEqual(
+      expect.objectContaining({
+        amount: '200.000',
+        unit: 'กรัม',
+        preparationNote: 'สับ',
+      }),
+    );
+  });
 });

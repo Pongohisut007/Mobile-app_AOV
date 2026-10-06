@@ -19,6 +19,9 @@ import 'package:flutter_application_1/widgets/create_food/recipe_cover_section.d
 import 'package:flutter_application_1/widgets/create_food/recipe_detail_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_category_section.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_ingredients_section.dart';
+import 'package:flutter_application_1/models/recipe_ingredient.dart';
+import 'package:flutter_application_1/repositories/ingredient_repository.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_steps_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_type_section.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
@@ -51,6 +54,9 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   final _cookingController = TextEditingController();
   final _servingsController = TextEditingController();
   final _selectedCategoryIds = <String>{};
+  // วัตถุดิบของสูตร (ลำดับในรายการ = ลำดับที่แสดง) กับคลังไว้ให้เลือก
+  List<RecipeIngredientLine> _ingredients = const [];
+  List<IngredientOption> _ingredientCatalog = const [];
   final _uploadRepository = HttpUploadRepository(baseUrl: ApiConfig.apiBaseUrl);
 
   String? _difficulty;
@@ -79,6 +85,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
   @override
   void initState() {
     super.initState();
+    _loadIngredientCatalog();
     final food = widget.initialFood;
     if (food == null) return;
 
@@ -101,6 +108,14 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     if (food.steps.isNotEmpty) {
       _sectionDraft = RecipeSectionDraft.fromSteps(food.steps);
     }
+    _ingredients = food.ingredients;
+  }
+
+  // โหลดไม่ได้ก็ยังพิมพ์ชื่อวัตถุดิบเองได้ (แค่ไม่มีตัวเลือกขึ้น)
+  Future<void> _loadIngredientCatalog() async {
+    final catalog = await IngredientRepository().fetchAll();
+    if (!mounted) return;
+    setState(() => _ingredientCatalog = catalog);
   }
 
   Future<void> _loadIsCreator() async {
@@ -135,6 +150,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         _servingsController.text.trim().isNotEmpty ||
         _difficulty != null ||
         _selectedCategoryIds.isNotEmpty ||
+        _ingredients.isNotEmpty ||
         _showImgCommu ||
         (sectionDraft?.sections.any(
               (section) =>
@@ -300,6 +316,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         if (!_isEditing || _canChangeType) 'type': _type,
         'status': asDraft ? 'draft' : 'published',
         'categoryIds': _selectedCategoryIds.toList(),
+        'ingredients': [for (final item in _ingredients) item.toPayload()],
         'sections': recipeSections,
       };
 
@@ -678,6 +695,13 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
                     : (category) => setState(
                         () => _selectedCategoryIds.remove(category.id),
                       ),
+              ),
+
+              RecipeIngredientsSection(
+                ingredients: _ingredients,
+                catalog: _ingredientCatalog,
+                enabled: !_isSaving && !_isBusy,
+                onChanged: (value) => setState(() => _ingredients = value),
               ),
 
               if (_canChangeType)

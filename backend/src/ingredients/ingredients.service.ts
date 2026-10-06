@@ -10,8 +10,24 @@ export class IngredientsService {
     private readonly ingredientRepository: Repository<Ingredient>,
   ) {}
 
-  findAll(): Promise<Ingredient[]> {
-    return this.ingredientRepository.find({ order: { name: 'ASC' } });
+  /**
+   * คลังวัตถุดิบสำหรับเลือกตอนสร้างสูตร (เฉพาะที่เปิดใช้งาน)
+   * [query] = พิมพ์ค้นหาบางส่วนของชื่อ แสดงไม่เกิน 30 รายการ
+   */
+  findAll(query?: string): Promise<Ingredient[]> {
+    const search = query?.trim();
+    const builder = this.ingredientRepository
+      .createQueryBuilder('ingredient')
+      .where('ingredient.isActive = true')
+      .orderBy('ingredient.name', 'ASC');
+    if (search) {
+      builder
+        .andWhere("ingredient.name ILIKE :search ESCAPE '\\'", {
+          search: `%${search.replace(/[\\%_]/g, (char) => `\\${char}`)}%`,
+        })
+        .take(30);
+    }
+    return builder.getMany();
   }
 
   async findOne(id: string): Promise<Ingredient> {

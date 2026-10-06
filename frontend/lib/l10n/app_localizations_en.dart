@@ -1909,4 +1909,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkingSession => 'Checking your account...';
+
+  @override
+  String get ingredients => 'Ingredients';
+
+  @override
+  String get ingredientsEmptyHint =>
+      'No ingredients yet. Add them so cooks can prepare everything.';
+
+  @override
+  String get addIngredient => 'Add ingredient';
+
+  @override
+  String get editIngredient => 'Edit ingredient';
+
+  @override
+  String get ingredientName => 'Ingredient';
+
+  @override
+  String get ingredientNameHint => 'Search, or type a new one';
+
+  @override
+  String get ingredientNameRequired => 'Please enter an ingredient';
+
+  @override
+  String get ingredientIsNew => 'New ingredient, it will be added to the list';
+
+  @override
+  String get ingredientAmount => 'Amount';
+
+  @override
+  String get ingredientAmountInvalid => 'Enter a number with up to 3 decimals';
+
+  @override
+  String get ingredientUnit => 'Unit';
+
+  @override
+  String get ingredientNote => 'Note, e.g. finely chopped';
+
+  @override
+  String get ingredientOptional => 'Optional';
+
+  @override
+  String get ingredientDuplicate => 'This ingredient is already in the list';
+
+  @override
+  String get ingredientAmountsLocked =>
+      'Buy this recipe to see amounts and preparation';
 }

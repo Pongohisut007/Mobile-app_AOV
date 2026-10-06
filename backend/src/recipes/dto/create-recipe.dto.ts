@@ -1,16 +1,20 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
+  IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
   IsUUID,
   Length,
+  Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { RecipeContentType } from '../entities/recipe-content.entity';
@@ -71,6 +75,42 @@ export class CreateRecipeSectionDto {
   @ValidateNested({ each: true })
   @Type(() => CreateRecipeContentDto)
   contents?: CreateRecipeContentDto[];
+}
+
+/** วัตถุดิบหนึ่งรายการของสูตร: เลือกจากคลัง (ingredientId) หรือพิมพ์ชื่อใหม่ (name) */
+export class RecipeIngredientInputDto {
+  // ต้องมีอย่างใดอย่างหนึ่ง ส่งมาทั้งคู่ = ใช้ ingredientId
+  @ValidateIf((input: RecipeIngredientInputDto) => input.name === undefined)
+  @IsUUID()
+  ingredientId?: string;
+
+  @ValidateIf(
+    (input: RecipeIngredientInputDto) => input.ingredientId === undefined,
+  )
+  @IsString()
+  @Length(1, 150)
+  name?: string;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0)
+  @Max(9999999)
+  amount?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  unit?: string | null;
+
+  /** เช่น "สับหยาบ", "หั่นเต๋า" */
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  note?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  isOptional?: boolean;
 }
 
 export class CreateRecipeDto {
@@ -146,4 +186,12 @@ export class CreateRecipeDto {
   @ValidateNested({ each: true })
   @Type(() => CreateRecipeSectionDto)
   sections?: CreateRecipeSectionDto[];
+
+  // ส่งมา = แทนรายการวัตถุดิบเดิมทั้งชุด (ลำดับในรายการ = ลำดับที่แสดง)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => RecipeIngredientInputDto)
+  ingredients?: RecipeIngredientInputDto[];
 }

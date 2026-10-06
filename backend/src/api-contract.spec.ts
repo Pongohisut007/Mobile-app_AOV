@@ -681,4 +681,49 @@ describe('Recipe API HTTP contracts', () => {
       { includeInactive: true },
     );
   });
+
+  it('validates recipe ingredients', async () => {
+    const recipe = { title: 'Soup', slug: 'soup' };
+    const post = (ingredients: unknown) =>
+      request(app.getHttpServer())
+        .post('/recipes')
+        .set('Authorization', 'Bearer test-user')
+        .send({ ...recipe, ingredients });
+
+    await post([
+      { ingredientId: recipeId, amount: 2, unit: 'ช้อนโต๊ะ' },
+      {
+        name: 'ใบกะเพรา',
+        amount: 0.5,
+        unit: 'ถ้วย',
+        note: 'เด็ดใบ',
+        isOptional: true,
+      },
+      { name: 'เกลือ' },
+    ]).expect(201);
+    expect(recipes.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        ingredients: [
+          expect.objectContaining({ ingredientId: recipeId, amount: 2 }),
+          expect.objectContaining({ name: 'ใบกะเพรา', isOptional: true }),
+          expect.objectContaining({ name: 'เกลือ' }),
+        ],
+      }),
+    );
+
+    recipes.create.mockClear();
+    for (const invalid of [
+      [{ amount: 1 }], // ไม่มีทั้ง id และชื่อ
+      [{ name: '' }],
+      [{ ingredientId: 'not-a-uuid' }],
+      [{ name: 'เกลือ', amount: -1 }],
+      [{ name: 'เกลือ', amount: 1.23456 }],
+      [{ name: 'เกลือ', unit: 'x'.repeat(51) }],
+      [{ name: 'เกลือ', extra: true }],
+      Array.from({ length: 51 }, (_, index) => ({ name: `item ${index}` })),
+    ]) {
+      await post(invalid).expect(400);
+    }
+    expect(recipes.create).not.toHaveBeenCalled();
+  });
 });

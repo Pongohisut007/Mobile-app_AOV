@@ -5,6 +5,7 @@ import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
 import 'package:flutter_application_1/bloc/cart/cart_state.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
+import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_state.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_bloc.dart';
 import 'package:flutter_application_1/bloc/recipe_comment/recipe_comment_event.dart';
 import 'package:flutter_application_1/bloc/recipe_review/recipe_review_bloc.dart';
@@ -24,6 +25,7 @@ import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
 import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
+import 'package:flutter_application_1/widgets/food_detail/food_ingredients.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
 import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
@@ -171,73 +173,81 @@ class _FoodDetailPageState extends State<FoodDetailPage>
           _playFlyToCart(food);
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        bottomNavigationBar:
-            widget.showComments || widget.scrollToComments || !canBuy
-            ? null
-            : FutureBuilder<Food>(
-                future: _foodFuture,
-                initialData: _cachedFood,
-                builder: (context, snapshot) {
-                  final food = snapshot.data;
-                  // สูตร community ฟรี และสูตรของตัวเอง ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
-                  if (food != null &&
-                      (_isCommunity(food) || _isOwnRecipe(food))) {
-                    return const SizedBox.shrink();
-                  }
+      // เพิ่งซื้อสูตรนี้ (จากตะกร้า) โหลดใหม่ให้ได้ขั้นตอนและปริมาณวัตถุดิบครบ
+      child: BlocListener<PurchasedRecipesBloc, PurchasedRecipesState>(
+        listenWhen: (previous, current) =>
+            !previous.isPurchased(widget.foodsId) &&
+            current.isPurchased(widget.foodsId),
+        listener: (_, _) => _refresh(silent: true),
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          bottomNavigationBar:
+              widget.showComments || widget.scrollToComments || !canBuy
+              ? null
+              : FutureBuilder<Food>(
+                  future: _foodFuture,
+                  initialData: _cachedFood,
+                  builder: (context, snapshot) {
+                    final food = snapshot.data;
+                    // สูตร community ฟรี และสูตรของตัวเอง ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
+                    if (food != null &&
+                        (_isCommunity(food) || _isOwnRecipe(food))) {
+                      return const SizedBox.shrink();
+                    }
 
-                  final isPending = context.select(
-                    (CartBloc bloc) => bloc.state.isPending(widget.foodsId),
-                  );
+                    final isPending = context.select(
+                      (CartBloc bloc) => bloc.state.isPending(widget.foodsId),
+                    );
 
-                  final inCart = context.select(
-                    (CartBloc bloc) => bloc.state.contains(widget.foodsId),
-                  );
+                    final inCart = context.select(
+                      (CartBloc bloc) => bloc.state.contains(widget.foodsId),
+                    );
 
-                  return BottomBuyBar(
-                    cartKey: _cartKey,
-                    isLoading: isPending,
-                    onCartPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.cart),
-                    buyLabel: inCart
-                        ? context.l10n.checkoutNow
-                        : context.l10n.buyNow,
-                    onBuyPressed: inCart
-                        ? () => Navigator.pushNamed(context, AppRoutes.cart)
-                        : food == null || isPending
-                        ? null
-                        : () => _addToCart(food),
-                  );
-                },
-              ),
-        body: FutureBuilder<Food>(
-          future: _foodFuture,
-          initialData: _cachedFood,
-          builder: (context, state) {
-            // มีข้อมูลเดิมอยู่แล้ว (เช่นหลังแก้ไขสูตร) ให้โชว์ของเดิมไว้ระหว่างโหลด
-            if (state.connectionState == ConnectionState.waiting &&
-                !state.hasData) {
-              final heroImageUrl = widget.heroImageUrl;
-              return LoadingView(
-                header: heroImageUrl == null
-                    ? null
-                    : FoodImage(
-                        heroTag: widget.foodsId,
-                        imageUrl: heroImageUrl,
-                      ),
-              );
-            }
+                    return BottomBuyBar(
+                      cartKey: _cartKey,
+                      isLoading: isPending,
+                      onCartPressed: () =>
+                          Navigator.pushNamed(context, AppRoutes.cart),
+                      buyLabel: inCart
+                          ? context.l10n.checkoutNow
+                          : context.l10n.buyNow,
+                      onBuyPressed: inCart
+                          ? () => Navigator.pushNamed(context, AppRoutes.cart)
+                          : food == null || isPending
+                          ? null
+                          : () => _addToCart(food),
+                    );
+                  },
+                ),
+          body: FutureBuilder<Food>(
+            future: _foodFuture,
+            initialData: _cachedFood,
+            builder: (context, state) {
+              // มีข้อมูลเดิมอยู่แล้ว (เช่นหลังแก้ไขสูตร) ให้โชว์ของเดิมไว้ระหว่างโหลด
+              if (state.connectionState == ConnectionState.waiting &&
+                  !state.hasData) {
+                final heroImageUrl = widget.heroImageUrl;
+                return LoadingView(
+                  header: heroImageUrl == null
+                      ? null
+                      : FoodImage(
+                          heroTag: widget.foodsId,
+                          imageUrl: heroImageUrl,
+                        ),
+                );
+              }
 
-            if (state.hasError || !state.hasData) {
-              return ErrorView(
-                message: state.error?.toString() ?? context.l10n.recipeNotFound,
-                onRetry: _reload,
-              );
-            }
+              if (state.hasError || !state.hasData) {
+                return ErrorView(
+                  message:
+                      state.error?.toString() ?? context.l10n.recipeNotFound,
+                  onRetry: _reload,
+                );
+              }
 
-            return _buildBody(state.data!, isPurchased: isPurchased);
-          },
+              return _buildBody(state.data!, isPurchased: isPurchased);
+            },
+          ),
         ),
       ),
     );
@@ -301,6 +311,15 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                     FoodDescription(description: food.description),
 
                     const SizedBox(height: 28),
+
+                    if (food.ingredients.isNotEmpty) ...[
+                      FoodIngredients(
+                        ingredients: food.ingredients,
+                        // ซื้อในหน้านี้แล้วแต่ยังไม่ได้โหลดสูตรใหม่ ก็ยังไม่มีปริมาณให้แสดง
+                        amountsLocked: !food.canViewFullRecipe,
+                      ),
+                      const SizedBox(height: 28),
+                    ],
 
                     if (canStartCooking) ...[
                       SizedBox(

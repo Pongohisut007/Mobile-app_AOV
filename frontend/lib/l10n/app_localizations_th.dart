@@ -1813,4 +1813,51 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get checkingSession => 'กำลังตรวจสอบบัญชี...';
+
+  @override
+  String get ingredients => 'วัตถุดิบ';
+
+  @override
+  String get ingredientsEmptyHint =>
+      'ยังไม่ได้ใส่วัตถุดิบ เพิ่มไว้ให้คนทำตามเตรียมของได้ครบ';
+
+  @override
+  String get addIngredient => 'เพิ่มวัตถุดิบ';
+
+  @override
+  String get editIngredient => 'แก้ไขวัตถุดิบ';
+
+  @override
+  String get ingredientName => 'ชื่อวัตถุดิบ';
+
+  @override
+  String get ingredientNameHint => 'พิมพ์เพื่อค้นหา หรือพิมพ์ชื่อใหม่';
+
+  @override
+  String get ingredientNameRequired => 'กรุณาใส่ชื่อวัตถุดิบ';
+
+  @override
+  String get ingredientIsNew => 'วัตถุดิบใหม่ จะถูกเพิ่มเข้าคลัง';
+
+  @override
+  String get ingredientAmount => 'ปริมาณ';
+
+  @override
+  String get ingredientAmountInvalid => 'ใส่เป็นตัวเลข ทศนิยมไม่เกิน 3 ตำแหน่ง';
+
+  @override
+  String get ingredientUnit => 'หน่วย';
+
+  @override
+  String get ingredientNote => 'หมายเหตุ เช่น สับหยาบ';
+
+  @override
+  String get ingredientOptional => 'ไม่ใส่ก็ได้';
+
+  @override
+  String get ingredientDuplicate => 'มีวัตถุดิบนี้ในรายการแล้ว';
+
+  @override
+  String get ingredientAmountsLocked =>
+      'ซื้อสูตรเพื่อดูปริมาณและวิธีเตรียมวัตถุดิบ';
 }

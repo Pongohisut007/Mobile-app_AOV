@@ -24,6 +24,10 @@ import { RecipeContent } from './entities/recipe-content.entity';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
 import { assertCanManageRecipe } from './recipe-permissions';
+import {
+  hideIngredientAmounts,
+  replaceRecipeIngredients,
+} from './recipe-ingredients';
 import { MediaSigner } from '../uploads/media-signer.service';
 
 export interface FindRecipesOptions {
@@ -332,6 +336,9 @@ export class RecipesService {
     for (const section of recipe.sections) {
       section.contents.sort((left, right) => left.sortOrder - right.sortOrder);
     }
+    recipe.recipeIngredients?.sort(
+      (left, right) => left.sortOrder - right.sortOrder,
+    );
 
     const [recipeWithCounts] = await this.attachRecipeCounts([recipe]);
     return recipeWithCounts;
@@ -362,6 +369,10 @@ export class RecipesService {
     if (recipe.canViewFullRecipe) return this.signPaidMedia(recipe);
 
     recipe.sections = recipe.sections.filter((section) => section.isPreview);
+    // ยังไม่ซื้อ: เห็นชื่อวัตถุดิบไว้ตัดสินใจ แต่ปริมาณ/หน่วย/หมายเหตุ เป็นส่วนที่ขาย
+    recipe.recipeIngredients = hideIngredientAmounts(
+      recipe.recipeIngredients ?? [],
+    );
     return recipe;
   }
 
@@ -493,6 +504,7 @@ export class RecipesService {
     const {
       categoryIds,
       sections = [],
+      ingredients = [],
       ...recipeData
     } = RecipesService.withoutSignedMedia(dto);
     const categories = await this.resolveCategories(categoryIds);
@@ -534,11 +546,16 @@ export class RecipesService {
           }
         }
 
+        if (ingredients.length > 0) {
+          await replaceRecipeIngredients(manager, recipe.id, ingredients);
+        }
+
         return recipeRepository.findOneOrFail({
           where: { id: recipe.id },
           relations: {
             creator: true,
             categories: true,
+            recipeIngredients: { ingredient: true },
             sections: { contents: true },
           },
         });
@@ -549,7 +566,7 @@ export class RecipesService {
   }
 
   async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
-    const { categoryIds, sections, ...recipeData } =
+    const { categoryIds, sections, ingredients, ...recipeData } =
       RecipesService.withoutSignedMedia(dto);
     const categories = categoryIds
       ? await this.resolveCategories(categoryIds)
@@ -590,6 +607,11 @@ export class RecipesService {
         recipe.publishedAt = new Date();
       }
       await recipeRepository.save(recipe);
+
+      // ไม่ส่งมา = คงวัตถุดิบเดิมไว้
+      if (ingredients) {
+        await replaceRecipeIngredients(manager, recipe.id, ingredients);
+      }
 
       if (!sections) return;
 

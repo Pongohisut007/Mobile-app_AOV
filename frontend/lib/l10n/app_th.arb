@@ -974,5 +974,23 @@
   "checkoutSessionExpired": "เซสชันหมดอายุระหว่างชำระเงิน รายการที่ยังไม่ได้ชำระยังอยู่ในตะกร้า",
   "checkoutSignInToContinue": "เข้าสู่ระบบเพื่อชำระต่อ",
   "checkoutResumeReady": "เข้าสู่ระบบแล้ว ชำระรายการที่เหลือต่อได้เลย",
-  "checkingSession": "กำลังตรวจสอบบัญชี..."
+  "checkingSession": "กำลังตรวจสอบบัญชี...",
+  "ingredients": "วัตถุดิบ",
+  "ingredientsEmptyHint": "ยังไม่ได้ใส่วัตถุดิบ เพิ่มไว้ให้คนทำตามเตรียมของได้ครบ",
+  "addIngredient": "เพิ่มวัตถุดิบ",
+  "editIngredient": "แก้ไขวัตถุดิบ",
+  "ingredientName": "ชื่อวัตถุดิบ",
+  "ingredientNameHint": "พิมพ์เพื่อค้นหา หรือพิมพ์ชื่อใหม่",
+  "ingredientNameRequired": "กรุณาใส่ชื่อวัตถุดิบ",
+  "ingredientIsNew": "วัตถุดิบใหม่ จะถูกเพิ่มเข้าคลัง",
+  "ingredientAmount": "ปริมาณ",
+  "ingredientAmountInvalid": "ใส่เป็นตัวเลข ทศนิยมไม่เกิน 3 ตำแหน่ง",
+  "ingredientUnit": "หน่วย",
+  "ingredientNote": "หมายเหตุ เช่น สับหยาบ",
+  "ingredientOptional": "ไม่ใส่ก็ได้",
+  "ingredientDuplicate": "มีวัตถุดิบนี้ในรายการแล้ว",
+  "ingredientAmountsLocked": "ซื้อสูตรเพื่อดูปริมาณและวิธีเตรียมวัตถุดิบ",
+  "@ingredientsEmptyHint": {
+    "description": "Shown in the create-recipe form when no ingredients were added"
+  }
 }
