@@ -970,5 +970,9 @@
     }
   },
   "resetCodeResent": "ส่งรหัสใหม่แล้ว",
-  "resetPasswordSubmit": "ตั้งรหัสผ่านใหม่"
+  "resetPasswordSubmit": "ตั้งรหัสผ่านใหม่",
+  "checkoutSessionExpired": "เซสชันหมดอายุระหว่างชำระเงิน รายการที่ยังไม่ได้ชำระยังอยู่ในตะกร้า",
+  "checkoutSignInToContinue": "เข้าสู่ระบบเพื่อชำระต่อ",
+  "checkoutResumeReady": "เข้าสู่ระบบแล้ว ชำระรายการที่เหลือต่อได้เลย",
+  "checkingSession": "กำลังตรวจสอบบัญชี..."
 }

@@ -1895,4 +1895,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetPasswordSubmit => 'Reset password';
+
+  @override
+  String get checkoutSessionExpired =>
+      'Your session expired during checkout. Unpaid items are still in your cart.';
+
+  @override
+  String get checkoutSignInToContinue => 'Sign in to continue';
+
+  @override
+  String get checkoutResumeReady =>
+      'You\'re signed in. Pay for the remaining items now.';
+
+  @override
+  String get checkingSession => 'Checking your account...';
 }

@@ -19,7 +19,22 @@ import 'package:flutter_application_1/widgets/login/login_logo.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.returnOnSuccess = false});
+
+  /// true = login สำเร็จแล้วกลับไปหน้าที่เปิดมา (pop พร้อม true) แทนการไปหน้าแรก
+  /// เช่น session หมดอายุตอนชำระเงิน กลับมาแล้วจ่ายต่อได้เลย
+  final bool returnOnSuccess;
+
+  /// ส่งเป็น arguments ของ route login = [returnOnSuccess]
+  static const returnHere = 'return-here';
+
+  /// เปิดหน้า login แล้วกลับมาหน้านี้ คืน true ถ้า login สำเร็จ
+  static Future<bool> signInAndReturn(BuildContext context) async {
+    final result = await Navigator.of(
+      context,
+    ).pushNamed<bool>(AppRoutes.login, arguments: returnHere);
+    return result ?? false;
+  }
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -91,6 +106,10 @@ class _LoginPageState extends State<LoginPage> {
           context.read<PurchasedRecipesBloc>().add(
             const PurchasedRecipesRequested(),
           );
+          if (widget.returnOnSuccess) {
+            Navigator.of(context).pop(true);
+            return;
+          }
           Navigator.pushNamedAndRemoveUntil(
             context,
             AppRoutes.home,

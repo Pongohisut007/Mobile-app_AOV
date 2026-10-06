@@ -8,7 +8,10 @@ import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/data/recipe_library_cache.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/models/cart_item.dart';
+import 'package:flutter_application_1/repositories/auth_repository.dart';
 import 'package:flutter_application_1/repositories/purchase_repository.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/views/pages/login_page.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/checkout_failure_page.dart';
 import 'package:flutter_application_1/views/pages/checkout_success_page.dart';
@@ -30,6 +33,9 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   late final PurchaseRepository _purchaseRepository =
       HttpMockPurchaseRepository(baseUrl: ApiConfig.apiBaseUrl);
+  late final AuthRepository _authRepository = HttpAuthRepository(
+    baseUrl: ApiConfig.apiBaseUrl,
+  );
   bool _isCheckingOut = false;
   // เปิดชีตเลือกผลจำลองอยู่ กันกดชำระเงินรัวจนชีตเด้งซ้อน
   bool _isChoosingScenario = false;
@@ -72,6 +78,13 @@ class _CartPageState extends State<CartPage> {
       return;
     }
 
+    // เช็กก่อนเปิดหน้าจ่ายเงิน: หมดอายุแล้วให้ login ก่อน ไม่ต้องไปลุ้นตอนกำลังจ่าย
+    setState(() => _isCheckingOut = true);
+    final signedIn = await _ensureSignedIn();
+    if (!mounted) return;
+    setState(() => _isCheckingOut = false);
+    if (!signedIn) return;
+
     _isChoosingScenario = true;
     final _MockPurchaseScenario? scenario;
     try {
@@ -92,11 +105,16 @@ class _CartPageState extends State<CartPage> {
     setState(() => _isCheckingOut = true);
     var completed = 0;
     String? errorMessage;
+    var sessionExpired = false;
 
     for (final item in items) {
       try {
         await _purchaseRepository.purchase(item);
         completed++;
+      } on PurchaseException catch (error) {
+        errorMessage = error.message;
+        sessionExpired = error.sessionExpired;
+        break;
       } on Exception catch (error) {
         errorMessage = error.toString();
         break;
@@ -115,6 +133,10 @@ class _CartPageState extends State<CartPage> {
     }
     setState(() => _isCheckingOut = false);
 
+    if (sessionExpired) {
+      _showSessionExpiredDuringCheckout(purchasedCount: completed);
+      return;
+    }
     if (errorMessage != null) {
       _showFailure(errorMessage, purchasedCount: completed);
       return;
@@ -130,6 +152,51 @@ class _CartPageState extends State<CartPage> {
               ),
           onBackHome: () =>
               Navigator.of(resultContext).popUntil((route) => route.isFirst),
+        ),
+      ),
+    );
+  }
+
+  /// true = มี session ใช้ได้ พร้อมจ่าย
+  /// ยังไม่ login / session หมดอายุ = เปิดหน้า login แล้วกลับมาตะกร้าเดิม (ให้กดจ่ายเองอีกที)
+  Future<bool> _ensureSignedIn() async {
+    final token = await TokenStorage().readAccessToken();
+    if (token != null && token.trim().isNotEmpty) {
+      final valid = await _authRepository.checkSession(accessToken: token);
+      if (valid) return true;
+      // 401: SessionExpiry ล้าง session ในเครื่องให้แล้ว
+    }
+    if (!mounted) return false;
+    if (token == null || token.trim().isEmpty) {
+      _showMessage(context.l10n.signInBeforeCheckout, isError: true);
+    }
+    await _signInAndReloadCart();
+    return false;
+  }
+
+  Future<void> _signInAndReloadCart() async {
+    final signedIn = await LoginPage.signInAndReturn(context);
+    if (!mounted || !signedIn) return;
+    context.read<CartBloc>().add(const CartRequested());
+    context.read<PurchasedRecipesBloc>().add(const PurchasedRecipesRefreshed());
+    _showMessage(context.l10n.checkoutResumeReady);
+  }
+
+  /// หมดอายุกลางทาง: รายการที่ซื้อไปแล้วได้สิทธิ์แล้ว ที่เหลือยังอยู่ในตะกร้าฝั่ง server
+  /// ให้ login แล้วกลับมาจ่ายต่อ (ตะกร้าบนจอว่างระหว่างนั้นเพราะกลายเป็นผู้เยี่ยมชม)
+  void _showSessionExpiredDuringCheckout({required int purchasedCount}) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (resultContext) => CheckoutFailurePage(
+          message: context.l10n.checkoutSessionExpired,
+          purchasedCount: purchasedCount,
+          retryLabel: context.l10n.checkoutSignInToContinue,
+          retryIcon: Icons.login_rounded,
+          onRetry: () {
+            Navigator.of(resultContext).pop();
+            _signInAndReloadCart();
+          },
+          onBackToCart: () => Navigator.of(resultContext).pop(),
         ),
       ),
     );

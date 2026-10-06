@@ -543,5 +543,9 @@
   "resendCode": "Resend code",
   "resendCodeIn": "Resend code in {seconds}s",
   "resetCodeResent": "New code sent",
-  "resetPasswordSubmit": "Reset password"
+  "resetPasswordSubmit": "Reset password",
+  "checkoutSessionExpired": "Your session expired during checkout. Unpaid items are still in your cart.",
+  "checkoutSignInToContinue": "Sign in to continue",
+  "checkoutResumeReady": "You're signed in. Pay for the remaining items now.",
+  "checkingSession": "Checking your account..."
 }

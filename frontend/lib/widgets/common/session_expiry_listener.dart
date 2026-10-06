@@ -10,6 +10,7 @@ import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_e
 import 'package:flutter_application_1/data/session_expiry.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/views/pages/login_page.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -56,8 +57,10 @@ class _SessionExpiryListenerState extends State<SessionExpiryListener> {
       type: AppSnackType.error,
       action: SnackBarAction(
         label: appL10n.signIn,
-        onPressed: () =>
-            appNavigatorKey.currentState?.pushNamed(AppRoutes.login),
+        onPressed: () => appNavigatorKey.currentState?.pushNamed(
+          AppRoutes.login,
+          arguments: LoginPage.returnHere,
+        ),
       ),
     );
   }

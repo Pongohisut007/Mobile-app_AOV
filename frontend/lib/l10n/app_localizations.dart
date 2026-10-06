@@ -3361,6 +3361,30 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ตั้งรหัสผ่านใหม่'**
   String get resetPasswordSubmit;
+
+  /// No description provided for @checkoutSessionExpired.
+  ///
+  /// In th, this message translates to:
+  /// **'เซสชันหมดอายุระหว่างชำระเงิน รายการที่ยังไม่ได้ชำระยังอยู่ในตะกร้า'**
+  String get checkoutSessionExpired;
+
+  /// No description provided for @checkoutSignInToContinue.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบเพื่อชำระต่อ'**
+  String get checkoutSignInToContinue;
+
+  /// No description provided for @checkoutResumeReady.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบแล้ว ชำระรายการที่เหลือต่อได้เลย'**
+  String get checkoutResumeReady;
+
+  /// No description provided for @checkingSession.
+  ///
+  /// In th, this message translates to:
+  /// **'กำลังตรวจสอบบัญชี...'**
+  String get checkingSession;
 }
 
 class _AppLocalizationsDelegate

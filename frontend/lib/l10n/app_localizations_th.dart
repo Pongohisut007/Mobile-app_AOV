@@ -1799,4 +1799,18 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get resetPasswordSubmit => 'ตั้งรหัสผ่านใหม่';
+
+  @override
+  String get checkoutSessionExpired =>
+      'เซสชันหมดอายุระหว่างชำระเงิน รายการที่ยังไม่ได้ชำระยังอยู่ในตะกร้า';
+
+  @override
+  String get checkoutSignInToContinue => 'เข้าสู่ระบบเพื่อชำระต่อ';
+
+  @override
+  String get checkoutResumeReady =>
+      'เข้าสู่ระบบแล้ว ชำระรายการที่เหลือต่อได้เลย';
+
+  @override
+  String get checkingSession => 'กำลังตรวจสอบบัญชี...';
 }

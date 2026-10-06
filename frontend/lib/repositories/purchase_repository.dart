@@ -49,7 +49,7 @@ class HttpMockPurchaseRepository implements PurchaseRepository {
           .timeout(requestTimeout);
 
       if (response.statusCode == 401) {
-        throw PurchaseException(appL10n.sessionExpired);
+        throw PurchaseException(appL10n.sessionExpired, sessionExpired: true);
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = _errorMessage(response.bodyBytes);
@@ -88,9 +88,12 @@ class HttpMockPurchaseRepository implements PurchaseRepository {
 }
 
 class PurchaseException implements Exception {
-  const PurchaseException(this.message);
+  const PurchaseException(this.message, {this.sessionExpired = false});
 
   final String message;
+
+  /// backend ตอบ 401 รายการนี้ยังไม่ถูกซื้อ (ตรวจ token ก่อนสร้างคำสั่งซื้อ)
+  final bool sessionExpired;
 
   @override
   String toString() => message;
