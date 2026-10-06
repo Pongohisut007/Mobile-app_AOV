@@ -5,7 +5,7 @@ export class CreateRecipeComments1760000000000 implements MigrationInterface {
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "recipe_comments" (
+      CREATE TABLE IF NOT EXISTS "recipe_comments" (
         "id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -20,7 +20,7 @@ export class CreateRecipeComments1760000000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`
-      CREATE INDEX "IDX_recipe_comments_recipe_created_at"
+      CREATE INDEX IF NOT EXISTS "IDX_recipe_comments_recipe_created_at"
       ON "recipe_comments" ("recipe_id", "created_at" DESC)
     `);
   }
