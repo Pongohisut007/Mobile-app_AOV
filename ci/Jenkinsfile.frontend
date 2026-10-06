@@ -214,19 +214,24 @@ pipeline {
 
         stage('Mobile - Build Debug APK') {
             when {
-                allOf {
-                    expression {
-                        env.CI_MODE == 'FULL'
-                    }
-
-                    expression { env.FRONTEND_CHANGED == 'true' }
-                }
+                expression { env.FRONTEND_CHANGED == 'true' }
             }
 
             steps {
                 container('flutter') {
                     dir('frontend') {
-                        sh 'flutter build apk --debug --dart-define-from-file=config/dev.json'
+                        script {
+                            def branch = env.CHANGE_BRANCH?.trim() ?: env.BRANCH_NAME?.trim()
+                            def config = branch in ['main', 'prod'] ? 'prod' :
+                                branch in ['develop', 'staging'] ? 'staging' : 'dev'
+                            env.FLUTTER_CONFIG_FILE = "config/${config}.json"
+                            echo "Building debug APK for ${branch} with ${env.FLUTTER_CONFIG_FILE}"
+                            sh '''
+                                set -eu
+                                test -f "$FLUTTER_CONFIG_FILE"
+                                flutter build apk --debug --dart-define-from-file="$FLUTTER_CONFIG_FILE"
+                            '''
+                        }
                     }
                 }
             }
