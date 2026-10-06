@@ -1,93 +1,95 @@
-# CI behavior
+# การทำงานของ CI
 
-## Pipeline paths
+## ตำแหน่ง Pipeline
 
-The component Multibranch jobs use `ci/Jenkinsfile.backend` and
-`ci/Jenkinsfile.frontend`. Both files must exist on each branch that should build.
-The root `Jenkinsfile` is not used. Disable any old combined job to avoid duplicate
-builds and deployments. Build queueing applies per job/branch, not across jobs.
+งาน Multibranch ของแต่ละส่วนใช้ `ci/Jenkinsfile.backend` และ
+`ci/Jenkinsfile.frontend` โดย branch ที่ต้องการให้ build ต้องมีไฟล์ทั้งสองนี้
+ไม่ได้ใช้ `Jenkinsfile` ที่ราก repo ควรปิดงานแบบรวมเดิมเพื่อไม่ให้ build และ deploy ซ้ำ
+การจัดคิว build ด้วย `disableConcurrentBuilds()` มีผลแยกตามงานและ branch
+ไม่ได้จัดคิวข้ามงาน
 
-## Secret detection
+## การตรวจหาความลับ
 
-Both component pipelines run Gitleaks on every branch/PR build, including FAST mode,
-documentation changes, and changes unrelated to the job's component. Each job
-checks the repository, rather than only its frontend/backend directory. Detection
-failures stop the build, and reports redact secret values.
+Pipeline ทั้งสองส่วนรัน Gitleaks ในทุก branch และ PR รวมถึงโหมด FAST
+การแก้เอกสาร และการแก้ไฟล์ที่ไม่เกี่ยวกับส่วนของงานนั้น แต่ละงานสแกนทั้ง repo
+ไม่ใช่เฉพาะไดเรกทอรี frontend หรือ backend หากพบความลับ build จะหยุด
+และรายงานจะปิดบังค่าความลับ
 
-The `generic-api-key` rule's README allowlist requires BOTH the exact `backend/README.md` path and the
-exact extracted example token `abc123def456`. Other secrets in that file are
-still scanned. Git scanning retains its existing history scan behavior.
+รายการยกเว้นของกฎ `generic-api-key` สำหรับตัวอย่างใน README ต้องตรงทั้ง
+ตำแหน่ง `backend/README.md` และ token ตัวอย่าง `abc123def456`
+ความลับอื่นในไฟล์เดียวกันยังถูกสแกน การสแกน Git ยังคงตรวจประวัติ commit
+ตามพฤติกรรมเดิม
 
-## Images and deployment
+## Image และการ deploy
 
-Backend images are pushed to Docker Hub (`docker.io/pongphisut/taskflow-api`,
-public). The pipeline logs in with the Jenkins `dockerhub` credential
-(Username with password: Docker Hub username + an access token with Read & Write
-scope). The pipeline can read the existing `buildcache` tag; it no longer
-updates that tag. The GitOps update changes `image.tag` and enables migrations;
-the repository comes from the chart's `values.yaml`.
+Backend image ที่ผ่านการตรวจถูก push ไปยัง Docker Hub repository สาธารณะ
+`docker.io/pongphisut/taskflow-api` โดย Pipeline เข้าสู่ระบบด้วย Jenkins credential
+`dockerhub` ชนิด Username with password: ชื่อผู้ใช้ Docker Hub และ access token
+ที่มีสิทธิ์ Read & Write Pipeline อ่าน cache จาก tag `buildcache` เดิมได้
+แต่ไม่อัปเดต tag นี้อีกแล้ว ขั้นตอน GitOps เปลี่ยน `image.tag` และเปิด migration
+ส่วน image repository อ่านจาก `values.yaml` ของ chart
 
-Image tags use the full checked-out commit SHA. Changes to CI/build configuration
-therefore get a new tag even if the backend source is unchanged. Rerunning the
-same commit is rebuilt locally, scanned, and tested before any registry push.
-The first build after this change will use a new tag instead of the old 7-character
-backend commit tag. Helm values continue receiving `IMAGE_TAG` as before.
+Image tag ใช้ commit SHA เต็มของโค้ดที่ checkout ดังนั้นการแก้การตั้งค่า CI หรือ build
+จะได้ tag ใหม่แม้โค้ด backend ไม่เปลี่ยน การรัน commit เดิมซ้ำจะ build image
+ในเครื่อง CI ใหม่ แล้วสแกนและทดสอบก่อน push ไปยัง registry ทุกครั้ง
+Helm values ยังคงรับค่า `IMAGE_TAG` เช่นเดิม
 
-Builds of the same job/branch queue with `disableConcurrentBuilds()` so an older
-build cannot wait for approval and then deploy after a newer build. Builds already
-running before this change should be finished or cancelled before relying on it.
-Branch deploy rules remain: `develop` to staging, `main` to production with approval;
-feature branches and PR jobs do not deploy. Approval still uses the pipeline's
-existing 60-minute timeout.
+งาน build ของ job และ branch เดียวกันเข้าคิวด้วย `disableConcurrentBuilds()`
+เพื่อไม่ให้ build เก่ารออนุมัติแล้ว deploy ตามหลัง build ใหม่ ควรปล่อยให้ build
+ที่เริ่มก่อนการเปลี่ยนแปลงนี้จบหรือยกเลิกก่อนพึ่งพาเงื่อนไขดังกล่าว
+กฎ deploy คือ `develop` ไป staging และ `main` ไป production หลังอนุมัติ
+branch สำหรับ feature และ PR ไม่ deploy โดย Pipeline มี timeout รวม 60 นาที
 
-## Verification
+## การตรวจสอบ
 
 ```sh
 git diff --check
 ```
 
-Run both Multibranch jobs to validate the pipelines with the installed Jenkins
-plugins. Verify feature/PR builds scan secrets and do not deploy, and confirm
-backend image scanning and E2E complete before approving production deployment.
+รันงาน Multibranch ทั้งสองเพื่อยืนยันว่า Pipeline ใช้ได้กับ Jenkins plugins
+ที่ติดตั้ง ตรวจว่า feature branch และ PR สแกนความลับแต่ไม่ deploy
+และตรวจว่า image scan กับ E2E ของ backend ผ่านก่อนอนุมัติ production
 
-## Migration and image promotion
+## Migration และการเผยแพร่ image
 
-`NODE_ENV=production` is used in both deployed environments. `APP_ENV` selects
-staging or production application behavior. The migration job runs the migration
-runner from the same image tag before the API Deployment is updated. Jenkins turns
-on `migration.enabled` when it first updates a GitOps image tag containing the
-runner. Existing tags must not run this job.
+ทั้งสอง environment ที่ deploy ใช้ `NODE_ENV=production` ส่วน `APP_ENV`
+กำหนดพฤติกรรมของแอปเป็น staging หรือ production Migration job ใช้ runner
+จาก image tag เดียวกับที่จะ deploy และต้องสำเร็จก่อนอัปเดต API Deployment
+Jenkins เปิด `migration.enabled` ตอนเปลี่ยน GitOps image tag เป็น image
+ที่มี runner นี้แล้ว ห้ามเปิด job ดังกล่าวกับ image tag รุ่นเก่าที่ไม่มี runner
 
-The current migrations are incremental and require an existing `users` and
-`recipes` schema. A new empty cluster needs a reviewed baseline migration before
-the first deployment. The runner fails explicitly if that baseline is absent.
-The CI E2E stack creates the legacy schema with development synchronization,
-runs the incremental migrations, then runs the HTTP tests with
-`NODE_ENV=production` under both `APP_ENV=staging` and `APP_ENV=production`.
-This exercises the upgrade path but does not replace a clean-database baseline
-test.
+Migration ที่มีอยู่เป็นการเปลี่ยน schema เพิ่มเติม จึงต้องมีตาราง `users`
+และ `recipes` อยู่ก่อน คลัสเตอร์ใหม่ที่มีฐานข้อมูลว่างต้องมี baseline migration
+ที่ผ่านการตรวจทานก่อน deploy ครั้งแรก Runner จะหยุดพร้อมข้อความระบุสาเหตุ
+หากยังไม่มี schema ตั้งต้น
 
-Full PR builds build and scan a local Docker image; they do not receive Docker
-Hub or GitOps write credentials. On `develop` and `main`, the verified local
-image is pushed after Trivy, E2E, and (on `main`) SBOM verification pass. The
-remote build cache is read but no longer updated by the pipeline.
+ชุด E2E ใน CI สร้าง schema เดิมด้วยการ synchronize ในโหมด development ก่อน
+จากนั้นรัน migration เพิ่มเติม แล้วทดสอบ HTTP โดยใช้ `NODE_ENV=production`
+ทั้งกรณี `APP_ENV=staging` และ `APP_ENV=production` วิธีนี้ตรวจเส้นทาง
+การอัปเกรด แต่ยังไม่ทดแทนการทดสอบ baseline บนฐานข้อมูลว่าง
 
-## Android release gate
+PR แบบ FULL จะ build และสแกน Docker image ในเครื่อง CI โดยไม่ได้รับ credential
+สำหรับเขียนไปยัง Docker Hub หรือ GitOps สำหรับ `develop` และ `main`
+Pipeline จะ push image ที่ตรวจแล้วหลัง Trivy, E2E และการตรวจ SBOM
+(เฉพาะ `main`) ผ่าน Pipeline อ่าน remote build cache ได้ แต่ไม่อัปเดต cache นั้น
 
-The `main` frontend build requires the Jenkins environment variable
-`MOBILE_API_BASE_URL` to be an HTTPS API URL. It also requires these Jenkins
-credentials: `android-upload-keystore` (file), `android-keystore-password`,
-`android-key-alias`, and `android-key-password` (secret text). The gate builds
-and archives a signed release App Bundle using `config/prod.json` with the API
-URL injected for that build and mock purchases disabled. Until the URL and
-credentials are configured, the `main` build fails deliberately. Debug builds
-continue to use the shared debug key.
+## เงื่อนไข Android release
 
-## Draft: remove DB_SYNCHRONIZE
+Frontend build บน `main` ต้องมี Jenkins environment variable
+`MOBILE_API_BASE_URL` เป็น HTTPS API URL และต้องมี Jenkins credentials ดังนี้:
+`android-upload-keystore` (ไฟล์), `android-keystore-password`,
+`android-key-alias` และ `android-key-password` (secret text)
 
-`DB_SYNCHRONIZE` in the chart ConfigMap is currently unused by the backend.
-Keep it during this change. After the migration job has been exercised against
-an existing staging database and a baseline migration has been added and tested
-for a fresh database, remove `config.dbSynchronize` from `values.yaml` and
-`DB_SYNCHRONIZE` from `templates/configmap.yaml`. Keep schema behavior keyed to
-the validated `APP_ENV`; never turn synchronization on in staging/production.
+ขั้นตอนนี้ build และเก็บ App Bundle แบบ release ที่เซ็นด้วย release key
+โดยใช้ `config/prod.json` และใส่ API URL สำหรับ build ครั้งนั้น พร้อมปิด
+การซื้อจำลอง หากยังไม่ได้ตั้ง URL และ credentials งาน build บน `main`
+จะล้มเหลวตามที่ตั้งใจไว้ ส่วน debug build ยังใช้ debug key ที่ทีมแชร์กัน
+
+## ร่างแผนลบ `DB_SYNCHRONIZE`
+
+Backend ยังไม่อ่านค่า `DB_SYNCHRONIZE` จาก ConfigMap ของ chart จึงคงค่านี้ไว้
+ในงานรอบนี้ หลังจากทดสอบ migration job กับฐานข้อมูล staging ที่มีอยู่
+และเพิ่มพร้อมทดสอบ baseline migration สำหรับฐานข้อมูลใหม่แล้ว ให้ลบ
+`config.dbSynchronize` จาก `values.yaml` และ `DB_SYNCHRONIZE` จาก
+`templates/configmap.yaml` โดยให้พฤติกรรมจัดการ schema อ้างอิง `APP_ENV`
+ที่ผ่านการตรวจค่าแล้ว และไม่เปิด synchronize ใน staging หรือ production
