@@ -1,10 +1,16 @@
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { randomBytes, scryptSync } from 'node:crypto';
-import { DataSource } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'node:crypto';
+import { DataSource, EntityManager } from 'typeorm';
 import { AppModule } from '../../app.module';
+import { Banner } from '../../banner/entities/banner.entity';
+import { CacheNamespace } from '../../cache/app-cache.module';
+import { AppCacheService } from '../../cache/app-cache.service';
+import { CartItem } from '../../cart/entities/cart-item.entity';
+import { Cart } from '../../cart/entities/cart.entity';
 import { Category } from '../../categories/entities/category.entity';
-import { CATEGORY_ENGLISH_NAMES } from '../migrations/1760000000003-AddNameEnToCategories';
 import { Favorite } from '../../favorites/entities/favorite.entity';
 import { Ingredient } from '../../ingredients/entities/ingredient.entity';
 import { RecipeIngredient } from '../../ingredients/entities/recipe-ingredient.entity';
@@ -15,6 +21,7 @@ import {
   RecipeAccess,
   RecipeAccessType,
 } from '../../recipe-access/entities/recipe-access.entity';
+import { RecipeComment } from '../../recipe-comments/entities/recipe-comment.entity';
 import {
   RecipeContent,
   RecipeContentType,
@@ -24,394 +31,709 @@ import {
   Recipe,
   RecipeDifficulty,
   RecipeStatus,
+  RecipeType,
 } from '../../recipes/entities/recipe.entity';
+import { REVIEW_TAGS } from '../../reviews/dto/upsert-review.dto';
 import { Review, ReviewStatus } from '../../reviews/entities/review.entity';
+import {
+  IdentityProvider,
+  UserIdentity,
+} from '../../users/entities/user-identity.entity';
 import { User, UserRole, UserStatus } from '../../users/entities/user.entity';
+import {
+  BANNERS,
+  CATEGORIES,
+  COMMENTS,
+  DISHES,
+  REVIEW_COMMENTS,
+  STEP_VIDEOS,
+  USERS,
+  type DishSeed,
+} from './demo-data';
+import {
+  descriptionFor,
+  ingredientsFor,
+  sectionsFor,
+  timesFor,
+} from './recipe-content';
+
+/**
+ * ล้างฐานข้อมูลแล้วใส่ข้อมูลตัวอย่าง เหมือนแอปถูกใช้งานมาราว 6 เดือน
+ *   npm run seed
+ * - ผู้ใช้ 20 คน (admin 1, creator 5, ผู้ใช้ 14 โดย 2 คนสมัครผ่าน Google)
+ * - สูตร 100 สูตร (official ขายได้ / community ฟรี / draft / ซ่อน)
+ * - คำสั่งซื้อ การจ่ายเงิน สิทธิ์ดูสูตร รีวิว คอมเมนต์ รายการโปรด ตะกร้า แบนเนอร์
+ * สุ่มแบบกำหนด seed ไว้ รันกี่ครั้งก็ได้ข้อมูลหน้าตาเดิม (ยกเว้น id และวันที่อิงวันนี้)
+ *
+ * กันพลาด: ไม่ยอมรันบน staging/production เว้นแต่ตั้ง SEED_ALLOW_RESET=true
+ */
 
 const logger = new Logger('DatabaseSeed');
+const PASSWORD = 'Password123!';
+const DAY = 24 * 60 * 60 * 1000;
 
-function hashDevelopmentPassword(password: string): string {
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, 64).toString('hex');
-  return `scrypt:${salt}:${hash}`;
+// ---------- สุ่มแบบกำหนด seed ----------
+function mulberry32(seed: number) {
+  let state = seed;
+  return () => {
+    state |= 0;
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const random = mulberry32(20261006);
+const between = (min: number, max: number) =>
+  min + Math.floor(random() * (max - min + 1));
+const chance = (probability: number) => random() < probability;
+const pick = <T>(items: readonly T[]): T =>
+  items[Math.floor(random() * items.length)];
+function sample<T>(items: readonly T[], count: number): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, Math.max(0, Math.min(count, copy.length)));
+}
+
+const now = Date.now();
+const daysAgo = (days: number) =>
+  new Date(now - days * DAY - Math.floor(random() * DAY));
+/** วันที่สุ่มระหว่าง [from] ถึงเมื่อวาน */
+const dateAfter = (from: Date, maxDaysLater?: number) => {
+  const end = Math.min(
+    now - DAY / 2,
+    maxDaysLater ? from.getTime() + maxDaysLater * DAY : now,
+  );
+  const start = Math.min(from.getTime() + 60 * 60 * 1000, end);
+  return new Date(start + random() * (end - start));
+};
+const latest = (...dates: Date[]) =>
+  new Date(Math.max(...dates.map((date) => date.getTime())));
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const money = (value: number) => value.toFixed(2);
+
+// ---------- ตัวแทนข้อมูลระหว่างสร้าง ----------
+interface SeededUser {
+  id: string;
+  key: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  createdAt: Date;
+}
+
+interface SeededRecipe {
+  id: string;
+  dish: DishSeed;
+  title: string;
+  creatorId: string;
+  type: RecipeType;
+  status: RecipeStatus;
+  price: number;
+  publishedAt: Date | null;
+}
+
+/** ล้างทุกตารางของแอป (ใน transaction เดียวกับการใส่ข้อมูล: พลาดกลางทาง = ข้อมูลเดิมยังอยู่) */
+async function resetDatabase(
+  dataSource: DataSource,
+  manager: EntityManager,
+): Promise<void> {
+  const tables = dataSource.entityMetadatas
+    .map((metadata) => `"${metadata.tableName}"`)
+    .join(', ');
+  await manager.query(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`);
+}
+
+async function seedUsers(
+  manager: EntityManager,
+  passwordHash: string,
+): Promise<SeededUser[]> {
+  const roleOf = {
+    admin: UserRole.ADMIN,
+    creator: UserRole.CREATOR,
+    user: UserRole.USER,
+  };
+  const users: SeededUser[] = USERS.map((seed, index) => ({
+    id: randomUUID(),
+    key: seed.key,
+    email: seed.email,
+    displayName: seed.displayName,
+    role: roleOf[seed.role],
+    // admin/creator มาก่อน ผู้ใช้ทยอยสมัครตามมา
+    createdAt:
+      seed.role === 'user'
+        ? daysAgo(between(20, 170))
+        : daysAgo(200 - index * 3),
+  }));
+
+  await manager.insert(
+    User,
+    users.map((user, index) => ({
+      id: user.id,
+      email: user.email,
+      passwordHash: USERS[index].googleOnly ? null : passwordHash,
+      displayName: user.displayName,
+      avatarUrl: USERS[index].avatarUrl,
+      role: user.role,
+      status: UserStatus.ACTIVE,
+      tokenVersion: 0,
+      createdAt: user.createdAt,
+      updatedAt: user.createdAt,
+    })),
+  );
+
+  const googleUsers = users.filter((_, index) => USERS[index].googleOnly);
+  await manager.insert(
+    UserIdentity,
+    googleUsers.map((user) => ({
+      userId: user.id,
+      provider: IdentityProvider.GOOGLE,
+      // sub ของ Google เป็นตัวเลข 21 หลัก
+      providerUserId: `1${between(1e9, 1e10 - 1)}${between(1e9, 1e10 - 1)}`,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.createdAt,
+    })),
+  );
+  return users;
+}
+
+async function seedCategories(
+  manager: EntityManager,
+): Promise<Map<string, string>> {
+  const created = daysAgo(210);
+  const rows = CATEGORIES.map((category, index) => ({
+    id: randomUUID(),
+    ...category,
+    isActive: true,
+    sortOrder: index + 1,
+    createdAt: created,
+    updatedAt: created,
+  }));
+  await manager.insert(Category, rows);
+  return new Map(rows.map((row) => [row.slug, row.id]));
+}
+
+async function seedRecipes(
+  manager: EntityManager,
+  users: SeededUser[],
+  categoryIds: Map<string, string>,
+): Promise<SeededRecipe[]> {
+  const creators = users.filter((user) => user.role === UserRole.CREATOR);
+  const members = users.filter((user) => user.role === UserRole.USER);
+  const prices = [39, 49, 59, 69, 79, 89, 99, 129, 149];
+  // สูตรที่ยังไม่เสร็จ/ถูกซ่อน (index ใน DISHES)
+  const drafts = new Set([11, 27, 44, 58, 70, 83, 91]);
+  const hidden = new Set([33]);
+  const rejected = new Set([64]);
+
+  const recipes: SeededRecipe[] = [];
+  const usedSlugs = new Set<string>();
+  const ingredientIds = new Map<string, string>();
+  const ingredientRows: object[] = [];
+  const recipeRows: object[] = [];
+  const categoryLinks: { recipeId: string; categoryId: string }[] = [];
+  const sectionRows: object[] = [];
+  const contentRows: object[] = [];
+  const recipeIngredientRows: object[] = [];
+
+  DISHES.forEach((dish, index) => {
+    const official =
+      dish.kind !== 'drink' && [0, 2, 4, 7, 9].includes(index % 12);
+    const author = official
+      ? creators[index % creators.length]
+      : chance(0.25)
+        ? pick(creators)
+        : pick(members);
+
+    const status = drafts.has(index)
+      ? RecipeStatus.DRAFT
+      : hidden.has(index)
+        ? RecipeStatus.HIDDEN
+        : rejected.has(index)
+          ? RecipeStatus.REJECTED
+          : RecipeStatus.PUBLISHED;
+    const publishedAt =
+      status === RecipeStatus.DRAFT ? null : dateAfter(author.createdAt);
+    const createdAt = publishedAt
+      ? new Date(publishedAt.getTime() - between(1, 5) * DAY)
+      : dateAfter(new Date(now - 14 * DAY));
+    const price = official ? pick(prices) : 0;
+
+    let slug = slugify(dish.titleEn) || `recipe-${index + 1}`;
+    while (usedSlugs.has(slug)) slug = `${slug}-${index + 1}`;
+    usedSlugs.add(slug);
+
+    const id = randomUUID();
+    const { preparationMinutes, cookingMinutes, difficulty } = timesFor(dish);
+    recipeRows.push({
+      id,
+      creatorId: author.id,
+      title: dish.title,
+      titleEn: dish.titleEn,
+      slug,
+      shortDescription: descriptionFor(dish),
+      coverImageUrl: dish.imageUrl,
+      showImgCommu: !official && chance(0.7),
+      price: money(price),
+      preparationMinutes,
+      cookingMinutes,
+      servingCount: between(1, 4),
+      difficulty: difficulty as RecipeDifficulty,
+      type: official ? RecipeType.OFFICIAL : RecipeType.COMMUNITY,
+      status,
+      publishedAt,
+      createdAt,
+      updatedAt: publishedAt ?? createdAt,
+    });
+    for (const slugOfCategory of dish.categories) {
+      const categoryId = categoryIds.get(slugOfCategory);
+      if (!categoryId) throw new Error(`Unknown category ${slugOfCategory}`);
+      categoryLinks.push({ recipeId: id, categoryId });
+    }
+
+    // ขั้นตอน: section แรกเป็นตัวอย่าง (ดูได้ก่อนซื้อ)
+    const video =
+      official && index % 7 === 0
+        ? STEP_VIDEOS[(index / 7) % STEP_VIDEOS.length]
+        : null;
+    sectionsFor(dish, official, video).forEach((section, sectionIndex) => {
+      const sectionId = randomUUID();
+      sectionRows.push({
+        id: sectionId,
+        recipeId: id,
+        title: section.title,
+        description: section.description,
+        sortOrder: sectionIndex + 1,
+        isPreview: sectionIndex === 0,
+        createdAt,
+        updatedAt: createdAt,
+      });
+      section.contents.forEach((content, contentIndex) => {
+        const isVideo = content.type === 'video';
+        contentRows.push({
+          sectionId,
+          contentType: content.type as RecipeContentType,
+          title: content.title,
+          textContent: isVideo ? null : content.text,
+          mediaUrl: isVideo ? content.text : null,
+          durationSeconds: isVideo ? 60 : null,
+          sortOrder: contentIndex + 1,
+          createdAt,
+          updatedAt: createdAt,
+        });
+      });
+    });
+
+    ingredientsFor(dish).forEach((line, lineIndex) => {
+      let ingredientId = ingredientIds.get(line.name);
+      if (!ingredientId) {
+        ingredientId = randomUUID();
+        ingredientIds.set(line.name, ingredientId);
+        ingredientRows.push({
+          id: ingredientId,
+          name: line.name,
+          imageUrl: null,
+          isActive: true,
+        });
+      }
+      recipeIngredientRows.push({
+        recipeId: id,
+        ingredientId,
+        amount: line.amount === null ? null : line.amount.toFixed(3),
+        unit: line.unit,
+        groupName: 'main',
+        preparationNote: line.note ?? null,
+        isOptional: line.optional ?? false,
+        sortOrder: lineIndex + 1,
+      });
+    });
+
+    recipes.push({
+      id,
+      dish,
+      title: dish.title,
+      creatorId: author.id,
+      type: official ? RecipeType.OFFICIAL : RecipeType.COMMUNITY,
+      status,
+      price,
+      publishedAt,
+    });
+  });
+
+  await manager.insert(Ingredient, ingredientRows);
+  await manager.insert(Recipe, recipeRows);
+  await manager
+    .createQueryBuilder()
+    .insert()
+    .into('recipe_categories')
+    .values(
+      categoryLinks.map((link) => ({
+        recipe_id: link.recipeId,
+        category_id: link.categoryId,
+      })),
+    )
+    .execute();
+  await manager.insert(RecipeSection, sectionRows);
+  await manager.insert(RecipeContent, contentRows);
+  await manager.insert(RecipeIngredient, recipeIngredientRows);
+  return recipes;
+}
+
+interface Purchase {
+  userId: string;
+  recipeId: string;
+  grantedAt: Date;
+}
+
+async function seedPurchases(
+  manager: EntityManager,
+  users: SeededUser[],
+  recipes: SeededRecipe[],
+): Promise<Purchase[]> {
+  const forSale = recipes.filter(
+    (recipe) =>
+      recipe.type === RecipeType.OFFICIAL &&
+      recipe.status === RecipeStatus.PUBLISHED,
+  );
+  const buyers = users.filter((user) => user.role !== UserRole.ADMIN);
+  const purchases: Purchase[] = [];
+  const orders: object[] = [];
+  const orderItems: object[] = [];
+  const payments: object[] = [];
+  const accesses: object[] = [];
+  let orderNumber = 1;
+
+  const newOrderNumber = (date: Date) =>
+    `RCP-${date.toISOString().slice(0, 10).replaceAll('-', '')}-${String(orderNumber++).padStart(4, '0')}`;
+
+  for (const buyer of buyers) {
+    const isCreator = buyer.role === UserRole.CREATOR;
+    const wanted = sample(
+      forSale.filter((recipe) => recipe.creatorId !== buyer.id),
+      isCreator ? between(0, 3) : between(2, 9),
+    );
+
+    // แบ่งเป็นคำสั่งซื้อละ 1-3 สูตร
+    while (wanted.length > 0) {
+      const items = wanted.splice(0, between(1, 3));
+      const earliest = latest(
+        buyer.createdAt,
+        ...items.map((recipe) => recipe.publishedAt ?? buyer.createdAt),
+      );
+      const paidAt = dateAfter(earliest);
+      const orderId = randomUUID();
+      const total = items.reduce((sum, recipe) => sum + recipe.price, 0);
+      orders.push({
+        id: orderId,
+        orderNumber: newOrderNumber(paidAt),
+        userId: buyer.id,
+        subtotal: money(total),
+        discountAmount: money(0),
+        totalAmount: money(total),
+        currency: 'THB',
+        status: OrderStatus.PAID,
+        paidAt,
+        cancelledAt: null,
+        createdAt: paidAt,
+        updatedAt: paidAt,
+      });
+      payments.push({
+        orderId,
+        provider: 'google_play',
+        providerTransactionId: `GPA.${between(1000, 9999)}-${between(1000, 9999)}-${between(1000, 9999)}-${orderNumber}`,
+        paymentMethod: 'google_play',
+        amount: money(total),
+        currency: 'THB',
+        status: PaymentStatus.SUCCESSFUL,
+        paidAt,
+        failureReason: null,
+        providerResponse: { seeded: true },
+        createdAt: paidAt,
+        updatedAt: paidAt,
+      });
+      for (const recipe of items) {
+        const orderItemId = randomUUID();
+        orderItems.push({
+          id: orderItemId,
+          orderId,
+          recipeId: recipe.id,
+          recipeTitle: recipe.title,
+          creatorId: recipe.creatorId,
+          unitPrice: money(recipe.price),
+          createdAt: paidAt,
+          updatedAt: paidAt,
+        });
+        accesses.push({
+          userId: buyer.id,
+          recipeId: recipe.id,
+          orderItemId,
+          accessType: RecipeAccessType.PURCHASE,
+          grantedAt: paidAt,
+          expiresAt: null,
+          revokedAt: null,
+          createdAt: paidAt,
+          updatedAt: paidAt,
+        });
+        purchases.push({
+          userId: buyer.id,
+          recipeId: recipe.id,
+          grantedAt: paidAt,
+        });
+      }
+    }
+
+    // บางคนจ่ายเงินไม่ผ่านบ้าง (ไม่ได้สิทธิ์ดูสูตร)
+    if (!isCreator && chance(0.3)) {
+      const recipe = pick(forSale);
+      const failedAt = dateAfter(
+        latest(buyer.createdAt, recipe.publishedAt ?? buyer.createdAt),
+      );
+      const orderId = randomUUID();
+      orders.push({
+        id: orderId,
+        orderNumber: newOrderNumber(failedAt),
+        userId: buyer.id,
+        subtotal: money(recipe.price),
+        discountAmount: money(0),
+        totalAmount: money(recipe.price),
+        currency: 'THB',
+        status: OrderStatus.FAILED,
+        paidAt: null,
+        cancelledAt: null,
+        createdAt: failedAt,
+        updatedAt: failedAt,
+      });
+      orderItems.push({
+        orderId,
+        recipeId: recipe.id,
+        recipeTitle: recipe.title,
+        creatorId: recipe.creatorId,
+        unitPrice: money(recipe.price),
+        createdAt: failedAt,
+        updatedAt: failedAt,
+      });
+      payments.push({
+        orderId,
+        provider: 'google_play',
+        providerTransactionId: null,
+        paymentMethod: 'google_play',
+        amount: money(recipe.price),
+        currency: 'THB',
+        status: PaymentStatus.FAILED,
+        paidAt: null,
+        failureReason: 'Payment declined by the card issuer',
+        providerResponse: { seeded: true },
+        createdAt: failedAt,
+        updatedAt: failedAt,
+      });
+    }
+  }
+
+  await manager.insert(Order, orders);
+  await manager.insert(OrderItem, orderItems);
+  await manager.insert(Payment, payments);
+  await manager.insert(RecipeAccess, accesses);
+  return purchases;
+}
+
+async function seedReviews(
+  manager: EntityManager,
+  purchases: Purchase[],
+): Promise<number> {
+  const ratingFor = () => {
+    const roll = random();
+    if (roll < 0.45) return 5;
+    if (roll < 0.8) return 4;
+    if (roll < 0.93) return 3;
+    if (roll < 0.98) return 2;
+    return 1;
+  };
+  const rows = purchases
+    .filter(() => chance(0.65))
+    .map((purchase, index) => {
+      const rating = ratingFor();
+      const at = dateAfter(purchase.grantedAt, 20);
+      return {
+        userId: purchase.userId,
+        recipeId: purchase.recipeId,
+        rating,
+        comment: chance(0.85)
+          ? pick(REVIEW_COMMENTS[Math.max(rating, 2)])
+          : null,
+        tags: rating >= 4 ? sample(REVIEW_TAGS, between(0, 3)) : [],
+        // ทีมงานซ่อนรีวิวที่ไม่เหมาะสมไปบ้าง
+        status:
+          index % 37 === 36 ? ReviewStatus.HIDDEN : ReviewStatus.PUBLISHED,
+        createdAt: at,
+        updatedAt: at,
+      };
+    });
+  await manager.insert(Review, rows);
+  return rows.length;
+}
+
+async function seedComments(
+  manager: EntityManager,
+  users: SeededUser[],
+  recipes: SeededRecipe[],
+): Promise<number> {
+  const commenters = users.filter((user) => user.role !== UserRole.ADMIN);
+  const rows: object[] = [];
+  for (const recipe of recipes) {
+    if (recipe.type !== RecipeType.COMMUNITY || !recipe.publishedAt) continue;
+    if (recipe.status !== RecipeStatus.PUBLISHED) continue;
+    for (const user of sample(commenters, between(0, 7))) {
+      const at = dateAfter(latest(recipe.publishedAt, user.createdAt));
+      rows.push({
+        recipeId: recipe.id,
+        userId: user.id,
+        comment: pick(COMMENTS),
+        createdAt: at,
+        updatedAt: at,
+      });
+    }
+  }
+  await manager.insert(RecipeComment, rows);
+  return rows.length;
+}
+
+async function seedFavorites(
+  manager: EntityManager,
+  users: SeededUser[],
+  recipes: SeededRecipe[],
+): Promise<number> {
+  const published = recipes.filter(
+    (recipe) => recipe.status === RecipeStatus.PUBLISHED,
+  );
+  const rows: object[] = [];
+  for (const user of users) {
+    if (user.role === UserRole.ADMIN) continue;
+    for (const recipe of sample(published, between(4, 15))) {
+      const at = dateAfter(latest(recipe.publishedAt!, user.createdAt));
+      rows.push({
+        userId: user.id,
+        recipeId: recipe.id,
+        createdAt: at,
+        updatedAt: at,
+      });
+    }
+  }
+  await manager.insert(Favorite, rows);
+  return rows.length;
+}
+
+async function seedCarts(
+  manager: EntityManager,
+  users: SeededUser[],
+  recipes: SeededRecipe[],
+  purchases: Purchase[],
+): Promise<number> {
+  const owned = new Set(purchases.map((p) => `${p.userId}:${p.recipeId}`));
+  const carts: object[] = [];
+  const items: object[] = [];
+  for (const user of users) {
+    if (user.role !== UserRole.USER || !chance(0.5)) continue;
+    const choices = recipes.filter(
+      (recipe) =>
+        recipe.type === RecipeType.OFFICIAL &&
+        recipe.status === RecipeStatus.PUBLISHED &&
+        !owned.has(`${user.id}:${recipe.id}`),
+    );
+    const cartId = randomUUID();
+    const at = daysAgo(between(0, 10));
+    carts.push({ id: cartId, userId: user.id, createdAt: at, updatedAt: at });
+    for (const recipe of sample(choices, between(1, 2))) {
+      items.push({ cartId, recipeId: recipe.id, createdAt: at, updatedAt: at });
+    }
+  }
+  await manager.insert(Cart, carts);
+  await manager.insert(CartItem, items);
+  return items.length;
+}
+
+async function seedBanners(manager: EntityManager): Promise<void> {
+  await manager.insert(
+    Banner,
+    BANNERS.map((banner, index) => {
+      const startDate = daysAgo(30 - index * 7);
+      return {
+        ...banner,
+        startDate,
+        endDate: new Date(now + (60 + index * 30) * DAY),
+        createdAt: startDate,
+        updatedAt: startDate,
+      };
+    }),
+  );
 }
 
 async function seed(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule, {
-    logger: ['error', 'warn'],
+    logger: ['log', 'error', 'warn'],
   });
 
   try {
+    const config = app.get(ConfigService);
+    const appEnv = config.get<string>('app.env');
+    if (appEnv !== 'development' && process.env.SEED_ALLOW_RESET !== 'true') {
+      throw new Error(
+        `Refusing to wipe the ${appEnv} database. Set SEED_ALLOW_RESET=true if you really mean it.`,
+      );
+    }
+
     const dataSource = app.get(DataSource);
+    const passwordHash = await bcrypt.hash(
+      PASSWORD,
+      config.get<number>('jwt.bcryptSaltRounds', 10),
+    );
 
-    await dataSource.transaction(async (manager) => {
-      const userRepository = manager.getRepository(User);
-      const categoryRepository = manager.getRepository(Category);
-      const ingredientRepository = manager.getRepository(Ingredient);
-      const recipeRepository = manager.getRepository(Recipe);
-      const recipeIngredientRepository =
-        manager.getRepository(RecipeIngredient);
-      const sectionRepository = manager.getRepository(RecipeSection);
-      const contentRepository = manager.getRepository(RecipeContent);
-      const orderRepository = manager.getRepository(Order);
-      const orderItemRepository = manager.getRepository(OrderItem);
-      const paymentRepository = manager.getRepository(Payment);
-      const accessRepository = manager.getRepository(RecipeAccess);
-      const reviewRepository = manager.getRepository(Review);
-      const favoriteRepository = manager.getRepository(Favorite);
-
-      let creator = await userRepository.findOne({
-        where: { email: 'chef@recipy.local' },
-      });
-      if (!creator) {
-        creator = await userRepository.save(
-          userRepository.create({
-            email: 'chef@recipy.local',
-            passwordHash: hashDevelopmentPassword('Password123!'),
-            displayName: 'เชฟมุก',
-            avatarUrl: null,
-            role: UserRole.CREATOR,
-            status: UserStatus.ACTIVE,
-          }),
-        );
-      }
-
-      let customer = await userRepository.findOne({
-        where: { email: 'customer@recipy.local' },
-      });
-      if (!customer) {
-        customer = await userRepository.save(
-          userRepository.create({
-            email: 'customer@recipy.local',
-            passwordHash: hashDevelopmentPassword('Password123!'),
-            displayName: 'ผู้ใช้ทดสอบ',
-            avatarUrl: null,
-            role: UserRole.USER,
-            status: UserStatus.ACTIVE,
-          }),
-        );
-      }
-
-      const categorySeeds = [
-        {
-          name: 'อาหารไทย',
-          nameEn: 'Thai food',
-          slug: 'thai-food',
-          description: 'สูตรอาหารไทย',
-          sortOrder: 1,
-        },
-        {
-          name: 'เมนูจานเดียว',
-          nameEn: 'One-dish meals',
-          slug: 'single-dish',
-          description: 'เมนูทำง่ายสำหรับหนึ่งมื้อ',
-          sortOrder: 2,
-        },
-      ];
-      const categories: Category[] = [];
-      for (const data of categorySeeds) {
-        let category = await categoryRepository.findOne({
-          where: { slug: data.slug },
-        });
-        if (!category) {
-          category = await categoryRepository.save(
-            categoryRepository.create(data),
-          );
-        }
-        categories.push(category);
-      }
-
-      // หมวดที่มีอยู่แล้วแต่ยังไม่มีชื่ออังกฤษ (เพิ่มเข้า DB เองก่อนมีฟิลด์นี้) เติมให้ตาม slug
-      for (const [slug, nameEn] of Object.entries(CATEGORY_ENGLISH_NAMES)) {
-        await categoryRepository
-          .createQueryBuilder()
-          .update(Category)
-          .set({ nameEn })
-          .where('lower(slug) = :slug AND name_en IS NULL', { slug })
-          .execute();
-      }
-
-      const ingredientSeeds = [
-        { name: 'หมูสับ', imageUrl: null },
-        { name: 'ใบกะเพรา', imageUrl: null },
-        { name: 'กระเทียม', imageUrl: null },
-        { name: 'พริกขี้หนู', imageUrl: null },
-        { name: 'น้ำปลา', imageUrl: null },
-      ];
-      const ingredients = new Map<string, Ingredient>();
-      for (const data of ingredientSeeds) {
-        let ingredient = await ingredientRepository.findOne({
-          where: { name: data.name },
-        });
-        if (!ingredient) {
-          ingredient = await ingredientRepository.save(
-            ingredientRepository.create(data),
-          );
-        }
-        ingredients.set(ingredient.name, ingredient);
-      }
-
-      let recipe = await recipeRepository.findOne({
-        where: { slug: 'pad-kaprao-pork-seed' },
-        relations: { categories: true },
-      });
-      if (!recipe) {
-        recipe = await recipeRepository.save(
-          recipeRepository.create({
-            creatorId: creator.id,
-            title: 'กะเพราหมูสับสูตรร้านอาหาร',
-            slug: 'pad-kaprao-pork-seed',
-            shortDescription: 'สูตรกะเพราหมูสับสำหรับทดสอบระบบ Recipy',
-            coverImageUrl: null,
-            price: '199.00',
-            preparationMinutes: 10,
-            cookingMinutes: 15,
-            servingCount: 2,
-            difficulty: RecipeDifficulty.EASY,
-            status: RecipeStatus.PUBLISHED,
-            publishedAt: new Date(),
-            categories,
-          }),
-        );
-      }
-
-      const recipeIngredientSeeds = [
-        {
-          name: 'หมูสับ',
-          amount: '200.000',
-          unit: 'กรัม',
-          preparationNote: null,
-          sortOrder: 1,
-        },
-        {
-          name: 'ใบกะเพรา',
-          amount: '1.000',
-          unit: 'ถ้วย',
-          preparationNote: 'เด็ดใบและล้างให้สะอาด',
-          sortOrder: 2,
-        },
-        {
-          name: 'กระเทียม',
-          amount: '5.000',
-          unit: 'กลีบ',
-          preparationNote: 'สับหยาบ',
-          sortOrder: 3,
-        },
-        {
-          name: 'พริกขี้หนู',
-          amount: '6.000',
-          unit: 'เม็ด',
-          preparationNote: 'ปรับตามระดับความเผ็ด',
-          sortOrder: 4,
-        },
-        {
-          name: 'น้ำปลา',
-          amount: '1.000',
-          unit: 'ช้อนโต๊ะ',
-          preparationNote: null,
-          sortOrder: 5,
-        },
-      ];
-      for (const data of recipeIngredientSeeds) {
-        const ingredient = ingredients.get(data.name);
-        if (!ingredient) throw new Error(`Missing ingredient: ${data.name}`);
-
-        const existing = await recipeIngredientRepository.findOne({
-          where: {
-            recipeId: recipe.id,
-            ingredientId: ingredient.id,
-            groupName: 'main',
-          },
-        });
-        if (!existing) {
-          await recipeIngredientRepository.save(
-            recipeIngredientRepository.create({
-              recipeId: recipe.id,
-              ingredientId: ingredient.id,
-              amount: data.amount,
-              unit: data.unit,
-              groupName: 'main',
-              preparationNote: data.preparationNote,
-              isOptional: false,
-              sortOrder: data.sortOrder,
-            }),
-          );
-        }
-      }
-
-      let preparationSection = await sectionRepository.findOne({
-        where: { recipeId: recipe.id, title: 'การเตรียมวัตถุดิบ' },
-      });
-      if (!preparationSection) {
-        preparationSection = await sectionRepository.save(
-          sectionRepository.create({
-            recipeId: recipe.id,
-            title: 'การเตรียมวัตถุดิบ',
-            description: 'เตรียมส่วนผสมก่อนเริ่มปรุง',
-            sortOrder: 1,
-            isPreview: true,
-          }),
-        );
-      }
-
-      let cookingSection = await sectionRepository.findOne({
-        where: { recipeId: recipe.id, title: 'ขั้นตอนการปรุง' },
-      });
-      if (!cookingSection) {
-        cookingSection = await sectionRepository.save(
-          sectionRepository.create({
-            recipeId: recipe.id,
-            title: 'ขั้นตอนการปรุง',
-            description: 'วิธีผัดกะเพราแบบละเอียด',
-            sortOrder: 2,
-            isPreview: false,
-          }),
-        );
-      }
-
-      const contentSeeds = [
-        {
-          sectionId: preparationSection.id,
-          contentType: RecipeContentType.TEXT,
-          title: 'เตรียมหมูและเครื่องผัด',
-          textContent: 'สับกระเทียมและพริก จากนั้นเด็ดใบกะเพราเตรียมไว้',
-          sortOrder: 1,
-        },
-        {
-          sectionId: cookingSection.id,
-          contentType: RecipeContentType.TEXT,
-          title: 'ผัดเครื่องให้หอม',
-          textContent: 'ตั้งกระทะ ใส่น้ำมัน แล้วผัดกระเทียมกับพริกจนหอม',
-          sortOrder: 1,
-        },
-        {
-          sectionId: cookingSection.id,
-          contentType: RecipeContentType.TIP,
-          title: 'เคล็ดลับ',
-          textContent: 'ใส่ใบกะเพราเป็นขั้นตอนสุดท้ายและปิดไฟทันที',
-          sortOrder: 2,
-        },
-      ];
-      for (const data of contentSeeds) {
-        const existing = await contentRepository.findOne({
-          where: { sectionId: data.sectionId, title: data.title },
-        });
-        if (!existing) {
-          await contentRepository.save(
-            contentRepository.create({
-              ...data,
-              mediaUrl: null,
-              durationSeconds: null,
-            }),
-          );
-        }
-      }
-
-      let order = await orderRepository.findOne({
-        where: { orderNumber: 'SEED-ORDER-0001' },
-      });
-      if (!order) {
-        order = await orderRepository.save(
-          orderRepository.create({
-            orderNumber: 'SEED-ORDER-0001',
-            userId: customer.id,
-            subtotal: '199.00',
-            discountAmount: '0.00',
-            totalAmount: '199.00',
-            currency: 'THB',
-            status: OrderStatus.PAID,
-            paidAt: new Date(),
-            cancelledAt: null,
-          }),
-        );
-      }
-
-      let orderItem = await orderItemRepository.findOne({
-        where: { orderId: order.id, recipeId: recipe.id },
-      });
-      if (!orderItem) {
-        orderItem = await orderItemRepository.save(
-          orderItemRepository.create({
-            orderId: order.id,
-            recipeId: recipe.id,
-            recipeTitle: recipe.title,
-            creatorId: creator.id,
-            unitPrice: '199.00',
-          }),
-        );
-      }
-
-      const payment = await paymentRepository.findOne({
-        where: {
-          provider: 'mock',
-          providerTransactionId: 'SEED-TXN-0001',
-        },
-      });
-      if (!payment) {
-        await paymentRepository.save(
-          paymentRepository.create({
-            orderId: order.id,
-            provider: 'mock',
-            providerTransactionId: 'SEED-TXN-0001',
-            paymentMethod: 'promptpay',
-            amount: '199.00',
-            currency: 'THB',
-            status: PaymentStatus.SUCCESSFUL,
-            paidAt: order.paidAt,
-            failureReason: null,
-            providerResponse: { seeded: true },
-          }),
-        );
-      }
-
-      const access = await accessRepository.findOne({
-        where: { userId: customer.id, recipeId: recipe.id },
-      });
-      if (!access) {
-        await accessRepository.save(
-          accessRepository.create({
-            userId: customer.id,
-            recipeId: recipe.id,
-            orderItemId: orderItem.id,
-            accessType: RecipeAccessType.PURCHASE,
-            grantedAt: order.paidAt ?? new Date(),
-            expiresAt: null,
-            revokedAt: null,
-          }),
-        );
-      }
-
-      const review = await reviewRepository.findOne({
-        where: { userId: customer.id, recipeId: recipe.id },
-      });
-      if (!review) {
-        await reviewRepository.save(
-          reviewRepository.create({
-            userId: customer.id,
-            recipeId: recipe.id,
-            rating: 5,
-            comment: 'สูตรเข้าใจง่ายและทำตามได้จริง',
-            status: ReviewStatus.PUBLISHED,
-          }),
-        );
-      }
-
-      const favorite = await favoriteRepository.findOne({
-        where: { userId: customer.id, recipeId: recipe.id },
-      });
-      if (!favorite) {
-        await favoriteRepository.save(
-          favoriteRepository.create({
-            userId: customer.id,
-            recipeId: recipe.id,
-          }),
-        );
-      }
+    const summary = await dataSource.transaction(async (manager) => {
+      await resetDatabase(dataSource, manager);
+      const users = await seedUsers(manager, passwordHash);
+      const categoryIds = await seedCategories(manager);
+      const recipes = await seedRecipes(manager, users, categoryIds);
+      const purchases = await seedPurchases(manager, users, recipes);
+      const reviews = await seedReviews(manager, purchases);
+      const comments = await seedComments(manager, users, recipes);
+      const favorites = await seedFavorites(manager, users, recipes);
+      const cartItems = await seedCarts(manager, users, recipes, purchases);
+      await seedBanners(manager);
+      return {
+        users: users.length,
+        recipes: recipes.length,
+        purchases: purchases.length,
+        reviews,
+        comments,
+        favorites,
+        cartItems,
+        banners: BANNERS.length,
+      };
     });
 
-    logger.log('Seed completed successfully');
-    logger.log('Creator: chef@recipy.local / Password123!');
-    logger.log('Customer: customer@recipy.local / Password123!');
+    // ข้อมูลเก่าที่ cache ไว้ (RAM/Redis) ใช้ไม่ได้แล้ว
+    const cache = app.get(AppCacheService, { strict: false });
+    await Promise.all(
+      Object.values(CacheNamespace).map((namespace) =>
+        cache.invalidate(namespace),
+      ),
+    );
+
+    logger.log(`Seed completed: ${JSON.stringify(summary)}`);
+    logger.log(`Every account with a password uses: ${PASSWORD}`);
+    logger.log('Admin:   admin@recipy.local');
+    logger.log('Creator: chef.mook@recipy.local (and 4 more creators)');
+    logger.log('User:    somchai@example.com (and 13 more users)');
   } finally {
     await app.close();
   }
