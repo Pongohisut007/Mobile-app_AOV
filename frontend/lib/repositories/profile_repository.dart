@@ -5,6 +5,7 @@ import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/data/api_cache.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 abstract interface class ProfileRepository {
   Future<UserProfile> fetchProfile(String accessToken);
@@ -27,7 +28,7 @@ class HttpProfileRepository implements ProfileRepository {
     http.Client? client,
     this.requestTimeout = const Duration(seconds: 10),
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final http.Client _client;

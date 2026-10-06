@@ -6,6 +6,7 @@ import 'package:flutter_application_1/models/purchase_result.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 /// Boundary between the cart UI and a billing provider.
 /// Replace HttpMockPurchaseRepository with GooglePlayPurchaseRepository later.
@@ -21,7 +22,7 @@ class HttpMockPurchaseRepository implements PurchaseRepository {
     this.requestTimeout = const Duration(seconds: 10),
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
        _tokenStorage = tokenStorage ?? TokenStorage(),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final TokenStorage _tokenStorage;

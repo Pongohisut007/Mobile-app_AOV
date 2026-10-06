@@ -17,6 +17,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/routes/route_generator.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter_application_1/widgets/common/session_expiry_listener.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> main() async {
@@ -62,35 +63,40 @@ class MyApp extends StatelessWidget {
         ),
       ],
       // เปลี่ยนภาษาในหน้าตั้งค่า = ทั้งแอปเปลี่ยนทันที ไม่ต้องเปิดใหม่
-      child: ValueListenableBuilder<Locale>(
-        valueListenable: AppLanguage.notifier,
-        builder: (context, locale, _) => MaterialApp(
-          // ภาษาหลักเป็นไทย ข้อความทั้งหมดอยู่ใน lib/l10n/*.arb
-          locale: locale,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          onGenerateTitle: (context) => AppInfo.name,
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-            useMaterial3: true,
-            snackBarTheme: appSnackBarTheme,
-            // เปลี่ยนหน้าแบบ iOS ทุกแพลตฟอร์ม: เลื่อนเข้าจากขวา ปัดขอบซ้ายเพื่อย้อนกลับได้
-            pageTransitionsTheme: PageTransitionsTheme(
-              builders: {
-                for (final platform in TargetPlatform.values)
-                  platform: const CupertinoPageTransitionsBuilder(),
-              },
+      // session หมดอายุจากหน้าไหนก็ตาม จัดการที่เดียว (ดู SessionExpiry)
+      child: SessionExpiryListener(
+        child: ValueListenableBuilder<Locale>(
+          valueListenable: AppLanguage.notifier,
+          builder: (context, locale, _) => MaterialApp(
+            navigatorKey: appNavigatorKey,
+            scaffoldMessengerKey: appScaffoldMessengerKey,
+            // ภาษาหลักเป็นไทย ข้อความทั้งหมดอยู่ใน lib/l10n/*.arb
+            locale: locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            onGenerateTitle: (context) => AppInfo.name,
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+              useMaterial3: true,
+              snackBarTheme: appSnackBarTheme,
+              // เปลี่ยนหน้าแบบ iOS ทุกแพลตฟอร์ม: เลื่อนเข้าจากขวา ปัดขอบซ้ายเพื่อย้อนกลับได้
+              pageTransitionsTheme: PageTransitionsTheme(
+                builders: {
+                  for (final platform in TargetPlatform.values)
+                    platform: const CupertinoPageTransitionsBuilder(),
+                },
+              ),
             ),
+            initialRoute: AppRoutes.home,
+            onGenerateRoute: (settings) =>
+                RoutesGenerator.generateRoute(settings),
           ),
-          initialRoute: AppRoutes.home,
-          onGenerateRoute: (settings) =>
-              RoutesGenerator.generateRoute(settings),
         ),
       ),
     );

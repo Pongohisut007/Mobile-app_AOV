@@ -5,9 +5,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/category.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/data/api_cache.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 class CategoryRepository {
   static const String baseUrl = ApiConfig.apiBaseUrl;
@@ -47,7 +47,7 @@ class CategoryRepository {
 
   Future<List<Category>> _fetchCategories() async {
     final url = '$baseUrl/categories';
-    final response = await http.get(Uri.parse(url));
+    final response = await appHttpClient.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final body = utf8.decode(response.bodyBytes);

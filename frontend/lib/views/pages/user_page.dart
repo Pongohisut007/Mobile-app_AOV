@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
-import 'package:flutter_application_1/bloc/cart/cart_event.dart';
-import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
-import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_bloc.dart';
-import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
-import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_state.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
@@ -128,63 +122,46 @@ class UserPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: ProfileColors.background,
       body: SafeArea(
-        // session หมดอายุ: แจ้งผู้ใช้ และล้างตะกร้า/หัวใจ/สูตรที่ซื้อของบัญชีเดิมออกจากจอ
-        child: BlocListener<ProfileBloc, ProfileState>(
-          listenWhen: (_, state) =>
-              state is ProfileGuest && state.sessionExpired,
-          listener: (context, _) {
-            context.read<CartBloc>().add(const CartRequested());
-            context.read<FavoriteBloc>().add(const FavoritesRequested());
-            context.read<PurchasedRecipesBloc>().add(
-              const PurchasedRecipesRequested(),
-            );
-            showAppSnackBar(
-              context,
-              context.l10n.sessionExpired,
-              type: AppSnackType.error,
-            );
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            return switch (state) {
+              ProfileLoaded(:final profile) => _ProfileContent(
+                profile: profile,
+                onRefresh: () => _refresh(context),
+                onEditProfile: () => _openEditProfile(context, profile),
+                onSettingsPressed: () =>
+                    _openSettings(context, hasPassword: profile.hasPassword),
+                onRecipeCollectionPressed: (collectionType) =>
+                    _openRecipeCollection(context, collectionType),
+                onCartPressed: () => _openCart(context),
+                onOpenRecipe: (recipe) => _openRecipe(context, recipe),
+                onCreateRecipe: () => _createRecipe(context, profile),
+              ),
+              ProfileGuest() => _ProfileContent(
+                profile: UserProfile.guest(),
+                onRefresh: () async {},
+                onEditProfile: () =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                onSettingsPressed: () =>
+                    _openSettings(context, isSignedIn: false),
+                onRecipeCollectionPressed: (_) =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                onCartPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                onOpenRecipe: (_) =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                onCreateRecipe: () =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                isGuest: true,
+              ),
+              ProfileFailure(:final message) => ProfileErrorView(
+                message: message,
+                onRetry: () =>
+                    context.read<ProfileBloc>().add(const ProfileRequested()),
+              ),
+              _ => const ProfileLoadingView(),
+            };
           },
-          child: BlocBuilder<ProfileBloc, ProfileState>(
-            builder: (context, state) {
-              return switch (state) {
-                ProfileLoaded(:final profile) => _ProfileContent(
-                  profile: profile,
-                  onRefresh: () => _refresh(context),
-                  onEditProfile: () => _openEditProfile(context, profile),
-                  onSettingsPressed: () =>
-                      _openSettings(context, hasPassword: profile.hasPassword),
-                  onRecipeCollectionPressed: (collectionType) =>
-                      _openRecipeCollection(context, collectionType),
-                  onCartPressed: () => _openCart(context),
-                  onOpenRecipe: (recipe) => _openRecipe(context, recipe),
-                  onCreateRecipe: () => _createRecipe(context, profile),
-                ),
-                ProfileGuest() => _ProfileContent(
-                  profile: UserProfile.guest(),
-                  onRefresh: () async {},
-                  onEditProfile: () =>
-                      Navigator.pushNamed(context, AppRoutes.login),
-                  onSettingsPressed: () =>
-                      _openSettings(context, isSignedIn: false),
-                  onRecipeCollectionPressed: (_) =>
-                      Navigator.pushNamed(context, AppRoutes.login),
-                  onCartPressed: () =>
-                      Navigator.pushNamed(context, AppRoutes.login),
-                  onOpenRecipe: (_) =>
-                      Navigator.pushNamed(context, AppRoutes.login),
-                  onCreateRecipe: () =>
-                      Navigator.pushNamed(context, AppRoutes.login),
-                  isGuest: true,
-                ),
-                ProfileFailure(:final message) => ProfileErrorView(
-                  message: message,
-                  onRetry: () =>
-                      context.read<ProfileBloc>().add(const ProfileRequested()),
-                ),
-                _ => const ProfileLoadingView(),
-              };
-            },
-          ),
         ),
       ),
     );
