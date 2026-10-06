@@ -728,12 +728,19 @@ pipeline {
                                     "API_IMAGE=${env.IMAGE_NAME}"
                                 ]) {
                                     sh '''
+                                        # Buildx --push publishes to Docker Hub but does not
+                                        # load the image into the DinD daemon used by Compose.
+                                        # Pull it explicitly so Compose's --no-build path has
+                                        # the exact published image selected for E2E.
+                                        docker pull "$API_IMAGE"
+                                        docker image inspect "$API_IMAGE" >/dev/null
+
                                         docker compose \
                                             -f docker-compose.yaml \
                                             -f docker-compose.ci.yaml \
                                             -p "$COMPOSE_PROJECT_NAME" \
                                             up -d --wait --wait-timeout 120 \
-                                            --no-build --remove-orphans
+                                            --pull missing --no-build --remove-orphans
 
                                         docker compose \
                                             -f docker-compose.yaml \
