@@ -1,6 +1,10 @@
+import 'dart:convert';
+
+import 'package:flutter_application_1/data/api_cache.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/models/recipe_summary.dart';
+import 'package:flutter_application_1/repositories/category_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -54,5 +58,19 @@ void main() {
 
     expect(recipe.categories.single.nameFor(AppLanguage.english), 'Thai food');
     expect(recipe.categories.single.nameFor(AppLanguage.thai), 'อาหารไทย');
+  });
+
+  test('the app never lists disabled categories', () async {
+    ApiCache.instance = ApiCache(directory: () async => null);
+    await ApiCache.instance.write(
+      'categories',
+      jsonEncode([
+        {'id': 'a', 'name': 'ไทย', 'slug': 'thai', 'isActive': true},
+        {'id': 'b', 'name': 'เก่า', 'slug': 'old', 'isActive': false},
+      ]),
+    );
+
+    final categories = await CategoryRepository().cachedCategories();
+    expect(categories!.map((category) => category.id), ['a']);
   });
 }

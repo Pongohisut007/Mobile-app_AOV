@@ -271,6 +271,7 @@ export class RecipesService {
             .from(Recipe, 'filtered')
             .innerJoin('filtered.categories', 'filteredCategory')
             .where('filteredCategory.slug = :category')
+            .andWhere('filteredCategory.isActive = true')
             .getQuery(),
         { category: options.category },
       );
@@ -287,6 +288,7 @@ export class RecipesService {
             .from(Recipe, 'filteredById')
             .innerJoin('filteredById.categories', 'filteredCategoryById')
             .where('filteredCategoryById.id = :categoryId')
+            .andWhere('filteredCategoryById.isActive = true')
             .getQuery(),
         { categoryId: options.categoryId },
       );
@@ -494,6 +496,7 @@ export class RecipesService {
       ...recipeData
     } = RecipesService.withoutSignedMedia(dto);
     const categories = await this.resolveCategories(categoryIds);
+    RecipesService.assertActiveCategories(categories);
 
     const created = await this.recipeRepository.manager.transaction(
       async (manager) => {
@@ -577,7 +580,12 @@ export class RecipesService {
       }
 
       Object.assign(recipe, recipeData, { id: recipe.id });
-      if (categories) recipe.categories = categories;
+      if (categories) {
+        recipe.categories = RecipesService.mergeCategories(
+          recipe.categories,
+          categories,
+        );
+      }
       if (recipe.status === RecipeStatus.PUBLISHED && !recipe.publishedAt) {
         recipe.publishedAt = new Date();
       }
@@ -613,6 +621,39 @@ export class RecipesService {
 
     await this.invalidateRecipes();
     return this.findOne(id);
+  }
+
+  /** สูตรใหม่ใส่หมวดที่ admin ปิดใช้งานไม่ได้ */
+  private static assertActiveCategories(categories: Category[]): void {
+    const inactive = categories.filter(
+      (category) => category.isActive === false,
+    );
+    if (inactive.length > 0) {
+      throw new BadRequestException(
+        `Categories are no longer available: ${inactive.map((c) => c.name).join(', ')}`,
+      );
+    }
+  }
+
+  /**
+   * หมวดหลังแก้สูตร = ที่ส่งมา + หมวดที่ปิดใช้งานซึ่งสูตรมีอยู่เดิม
+   * แอปไม่เห็นหมวดที่ปิด (จึงไม่ได้ส่งกลับมา) ถ้าแทนทั้งชุดตรง ๆ สูตรจะหลุดจากหมวดนั้นถาวร
+   * เพิ่มหมวดที่ปิดเข้าไปใหม่ไม่ได้
+   */
+  private static mergeCategories(
+    current: Category[],
+    requested: Category[],
+  ): Category[] {
+    const currentIds = new Set(current.map((category) => category.id));
+    RecipesService.assertActiveCategories(
+      requested.filter((category) => !currentIds.has(category.id)),
+    );
+    const requestedIds = new Set(requested.map((category) => category.id));
+    const keptHidden = current.filter(
+      (category) =>
+        category.isActive === false && !requestedIds.has(category.id),
+    );
+    return [...requested, ...keptHidden];
   }
 
   // แปลง categoryIds -> Category entity จริง และเช็คว่ามีครบทุก id

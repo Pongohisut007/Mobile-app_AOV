@@ -145,4 +145,19 @@ export class Recipe extends BaseEntity {
 
   @OneToMany(() => CartItem, (item) => item.recipe)
   cartItems!: CartItem[];
+
+  /**
+   * หมวดที่ admin ปิดใช้งาน (is_active = false) ไม่ส่งออกไปกับข้อมูลสูตร
+   * ใช้ได้กับทุกที่ที่ส่งสูตรออกไป (รายการ/รายละเอียด/ตะกร้า/หัวใจ/สูตรที่ซื้อ และ cache)
+   * แต่ความสัมพันธ์ในฐานข้อมูลยังอยู่ เปิดหมวดกลับเมื่อไรก็กลับมาเหมือนเดิม
+   */
+  toJSON(): Record<string, unknown> {
+    const json = { ...this } as Record<string, unknown>;
+    if (Array.isArray(this.categories)) {
+      json.categories = this.categories.filter(
+        (category) => category.isActive !== false,
+      );
+    }
+    return json;
+  }
 }

@@ -65,10 +65,18 @@ describe('CategoriesService', () => {
   it('uses the simple sorted query when no recipe filter is requested', async () => {
     categories.find.mockResolvedValue([{ id: 'cat' }]);
     expect(await service.findAll()).toEqual([{ id: 'cat' }]);
+    // คนทั่วไปเห็นเฉพาะหมวดที่เปิดอยู่
     expect(categories.find).toHaveBeenCalledWith({
+      where: { isActive: true },
       order: { sortOrder: 'ASC' },
     });
     expect(categories.createQueryBuilder).not.toHaveBeenCalled();
+
+    await service.findAll(undefined, undefined, { includeInactive: true });
+    expect(categories.find).toHaveBeenLastCalledWith({
+      where: {},
+      order: { sortOrder: 'ASC' },
+    });
   });
 
   it('filters joined recipes and attaches counts only to those recipes', async () => {
@@ -154,6 +162,25 @@ describe('CategoriesService', () => {
     await service.remove('cat');
     expect(categories.remove).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'cat' }),
+    );
+  });
+
+  it('hides disabled categories unless asked for them', async () => {
+    categoryQuery.getOne.mockResolvedValue({ id: 'cat', recipes: [] });
+
+    await service.findOne('cat');
+    expect(categoryQuery.andWhere).toHaveBeenCalledWith(
+      'category.isActive = :active',
+      { active: true },
+    );
+
+    categoryQuery.andWhere.mockClear();
+    await service.findOne('cat', undefined, undefined, {
+      includeInactive: true,
+    });
+    expect(categoryQuery.andWhere).not.toHaveBeenCalledWith(
+      'category.isActive = :active',
+      { active: true },
     );
   });
 });

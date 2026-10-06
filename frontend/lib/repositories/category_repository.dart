@@ -40,9 +40,13 @@ class CategoryRepository {
     }
   }
 
+  // หมวดที่ปิดใช้งาน backend ส่งมาให้เฉพาะ admin (ไว้จัดการ) ในแอปไม่ต้องแสดง
   static List<Category> _decode(String body) {
     final List<dynamic> jsonList = json.decode(body);
-    return jsonList.map((json) => Category.fromJson(json)).toList();
+    return jsonList
+        .map((json) => Category.fromJson(json))
+        .where((category) => category.isActive)
+        .toList();
   }
 
   Future<List<Category>> _fetchCategories() async {

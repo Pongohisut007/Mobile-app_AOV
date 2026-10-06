@@ -45,6 +45,8 @@ function authenticate(context: ExecutionContext, required: boolean): boolean {
     incoming.user = { id: userId, role: 'user' };
   } else if (incoming.headers.authorization === 'Bearer test-creator') {
     incoming.user = { id: userId, role: 'creator' };
+  } else if (incoming.headers.authorization === 'Bearer test-admin') {
+    incoming.user = { id: userId, role: 'admin' };
   } else if (required) {
     throw new UnauthorizedException();
   }
@@ -610,9 +612,11 @@ describe('Recipe API HTTP contracts', () => {
     await request(app.getHttpServer())
       .get('/categories?type=community&status=published')
       .expect(200);
+    const publicOnly = { includeInactive: false };
     expect(categories.findAll).toHaveBeenLastCalledWith(
       'community',
       'published',
+      publicOnly,
     );
     await request(app.getHttpServer())
       .get('/categories?type=community')
@@ -620,9 +624,14 @@ describe('Recipe API HTTP contracts', () => {
     expect(categories.findAll).toHaveBeenLastCalledWith(
       'community',
       'published',
+      publicOnly,
     );
     await request(app.getHttpServer()).get('/categories').expect(200);
-    expect(categories.findAll).toHaveBeenLastCalledWith();
+    expect(categories.findAll).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      publicOnly,
+    );
 
     await request(app.getHttpServer())
       .get(`/categories/${recipeId}?type=official`)
@@ -631,6 +640,7 @@ describe('Recipe API HTTP contracts', () => {
       recipeId,
       'official',
       'published',
+      { includeInactive: false },
     );
 
     categories.findOne.mockClear();
@@ -641,5 +651,34 @@ describe('Recipe API HTTP contracts', () => {
       .get('/categories?status=hidden')
       .expect(403);
     expect(categories.findOne).not.toHaveBeenCalled();
+  });
+
+  it('shows disabled categories to admins only', async () => {
+    await request(app.getHttpServer())
+      .get('/categories')
+      .set('Authorization', 'Bearer test-user')
+      .expect(200);
+    expect(categories.findAll).toHaveBeenLastCalledWith(undefined, undefined, {
+      includeInactive: false,
+    });
+
+    await request(app.getHttpServer())
+      .get('/categories')
+      .set('Authorization', 'Bearer test-admin')
+      .expect(200);
+    expect(categories.findAll).toHaveBeenLastCalledWith(undefined, undefined, {
+      includeInactive: true,
+    });
+
+    await request(app.getHttpServer())
+      .get(`/categories/${recipeId}`)
+      .set('Authorization', 'Bearer test-admin')
+      .expect(200);
+    expect(categories.findOne).toHaveBeenLastCalledWith(
+      recipeId,
+      undefined,
+      'published',
+      { includeInactive: true },
+    );
   });
 });

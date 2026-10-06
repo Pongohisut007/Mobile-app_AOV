@@ -553,4 +553,59 @@ describe('RecipesService', () => {
     );
     expect(recipeRepo.save).not.toHaveBeenCalled();
   });
+
+  describe('disabled categories', () => {
+    const managerFor = (current: unknown[]) => {
+      const recipeRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: 'r',
+          status: RecipeStatus.DRAFT,
+          categories: current,
+        }),
+        save: jest.fn(),
+      };
+      recipeRepository.manager.transaction.mockImplementation((callback) =>
+        callback({ getRepository: () => recipeRepo }),
+      );
+      recipeRepository.findOne.mockResolvedValue({ id: 'r', sections: [] });
+      return recipeRepo;
+    };
+    const active = { id: 'thai', name: 'Thai', isActive: true };
+    const hidden = { id: 'old', name: 'Old', isActive: false };
+
+    it('cannot be used for a new recipe', async () => {
+      categoryRepository.findBy.mockResolvedValue([hidden]);
+      await expect(
+        service.create({
+          title: 'Soup',
+          categoryIds: ['old'],
+        } as CreateRecipeDto),
+      ).rejects.toThrow('no longer available');
+    });
+
+    it('stay on a recipe when the app edits it without seeing them', async () => {
+      const recipeRepo = managerFor([active, hidden]);
+      categoryRepository.findBy.mockResolvedValue([active]);
+
+      await service.update('r', {
+        categoryIds: ['thai'],
+      });
+
+      expect(recipeRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ categories: [active, hidden] }),
+      );
+    });
+
+    it('cannot be newly added to an existing recipe', async () => {
+      const recipeRepo = managerFor([active]);
+      categoryRepository.findBy.mockResolvedValue([active, hidden]);
+
+      await expect(
+        service.update('r', {
+          categoryIds: ['thai', 'old'],
+        }),
+      ).rejects.toThrow('no longer available');
+      expect(recipeRepo.save).not.toHaveBeenCalled();
+    });
+  });
 });

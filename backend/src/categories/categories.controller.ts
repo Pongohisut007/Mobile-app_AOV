@@ -8,8 +8,12 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { AdminOnly } from '../auth/decorators/admin-only.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { UserRole } from '../users/entities/user.entity';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { Category } from './entities/category.entity';
@@ -22,21 +26,32 @@ export class CategoriesController {
 
   // ส่ง type/status มา = แนบสูตรในหมวดมาด้วย ซึ่งต้องเป็นสูตรที่เผยแพร่แล้วเท่านั้น
   // (ไม่งั้นใช้ดู draft ของคนอื่นแทน GET /recipes ได้)
+  // หมวดที่ปิดใช้งานเห็นเฉพาะ admin (ไว้เปิดกลับ) คนอื่นเหมือนไม่มีหมวดนั้น
+  @UseGuards(OptionalJwtAuthGuard)
   @Get()
   findAll(
     @Query('type') type?: RecipeType,
     @Query('status') status?: RecipeStatus,
+    @CurrentUser('role') role?: UserRole,
   ): Promise<Category[]> {
-    if (!type && !status) return this.categoriesService.findAll();
-    return this.categoriesService.findAll(type, publishedOnly(status));
+    const options = { includeInactive: role === UserRole.ADMIN };
+    if (!type && !status) {
+      return this.categoriesService.findAll(undefined, undefined, options);
+    }
+    return this.categoriesService.findAll(type, publishedOnly(status), options);
   }
+
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('type') type?: RecipeType,
     @Query('status') status?: RecipeStatus,
+    @CurrentUser('role') role?: UserRole,
   ): Promise<Category> {
-    return this.categoriesService.findOne(id, type, publishedOnly(status));
+    return this.categoriesService.findOne(id, type, publishedOnly(status), {
+      includeInactive: role === UserRole.ADMIN,
+    });
   }
 
   @AdminOnly()
