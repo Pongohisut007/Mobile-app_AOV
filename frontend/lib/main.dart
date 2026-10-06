@@ -20,6 +20,8 @@ import 'package:flutter_application_1/routes/unfocus_on_navigate_observer.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/common/session_expiry_listener.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/widgets/common/app_menu.dart';
+import 'package:flutter_application_1/widgets/common/app_sheet.dart';
 
 Future<void> main() async {
   // ไม่ได้ส่ง --dart-define-from-file มา: แจ้งชัด ๆ ดีกว่าไปพังตอนยิง API
@@ -88,6 +90,8 @@ class MyApp extends StatelessWidget {
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
               useMaterial3: true,
               snackBarTheme: appSnackBarTheme,
+              popupMenuTheme: appPopupMenuTheme,
+              bottomSheetTheme: appBottomSheetTheme,
               // เปลี่ยนหน้าแบบ iOS ทุกแพลตฟอร์ม: เลื่อนเข้าจากขวา ปัดขอบซ้ายเพื่อย้อนกลับได้
               pageTransitionsTheme: PageTransitionsTheme(
                 builders: {

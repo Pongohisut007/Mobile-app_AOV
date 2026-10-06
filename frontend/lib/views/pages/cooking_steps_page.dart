@@ -5,6 +5,9 @@ import 'package:flutter_application_1/widgets/cooking_steps/cooking_steps_header
 import 'package:flutter_application_1/widgets/cooking_steps/cooking_step_controls.dart';
 import 'package:flutter_application_1/widgets/cooking_steps/empty_steps.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_sheet.dart';
+import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
+import 'package:flutter_application_1/widgets/common/app_dialog.dart';
 
 class CookingStepsPage extends StatefulWidget {
   const CookingStepsPage({super.key, required this.food});
@@ -60,24 +63,36 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
   }
 
   void _showCompletedSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
+    showAppBottomSheet<void>(
+      context,
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(28, 8, 28, 36),
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(
-                Icons.celebration_rounded,
-                size: 58,
-                color: Color(0xFFFF6847),
+              Center(
+                child: Container(
+                  width: 76,
+                  height: 76,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFEDE8),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.celebration_rounded,
+                    size: 40,
+                    color: Color(0xFFFF6847),
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Text(
                 context.l10n.cookingDone,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
+                  color: ProfileColors.ink,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -87,17 +102,20 @@ class _CookingStepsPageState extends State<CookingStepsPage> {
                 context.l10n.cookingDoneMessage(
                   widget.food.displayName(context),
                 ),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: ProfileColors.muted,
+                  fontSize: 15,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context);
-                  },
-                  child: Text(context.l10n.backToRecipePage),
-                ),
+              AppDialogButton(
+                label: context.l10n.backToRecipePage,
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
               ),
             ],
           ),

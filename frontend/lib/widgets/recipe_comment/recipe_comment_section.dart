@@ -10,6 +10,8 @@ import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_tile.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_dialog.dart';
+import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 
 class RecipeCommentSection extends StatelessWidget {
   const RecipeCommentSection({
@@ -201,24 +203,16 @@ class RecipeCommentSection extends StatelessWidget {
     BuildContext context,
     RecipeComment comment,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.deleteComment),
-        content: Text(context.l10n.deleteCommentConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(context.l10n.delete),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      icon: Icons.delete_outline_rounded,
+      title: context.l10n.deleteComment,
+      message: context.l10n.deleteCommentConfirm,
+      confirmLabel: context.l10n.delete,
+      cancelLabel: context.l10n.cancel,
+      danger: true,
     );
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
     context.read<RecipeCommentBloc>().add(RecipeCommentDeleted(comment.id));
   }
 }
@@ -250,29 +244,32 @@ class _EditRecipeCommentDialogState extends State<_EditRecipeCommentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(context.l10n.editComment),
+    return AppDialog(
+      icon: Icons.edit_outlined,
+      title: context.l10n.editComment,
       content: TextField(
         controller: _controller,
         autofocus: true,
         maxLength: 1000,
         maxLines: 4,
-        decoration: InputDecoration(
-          hintText: context.l10n.writeCommentHint,
+        minLines: 3,
+        decoration: RecipeFormStyle.input(
+          hint: context.l10n.writeCommentHint,
           alignLabelWithHint: true,
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
-        ),
-        FilledButton(
+        AppDialogButton(
+          label: context.l10n.save,
           onPressed: () {
             final text = _controller.text.trim();
             if (text.isNotEmpty) Navigator.pop(context, text);
           },
-          child: Text(context.l10n.save),
+        ),
+        AppDialogButton(
+          label: context.l10n.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(context),
         ),
       ],
     );

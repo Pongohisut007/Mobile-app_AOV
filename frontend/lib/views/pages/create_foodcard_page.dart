@@ -25,6 +25,7 @@ import 'package:flutter_application_1/repositories/ingredient_repository.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_steps_section.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_type_section.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_dialog.dart';
 
 class CreateFoodcardPage extends StatefulWidget {
   const CreateFoodcardPage({
@@ -360,28 +361,28 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
         return;
       }
 
-      final decision = await showDialog<_ExitDecision>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(context.l10n.saveDraftBeforeLeaving),
-          content: Text(context.l10n.saveDraftBeforeLeavingMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(null),
-              child: Text(context.l10n.stay),
-            ),
-            TextButton(
-              onPressed: () =>
-                  Navigator.of(dialogContext).pop(_ExitDecision.discard),
-              child: Text(context.l10n.leaveWithoutSaving),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.of(dialogContext).pop(_ExitDecision.saveDraft),
-              child: Text(context.l10n.saveDraft),
-            ),
-          ],
-        ),
+      final decision = await showAppDialog<_ExitDecision?>(
+        context,
+        icon: Icons.edit_note_rounded,
+        title: context.l10n.saveDraftBeforeLeaving,
+        message: context.l10n.saveDraftBeforeLeavingMessage,
+        actions: [
+          AppDialogAction(
+            label: context.l10n.saveDraft,
+            value: _ExitDecision.saveDraft,
+          ),
+          AppDialogAction(
+            label: context.l10n.leaveWithoutSaving,
+            value: _ExitDecision.discard,
+            style: AppDialogActionStyle.secondary,
+            danger: true,
+          ),
+          AppDialogAction(
+            label: context.l10n.stay,
+            value: null,
+            style: AppDialogActionStyle.text,
+          ),
+        ],
       );
       if (!mounted || decision == null) {
         return;
@@ -398,22 +399,21 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
 
   // โหมดแก้ไขไม่บันทึกเป็นฉบับร่าง เพราะจะทำให้สูตรที่เผยแพร่แล้วกลายเป็น draft
   Future<void> _confirmDiscardEdit() async {
-    final discard = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.discardEditsTitle),
-        content: Text(context.l10n.discardEditsMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(context.l10n.keepEditing),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(context.l10n.leaveWithoutSaving),
-          ),
-        ],
-      ),
+    final discard = await showAppDialog<bool>(
+      context,
+      icon: Icons.edit_off_rounded,
+      title: context.l10n.discardEditsTitle,
+      message: context.l10n.discardEditsMessage,
+      danger: true,
+      actions: [
+        AppDialogAction(label: context.l10n.keepEditing, value: false),
+        AppDialogAction(
+          label: context.l10n.leaveWithoutSaving,
+          value: true,
+          style: AppDialogActionStyle.text,
+          danger: true,
+        ),
+      ],
     );
     if (!mounted || discard != true) return;
     _popPage(false);

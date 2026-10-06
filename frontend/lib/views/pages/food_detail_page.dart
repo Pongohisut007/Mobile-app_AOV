@@ -36,6 +36,7 @@ import 'package:flutter_application_1/widgets/recipe_comment/recipe_comment_sect
 import 'package:flutter_application_1/widgets/recipe_review/recipe_review_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_dialog.dart';
 
 class FoodDetailPage extends StatefulWidget {
   const FoodDetailPage({
@@ -436,30 +437,17 @@ class _FoodDetailPageState extends State<FoodDetailPage>
   Future<void> _deleteFood(Food food) async {
     if (_isDeleting) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(context.l10n.deleteRecipe),
-          content: Text(context.l10n.deleteRecipeConfirm),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(context.l10n.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(
-                context.l10n.delete,
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirmed = await showAppConfirmDialog(
+      context,
+      icon: Icons.delete_outline_rounded,
+      title: context.l10n.deleteRecipe,
+      message: context.l10n.deleteRecipeConfirm,
+      confirmLabel: context.l10n.delete,
+      cancelLabel: context.l10n.cancel,
+      danger: true,
     );
 
-    if (confirmed != true || !mounted || _isDeleting) return;
+    if (!confirmed || !mounted || _isDeleting) return;
 
     setState(() => _isDeleting = true);
     try {

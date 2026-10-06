@@ -22,6 +22,8 @@ import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_dialog.dart';
+import 'package:flutter_application_1/widgets/common/app_sheet.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -221,49 +223,38 @@ class _CartPageState extends State<CartPage> {
   }
 
   Future<_MockPurchaseScenario?> _chooseMockScenario() {
-    return showModalBottomSheet<_MockPurchaseScenario>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                context.l10n.mockBillingTitle,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.mockBillingSubtitle,
-                style: TextStyle(color: ProfileColors.muted),
-              ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: () =>
-                    Navigator.pop(sheetContext, _MockPurchaseScenario.success),
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: Text(context.l10n.mockPaySuccess),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    Navigator.pop(sheetContext, _MockPurchaseScenario.failed),
-                icon: const Icon(Icons.error_outline_rounded),
-                label: Text(context.l10n.mockPayFail),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.pop(
-                  sheetContext,
-                  _MockPurchaseScenario.cancelled,
-                ),
-                child: Text(context.l10n.mockUserCancel),
-              ),
-            ],
-          ),
+    return showAppBottomSheet<_MockPurchaseScenario>(
+      context,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppSheetHeader(
+              title: context.l10n.mockBillingTitle,
+              subtitle: context.l10n.mockBillingSubtitle,
+            ),
+            AppSheetOption(
+              icon: Icons.check_circle_outline_rounded,
+              title: context.l10n.mockPaySuccess,
+              onTap: () =>
+                  Navigator.pop(sheetContext, _MockPurchaseScenario.success),
+            ),
+            AppSheetOption(
+              icon: Icons.error_outline_rounded,
+              title: context.l10n.mockPayFail,
+              danger: true,
+              onTap: () =>
+                  Navigator.pop(sheetContext, _MockPurchaseScenario.failed),
+            ),
+            AppSheetOption(
+              icon: Icons.close_rounded,
+              title: context.l10n.mockUserCancel,
+              onTap: () =>
+                  Navigator.pop(sheetContext, _MockPurchaseScenario.cancelled),
+            ),
+          ],
         ),
       ),
     );
@@ -273,27 +264,16 @@ class _CartPageState extends State<CartPage> {
   Future<void> _confirmClear(BuildContext context) async {
     final cartBloc = context.read<CartBloc>();
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.clearCartTitle),
-        content: Text(context.l10n.clearCartMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(context.l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              cartBloc.add(const CartCleared());
-              Navigator.pop(dialogContext);
-            },
-            style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
-            child: Text(context.l10n.clear),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      icon: Icons.remove_shopping_cart_outlined,
+      title: context.l10n.clearCartTitle,
+      message: context.l10n.clearCartMessage,
+      confirmLabel: context.l10n.clear,
+      cancelLabel: context.l10n.cancel,
+      danger: true,
     );
+    if (confirmed) cartBloc.add(const CartCleared());
   }
 
   // ดึงลงเพื่อโหลดตะกร้าใหม่ ระหว่างจ่ายเงินไม่ให้โหลดทับ

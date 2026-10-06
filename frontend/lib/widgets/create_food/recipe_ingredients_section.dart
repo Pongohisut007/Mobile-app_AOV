@@ -4,6 +4,7 @@ import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/models/recipe_ingredient.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_section_heading.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
+import 'package:flutter_application_1/widgets/common/app_sheet.dart';
 
 /// การ์ด "วัตถุดิบ" ในหน้าสร้าง/แก้สูตร: รายการ + เพิ่ม/แก้/ลบ/เลื่อนลำดับ
 class RecipeIngredientsSection extends StatelessWidget {
@@ -196,10 +197,9 @@ Future<RecipeIngredientLine?> showIngredientEditor(
   required List<RecipeIngredientLine> others,
   RecipeIngredientLine? initial,
 }) {
-  return showModalBottomSheet<RecipeIngredientLine>(
-    context: context,
+  return showAppBottomSheet<RecipeIngredientLine>(
+    context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (_) =>
         _IngredientEditor(catalog: catalog, others: others, initial: initial),
   );
