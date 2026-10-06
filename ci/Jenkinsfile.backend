@@ -379,6 +379,7 @@ pipeline {
         stage('SonarQube Analysis') {
             when {
                 allOf {
+                    expression { !env.CHANGE_ID?.trim() }
                     expression {
                         env.CI_MODE == 'FULL'
                     }
@@ -408,6 +409,7 @@ pipeline {
         stage('Quality Gate') {
             when {
                 allOf {
+                    expression { !env.CHANGE_ID?.trim() }
                     expression {
                         env.CI_MODE == 'FULL'
                     }
@@ -466,82 +468,6 @@ pipeline {
             }
         }
 
-        stage('Docker Hub Login') {
-            when {
-                allOf {
-                    expression {
-                        env.CI_MODE == 'FULL'
-                    }
-
-                    expression { env.BACKEND_CHANGED == 'true' }
-                }
-            }
-
-            steps {
-                // Writes ~/.docker/config.json in the ci container. buildx, docker
-                // compose (E2E pulls), Trivy and Syft all read credentials from it,
-                // which also avoids anonymous Docker Hub pull rate limits.
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_TOKEN'
-                    )
-                ]) {
-                    sh '''
-                        set +x
-                        printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io \
-                            --username "$DOCKERHUB_USER" \
-                            --password-stdin
-                    '''
-                }
-            }
-        }
-
-        stage('Verify Image Exists') {
-            when {
-                allOf {
-                    expression {
-                        env.CI_MODE == 'FULL'
-                    }
-
-                    expression { env.BACKEND_CHANGED == 'true' }
-                }
-            }
-
-            steps {
-                script {
-                    def output = sh(
-                        script: '''
-                            # A missing tag exits non-zero; classify it below instead
-                            # of failing the stage.
-                            { docker buildx imagetools inspect "$IMAGE_NAME" 2>&1 \
-                                && echo "__IMAGE_EXISTS__"; } || true
-                        ''',
-                        returnStdout: true
-                    ).trim()
-
-                    if (output.contains('__IMAGE_EXISTS__')) {
-                        env.NEED_IMAGE_BUILD = 'false'
-
-                        echo "Image exists: ${env.IMAGE_NAME}"
-                    }
-                    else if (output.toLowerCase().contains('not found')) {
-                        env.NEED_IMAGE_BUILD = 'true'
-
-                        echo "Image does not exist: ${env.IMAGE_NAME}"
-                        echo 'Image will be rebuilt.'
-                    }
-                    else {
-                        error """
-                        Unable to check registry.
-                        ${output}
-                        """
-                    }
-                }
-            }
-        }
-
         stage('Backend - Build Image') {
             when {
                 allOf {
@@ -551,9 +477,6 @@ pipeline {
 
                     expression { env.BACKEND_CHANGED == 'true' }
 
-                    expression {
-                        env.NEED_IMAGE_BUILD == 'true'
-                    }
                 }
             }
 
@@ -595,11 +518,12 @@ pipeline {
 
                             docker buildx build \
                                 --builder jenkins-builder \
-                                --push \
+                                --load \
                                 -t "$IMAGE_NAME" \
                                 --cache-from "type=registry,ref=$IMAGE_REPO:buildcache" \
-                                --cache-to "type=registry,ref=$IMAGE_REPO:buildcache,mode=max,image-manifest=true,oci-mediatypes=true" \
                                 .
+
+                            docker image inspect "$IMAGE_NAME" >/dev/null
 
                             echo "========================================"
                             echo "Image build completed"
@@ -648,7 +572,7 @@ pipeline {
 
                                 trivy image \
                                     --cache-dir "$TRIVY_CACHE_DIR" \
-                                    --image-src remote \
+                                    --image-src docker \
                                     --format json \
                                     --output reports/trivy-image.json \
                                     "$IMAGE_NAME"
@@ -722,17 +646,13 @@ pipeline {
                     }
 
                     steps {
-                        timeout(time: 10, unit: 'MINUTES') {
+                        timeout(time: 15, unit: 'MINUTES') {
                             dir('backend') {
                                 withEnv([
                                     "API_IMAGE=${env.IMAGE_NAME}"
                                 ]) {
                                     sh '''
-                                        # Buildx --push publishes to Docker Hub but does not
-                                        # load the image into the DinD daemon used by Compose.
-                                        # Pull it explicitly so Compose's --no-build path has
-                                        # the exact published image selected for E2E.
-                                        docker pull "$API_IMAGE"
+                                        # Test the same local image that passed the build step.
                                         docker image inspect "$API_IMAGE" >/dev/null
 
                                         docker compose \
@@ -746,6 +666,31 @@ pipeline {
                                             -f docker-compose.yaml \
                                             -f docker-compose.ci.yaml \
                                             -p "$COMPOSE_PROJECT_NAME" ps
+
+                                        # Bootstrap the legacy schema as development
+                                        # currently does, then exercise all incremental
+                                        # migrations before the staging-mode E2E run.
+                                        docker compose \
+                                            -f docker-compose.yaml \
+                                            -f docker-compose.ci.yaml \
+                                            -p "$COMPOSE_PROJECT_NAME" \
+                                            stop api
+
+                                        docker compose \
+                                            -f docker-compose.yaml \
+                                            -f docker-compose.ci.yaml \
+                                            -p "$COMPOSE_PROJECT_NAME" \
+                                            run --rm --no-deps \
+                                            -e APP_ENV=staging -e NODE_ENV=production \
+                                            api node dist/src/database/run-migrations.js
+
+                                        CI_NODE_ENV=production CI_APP_ENV=staging \
+                                            docker compose \
+                                            -f docker-compose.yaml \
+                                            -f docker-compose.ci.yaml \
+                                            -p "$COMPOSE_PROJECT_NAME" \
+                                            up -d --wait --wait-timeout 120 \
+                                            --no-deps --no-build --force-recreate api
                                     '''
                                 }
                             }
@@ -754,6 +699,20 @@ pipeline {
                                 sh '''
                                     BASE_URL=http://localhost:3000 \
                                         npm run test:e2e -- --ci --runInBand
+                                    mv reports/e2e-junit.xml reports/e2e-staging-junit.xml
+
+                                    API_IMAGE="$IMAGE_NAME" \
+                                        CI_NODE_ENV=production CI_APP_ENV=production \
+                                        docker compose \
+                                        -f docker-compose.yaml \
+                                        -f docker-compose.ci.yaml \
+                                        -p "$COMPOSE_PROJECT_NAME" \
+                                        up -d --wait --wait-timeout 120 \
+                                        --no-deps --no-build --force-recreate api
+
+                                    BASE_URL=http://localhost:3000 \
+                                        npm run test:e2e -- --ci --runInBand
+                                    mv reports/e2e-junit.xml reports/e2e-production-junit.xml
                                 '''
                             }
                         }
@@ -786,7 +745,7 @@ pipeline {
                                 }
                                 junit(
                                     allowEmptyResults: true,
-                                    testResults: 'reports/e2e-junit.xml'
+                                    testResults: 'reports/e2e*-junit.xml'
                                 )
                                 archiveArtifacts(
                                     artifacts: 'reports/e2e-*',
@@ -807,6 +766,7 @@ pipeline {
                     when {
                         allOf {
                             branch 'main'
+                            expression { !env.CHANGE_ID?.trim() }
 
                             expression {
                                 env.CI_MODE == 'FULL'
@@ -824,7 +784,7 @@ pipeline {
                                     mkdir -p reports
 
                                     syft "$IMAGE_NAME" \
-                                        --from registry \
+                                        --from docker \
                                         -o cyclonedx-json=reports/taskflow-api.cdx.json
                                 '''
                                 }
@@ -917,10 +877,43 @@ pipeline {
             }
         }
 
+        stage('Publish Verified Image') {
+            when {
+                allOf {
+                    anyOf {
+                        branch 'develop'
+                        branch 'main'
+                    }
+                    expression { !env.CHANGE_ID?.trim() }
+                    expression { env.CI_MODE == 'FULL' }
+                    expression { env.BACKEND_CHANGED == 'true' }
+                }
+            }
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+                        printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io \
+                            --username "$DOCKERHUB_USER" --password-stdin
+                        docker image inspect "$IMAGE_NAME" >/dev/null
+                        docker push "$IMAGE_NAME"
+                        docker logout docker.io
+                    '''
+                }
+            }
+        }
+
         stage('Production Approval') {
             when {
                 allOf {
                     branch 'main'
+                    expression { !env.CHANGE_ID?.trim() }
                     expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
@@ -954,6 +947,8 @@ pipeline {
                         branch 'develop'
                         branch 'main'
                     }
+
+                    expression { !env.CHANGE_ID?.trim() }
 
                     expression { env.BACKEND_CHANGED == 'true' }
                 }
@@ -996,6 +991,8 @@ pipeline {
                         branch 'main'
                     }
 
+                    expression { !env.CHANGE_ID?.trim() }
+
                     expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
@@ -1020,6 +1017,8 @@ pipeline {
                         branch 'main'
                     }
 
+                    expression { !env.CHANGE_ID?.trim() }
+
                     expression { env.BACKEND_CHANGED == 'true' }
                 }
             }
@@ -1030,11 +1029,13 @@ pipeline {
                         echo "Updating:"
                         echo "$GITOPS_VALUES"
 
-                        # Only bump the tag. The repository comes from the chart's
-                        # values.yaml (Docker Hub); writing it here would override it.
+                        # Enable migrations with the first image that contains the
+                        # migration runner; older deployed tags do not contain it.
                         yq -i \
-                            '.image.tag = strenv(IMAGE_TAG)' \
+                            '.image.tag = strenv(IMAGE_TAG) | .migration.enabled = true' \
                             "$GITOPS_VALUES"
+
+                        helm lint "$TASKFLOW_CHART" -f "$GITOPS_VALUES"
 
                         echo "Updated image:"
                         yq '.image' "$GITOPS_VALUES"
@@ -1052,6 +1053,8 @@ pipeline {
                         branch 'develop'
                         branch 'main'
                     }
+
+                    expression { !env.CHANGE_ID?.trim() }
 
                     expression { env.BACKEND_CHANGED == 'true' }
                 }
@@ -1102,6 +1105,8 @@ pipeline {
                         branch 'develop'
                         branch 'main'
                     }
+
+                    expression { !env.CHANGE_ID?.trim() }
 
                     expression { env.BACKEND_CHANGED == 'true' }
 
@@ -1172,16 +1177,12 @@ pipeline {
             GitOps : ${env.GITOPS_COMMIT ?: '-'}
             """.stripIndent()
 
-            withCredentials([
-                string(
-                    credentialsId: 'discord-webhook-url',
-                    variable: 'DISCORD_WEBHOOK_URL'
-                )
-            ]) {
-                sh '''
-                    python3 ci/scripts/discord_notify.py success \
-                        || echo "WARNING: Discord notification failed"
-                '''
+            script {
+                if (!env.CHANGE_ID?.trim() && ['develop', 'main'].contains(env.BRANCH_NAME)) {
+                    withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                        sh 'python3 ci/scripts/discord_notify.py success || echo "WARNING: Discord notification failed"'
+                    }
+                }
             }
         }
 
@@ -1195,16 +1196,12 @@ pipeline {
             Stage  : ${env.STAGE_NAME}
             """.stripIndent()
 
-            withCredentials([
-                string(
-                    credentialsId: 'discord-webhook-url',
-                    variable: 'DISCORD_WEBHOOK_URL'
-                )
-            ]) {
-                sh '''
-                    python3 ci/scripts/discord_notify.py failure \
-                        || echo "WARNING: Discord notification failed"
-                '''
+            script {
+                if (!env.CHANGE_ID?.trim() && ['develop', 'main'].contains(env.BRANCH_NAME)) {
+                    withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                        sh 'python3 ci/scripts/discord_notify.py failure || echo "WARNING: Discord notification failed"'
+                    }
+                }
             }
         }
     }
