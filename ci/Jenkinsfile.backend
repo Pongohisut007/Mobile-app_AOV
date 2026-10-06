@@ -15,7 +15,10 @@ pipeline {
         IMAGE_REPO = 'docker.io/pongphisut/taskflow-api'
 
         GITOPS_REPO   = 'https://github.com/aovPro/Mobile-app_AOV-Gitops.git'
-        GITOPS_BRANCH = 'main'
+        // TEMPORARY: the k3s Argo CD apps track this branch while the
+        // k3s/Docker Hub migration is tested on staging. Set back to 'main'
+        // after migrate-k3s-dockerhub is merged into the GitOps main.
+        GITOPS_BRANCH = 'migrate-k3s-dockerhub'
         GITOPS_DIR    = 'gitops'
 
         TASKFLOW_CHART = 'taskflow-chart'
