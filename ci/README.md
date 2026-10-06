@@ -85,6 +85,62 @@ Frontend build บน `main` ต้องมี Jenkins environment variable
 การซื้อจำลอง หากยังไม่ได้ตั้ง URL และ credentials งาน build บน `main`
 จะล้มเหลวตามที่ตั้งใจไว้ ส่วน debug build ยังใช้ debug key ที่ทีมแชร์กัน
 
+## ค่าที่ต้องเตรียมก่อนทดลอง Pipeline
+
+### Feature branch และ PR
+
+Feature branch ที่ชื่อ `feature/...` รัน FAST; PR รัน FULL แต่ไม่ publish image
+หรือ deploy การทดสอบ E2E ใช้ค่าจำลองจาก `backend/docker-compose.ci.yaml`
+จึงไม่ต้องใส่ production secret เพื่อทดลองสองกรณีนี้ ต้องมี Jenkins jobs,
+agent images, PVC และเครื่องมือของ CI ตามไฟล์ใน `ci/pods/` อยู่แล้ว
+
+### Jenkins สำหรับ `develop` และ `main`
+
+- Backend บน `develop` และ `main`: credential `dockerhub` ชนิด Username with
+  password สำหรับ push image, `github-jenkins` สำหรับเขียน GitOps repo,
+  การตั้งค่า SonarQube ชื่อ `SonarQube` พร้อม webhook สำหรับ Quality Gate,
+  และ `discord-webhook-url` สำหรับการแจ้งผลของ trusted branch
+- Backend บน `main` เพิ่ม `cosign-private-key` (file), `cosign-password`
+  (secret text) และ `cosign-public-key` (file) สำหรับเซ็นและตรวจ SBOM
+- Frontend บน `main` เพิ่ม `MOBILE_API_BASE_URL` เป็น HTTPS URL และ Android
+  signing credentials ทั้งสี่รายการในหัวข้อก่อนหน้า
+
+ตรวจว่า Jenkins Multibranch jobs ชี้ไปที่ `ci/Jenkinsfile.backend` และ
+`ci/Jenkinsfile.frontend` และเห็น branch ที่ push ขึ้น remote แล้ว
+
+### ค่า runtime ใน staging และ production
+
+Chart สร้าง ConfigMap สำหรับ `NODE_ENV`, `APP_ENV`, `PORT`, `DB_HOST`,
+`DB_PORT`, `DB_NAME`, `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS` และ `REDIS_URL`
+อยู่แล้ว ค่า `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` และ `R2_*` มาจาก
+Kubernetes Secret ที่ chart สร้างหรือจาก `secrets.existingSecret`
+
+ก่อน deploy จริง ต้องแทน `JWT_SECRET` และรหัส PostgreSQL ตัวอย่างใน chart
+ด้วยค่าของแต่ละ environment ผ่าน Secret ที่จัดการแยก ตรวจว่า Secret
+`taskflow-extra-env` ใน namespace ของ environment นั้นมี `PSU_AI_API_KEY`
+ที่ใช้ได้ ไฟล์ SealedSecret ใน GitOps repo ไม่ได้อยู่ใต้ path ของ Argo CD
+Application สำหรับ chart จึงต้องตรวจว่าได้นำไปใช้และถอดรหัสเป็น Secret แล้ว
+แม้ chart ระบุ extra Secret เป็น optional แต่ backend สร้าง AI client ตอนเริ่ม
+แอปและอาจเริ่มไม่ขึ้นเมื่อไม่มี API key
+
+ถ้าจะทดสอบความสามารถของแอปครบ ให้ตั้ง `R2_ACCOUNT_ID`,
+`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` สำหรับอัปโหลด,
+`GOOGLE_CLIENT_IDS` ให้ตรงกับ client ID ที่ฝังใน mobile build สำหรับ Google
+Sign-In และ `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`
+สำหรับอีเมลรีเซ็ตรหัสผ่าน ใน staging หากไม่ตั้ง SMTP แอปจะพิมพ์อีเมลลง log;
+ใน production คำขอส่งอีเมลจะล้มเหลว ค่า `PSU_AI_BASE_URL` และ `PSU_AI_MODEL`
+มีค่าเริ่มต้นในโค้ด ส่วน `TRUST_PROXY` ต้องกำหนดตามจำนวน proxy ที่เชื่อถือ
+หากต้องการให้ rate limit เห็น IP ผู้ใช้จริง
+
+`frontend/config/staging.json` และ `frontend/config/prod.json` ยังมี
+`API_BASE_URL` ว่าง โดย CI ของ `develop` สร้าง debug APK จาก `config/dev.json`
+ซึ่งชี้ emulator ไปที่เครื่องนักพัฒนา ไม่ได้สร้างแอปที่ชี้ staging API
+การใส่ค่าใน `staging.json` อย่างเดียวจึงยังไม่เปลี่ยน artifact ของ CI
+สำหรับ `main` release gate จะใช้ `MOBILE_API_BASE_URL` จาก Jenkins แทน
+
+`DB_SYNCHRONIZE` ใน chart ยังไม่ถูก backend อ่าน จึงไม่ต้องใส่ค่าเพิ่มเพื่อ
+เปิดหรือปิด schema synchronization ให้ใช้ `APP_ENV` ตามที่ chart กำหนด
+
 ## ร่างแผนลบ `DB_SYNCHRONIZE`
 
 Backend ยังไม่อ่านค่า `DB_SYNCHRONIZE` จาก ConfigMap ของ chart จึงคงค่านี้ไว้
