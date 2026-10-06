@@ -240,6 +240,68 @@ pipeline {
                 }
             }
         }
+
+        stage('Mobile - Release Gate') {
+            when {
+                allOf {
+                    branch 'main'
+                    expression { !env.CHANGE_ID?.trim() }
+                    expression { env.FRONTEND_CHANGED == 'true' }
+                }
+            }
+            steps {
+                dir('frontend') {
+                    sh '''
+                        python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+from urllib.parse import urlparse
+
+url = os.environ.get('MOBILE_API_BASE_URL', '').strip().rstrip('/')
+parsed = urlparse(url)
+if parsed.scheme != 'https' or not parsed.netloc:
+    raise SystemExit('MOBILE_API_BASE_URL must be a nonempty HTTPS URL')
+
+config = json.loads(Path('config/prod.json').read_text(encoding='utf-8'))
+config['API_BASE_URL'] = url
+config['ENABLE_MOCK_IAP'] = False
+Path('config/ci-release.json').write_text(json.dumps(config), encoding='utf-8')
+PY
+                    '''
+                }
+                withCredentials([
+                    file(credentialsId: 'android-upload-keystore', variable: 'ANDROID_KEYSTORE_PATH'),
+                    string(credentialsId: 'android-keystore-password', variable: 'ANDROID_KEYSTORE_PASSWORD'),
+                    string(credentialsId: 'android-key-alias', variable: 'ANDROID_KEY_ALIAS'),
+                    string(credentialsId: 'android-key-password', variable: 'ANDROID_KEY_PASSWORD')
+                ]) {
+                    container('flutter') {
+                        dir('frontend') {
+                            sh '''
+                                test -s "$ANDROID_KEYSTORE_PATH"
+                                test -n "$ANDROID_KEYSTORE_PASSWORD"
+                                test -n "$ANDROID_KEY_ALIAS"
+                                test -n "$ANDROID_KEY_PASSWORD"
+                                flutter build appbundle --release \
+                                    --dart-define-from-file=config/ci-release.json
+                            '''
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    archiveArtifacts(
+                        artifacts: 'frontend/build/app/outputs/bundle/release/app-release.aab',
+                        fingerprint: true
+                    )
+                }
+                always {
+                    sh 'rm -f frontend/config/ci-release.json'
+                }
+            }
+        }
     }
 
     post {
@@ -250,13 +312,21 @@ pipeline {
             )
         }
         success {
-            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
-                sh 'python3 ci/scripts/discord_notify.py success || echo "WARNING: Discord notification failed"'
+            script {
+                if (!env.CHANGE_ID?.trim() && ['develop', 'main'].contains(env.BRANCH_NAME)) {
+                    withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                        sh 'python3 ci/scripts/discord_notify.py success || echo "WARNING: Discord notification failed"'
+                    }
+                }
             }
         }
         failure {
-            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
-                sh 'python3 ci/scripts/discord_notify.py failure || echo "WARNING: Discord notification failed"'
+            script {
+                if (!env.CHANGE_ID?.trim() && ['develop', 'main'].contains(env.BRANCH_NAME)) {
+                    withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                        sh 'python3 ci/scripts/discord_notify.py failure || echo "WARNING: Discord notification failed"'
+                    }
+                }
             }
         }
     }
