@@ -25,6 +25,12 @@ export enum RecipeStatus {
   PUBLISHED = 'published',
   HIDDEN = 'hidden',
   REJECTED = 'rejected',
+  /**
+   * เจ้าของลบสูตรที่มีคนสั่งซื้อไปแล้ว: ลบจริงไม่ได้ (order_items ต้องอยู่เป็นหลักฐานการขาย)
+   * จึงเก็บไว้แทน ไม่โผล่ในรายการไหน ไม่มีใครซื้อเพิ่มได้ เจ้าของจัดการต่อไม่ได้
+   * แต่คนที่ซื้อแล้วยังเปิดดูได้จากหน้าสูตรที่ซื้อ
+   */
+  ARCHIVED = 'archived',
 }
 
 export enum RecipeDifficulty {

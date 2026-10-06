@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { Banner } from '../../banner/entities/banner.entity';
 import { CacheNamespace } from '../../cache/app-cache.module';
@@ -60,8 +60,9 @@ import {
 /**
  * ล้างฐานข้อมูลแล้วใส่ข้อมูลตัวอย่าง เหมือนแอปถูกใช้งานมาราว 6 เดือน
  *   npm run seed
- * - ผู้ใช้ 20 คน (admin 1, creator 5, ผู้ใช้ 14 โดย 2 คนสมัครผ่าน Google)
- * - สูตร 100 สูตร (official ขายได้ / community ฟรี / draft / ซ่อน)
+ * - ผู้ใช้ 20 คน (admin 1, creator 5, ผู้ใช้ 14 โดย 2 คนสมัครผ่าน Google และ 1 คนลบบัญชีไปแล้ว)
+ * - สูตร 100 สูตร (official ขายได้ / community ฟรี / draft / ซ่อน / ไม่ผ่านการตรวจ
+ *   / archived = เจ้าของลบแต่มีคนซื้อไปแล้ว)
  * - คำสั่งซื้อ การจ่ายเงิน สิทธิ์ดูสูตร รีวิว คอมเมนต์ รายการโปรด ตะกร้า แบนเนอร์
  * สุ่มแบบกำหนด seed ไว้ รันกี่ครั้งก็ได้ข้อมูลหน้าตาเดิม (ยกเว้น id และวันที่อิงวันนี้)
  *
@@ -547,6 +548,34 @@ async function seedPurchases(
   return purchases;
 }
 
+/**
+ * เจ้าของลบสูตร official ที่ขายไปแล้ว: ลบจริงไม่ได้ จึงกลายเป็น archived (เหมือน RecipesService.remove)
+ * ทำก่อนใส่หัวใจ/ตะกร้า สูตรนี้จึงไม่อยู่ในตะกร้าหรือรายการโปรดของใคร แต่ผู้ซื้อยังเปิดดูได้
+ */
+async function archiveSoldRecipe(
+  manager: EntityManager,
+  recipes: SeededRecipe[],
+  purchases: Purchase[],
+): Promise<SeededRecipe> {
+  const buyersOf = (recipe: SeededRecipe) =>
+    purchases.filter((purchase) => purchase.recipeId === recipe.id).length;
+  const recipe = recipes.find(
+    (candidate) =>
+      candidate.type === RecipeType.OFFICIAL &&
+      candidate.status === RecipeStatus.PUBLISHED &&
+      buyersOf(candidate) >= 2,
+  );
+  if (!recipe) throw new Error('No sold recipe to archive');
+
+  recipe.status = RecipeStatus.ARCHIVED;
+  await manager.update(
+    Recipe,
+    { id: recipe.id },
+    { status: RecipeStatus.ARCHIVED, updatedAt: daysAgo(between(3, 10)) },
+  );
+  return recipe;
+}
+
 async function seedReviews(
   manager: EntityManager,
   purchases: Purchase[],
@@ -662,6 +691,56 @@ async function seedCarts(
   return items.length;
 }
 
+/**
+ * ผู้ใช้ที่ลบบัญชีไปแล้ว ทำแบบเดียวกับ UsersService.deleteAccount
+ * คำสั่งซื้อ รีวิว และคอมเมนต์ยังอยู่ (ขึ้นชื่อ "ผู้ใช้ที่ลบบัญชีแล้ว") สูตรของเขาไม่โผล่ในรายการแล้ว
+ * หัวใจ ตะกร้า และบัญชี Google ถูกลบ เข้าสู่ระบบไม่ได้อีก
+ */
+async function seedDeletedAccount(
+  manager: EntityManager,
+  users: SeededUser[],
+): Promise<SeededUser> {
+  const user = [...users]
+    .reverse()
+    .find(
+      (candidate) =>
+        candidate.role === UserRole.USER &&
+        !USERS.find((seed) => seed.key === candidate.key)?.googleOnly,
+    );
+  if (!user) throw new Error('No user to delete');
+
+  const ownRecipes = await manager.find(Recipe, {
+    where: { creatorId: user.id },
+    select: { id: true },
+  });
+  const ownRecipeIds = ownRecipes.map((recipe) => recipe.id);
+
+  await manager.delete(Favorite, { userId: user.id });
+  if (ownRecipeIds.length > 0) {
+    await manager.delete(Favorite, { recipeId: In(ownRecipeIds) });
+    await manager.delete(CartItem, { recipeId: In(ownRecipeIds) });
+  }
+  await manager.delete(Cart, { userId: user.id });
+  await manager.delete(UserIdentity, { userId: user.id });
+
+  const deletedAt = daysAgo(between(2, 7));
+  await manager.update(
+    User,
+    { id: user.id },
+    {
+      email: `deleted+${user.id}@deleted.invalid`,
+      displayName: 'ผู้ใช้ที่ลบบัญชีแล้ว',
+      avatarUrl: null,
+      // รหัสผ่านสุ่มที่ไม่มีใครรู้ (null = บัญชี Google ที่ไม่เคยตั้งรหัส)
+      passwordHash: await bcrypt.hash(randomUUID(), 4),
+      status: UserStatus.DISABLED,
+      tokenVersion: 1,
+      updatedAt: deletedAt,
+    },
+  );
+  return user;
+}
+
 async function seedBanners(manager: EntityManager): Promise<void> {
   await manager.insert(
     Banner,
@@ -704,10 +783,12 @@ async function seed(): Promise<void> {
       const categoryIds = await seedCategories(manager);
       const recipes = await seedRecipes(manager, users, categoryIds);
       const purchases = await seedPurchases(manager, users, recipes);
+      const archived = await archiveSoldRecipe(manager, recipes, purchases);
       const reviews = await seedReviews(manager, purchases);
       const comments = await seedComments(manager, users, recipes);
       const favorites = await seedFavorites(manager, users, recipes);
       const cartItems = await seedCarts(manager, users, recipes, purchases);
+      const deletedUser = await seedDeletedAccount(manager, users);
       await seedBanners(manager);
       return {
         users: users.length,
@@ -718,6 +799,8 @@ async function seed(): Promise<void> {
         favorites,
         cartItems,
         banners: BANNERS.length,
+        archivedRecipe: archived.title,
+        deletedAccount: deletedUser.email,
       };
     });
 

@@ -1,6 +1,7 @@
 /* eslint-disable security/detect-object-injection, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment -- Test query builders and transaction callbacks are Jest mocks. */
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
+import { CartItem } from '../cart/entities/cart-item.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
@@ -53,6 +54,8 @@ describe('RecipesService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     remove: jest.fn(),
+    exists: jest.fn(),
+    delete: jest.fn(),
     manager: { transaction: jest.fn() },
   };
   const categoryRepository = { findBy: jest.fn() };
@@ -383,6 +386,95 @@ describe('RecipesService', () => {
     await expect(
       service.assertCanManage('missing', { id: 'owner', role: UserRole.USER }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('treats an archived recipe as gone for its owner but not for admins', async () => {
+    recipeRepository.findOne.mockResolvedValue({
+      id: 'r',
+      creatorId: 'owner',
+      status: RecipeStatus.ARCHIVED,
+    });
+
+    await expect(
+      service.assertCanManage('r', { id: 'owner', role: UserRole.CREATOR }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.assertCanManage('r', { id: 'admin', role: UserRole.ADMIN }),
+    ).resolves.toBeUndefined();
+  });
+
+  describe('remove', () => {
+    const fkError = new QueryFailedError('DELETE', [], {
+      code: '23503',
+    } as unknown as Error);
+
+    function archiveManager() {
+      const favoriteDelete = queryBuilder();
+      favoriteDelete.delete = jest.fn().mockReturnValue(favoriteDelete);
+      favoriteDelete.execute = jest.fn().mockResolvedValue({});
+      const manager = {
+        update: jest.fn(),
+        delete: jest.fn(),
+        createQueryBuilder: jest.fn().mockReturnValue(favoriteDelete),
+      };
+      recipeRepository.manager.transaction.mockImplementation(
+        (work: (m: typeof manager) => Promise<void>) => work(manager),
+      );
+      return { manager, favoriteDelete };
+    }
+
+    it('deletes a recipe nobody has ordered', async () => {
+      recipeRepository.exists.mockResolvedValue(true);
+      recipeRepository.delete.mockResolvedValue({ affected: 1 });
+
+      await expect(service.remove('r')).resolves.toBe('deleted');
+      expect(recipeRepository.delete).toHaveBeenCalledWith({ id: 'r' });
+      expect(recipeRepository.manager.transaction).not.toHaveBeenCalled();
+    });
+
+    it('archives a recipe that is referenced by orders', async () => {
+      recipeRepository.exists.mockResolvedValue(true);
+      recipeRepository.delete.mockRejectedValue(fkError);
+      const { manager, favoriteDelete } = archiveManager();
+
+      await expect(service.remove('r')).resolves.toBe('archived');
+      expect(manager.update).toHaveBeenCalledWith(
+        Recipe,
+        { id: 'r' },
+        { status: RecipeStatus.ARCHIVED },
+      );
+      expect(manager.delete).toHaveBeenCalledWith(CartItem, { recipeId: 'r' });
+      // หัวใจของคนที่ซื้อแล้วยังอยู่
+      expect(favoriteDelete.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('NOT IN (SELECT user_id FROM recipe_access'),
+      );
+    });
+
+    it('rethrows other database errors', async () => {
+      recipeRepository.exists.mockResolvedValue(true);
+      recipeRepository.delete.mockRejectedValue(new Error('connection lost'));
+
+      await expect(service.remove('r')).rejects.toThrow('connection lost');
+      expect(recipeRepository.manager.transaction).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 for a missing recipe', async () => {
+      recipeRepository.exists.mockResolvedValue(false);
+
+      await expect(service.remove('missing')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(recipeRepository.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  it('hides archived recipes from lists unless a status is requested', async () => {
+    await service.findAll({ creatorId: 'owner' });
+
+    expect(recipeQuery.andWhere).toHaveBeenCalledWith(
+      'recipe.status != :archived',
+      { archived: RecipeStatus.ARCHIVED },
+    );
   });
 
   it('creates recipe sections and contents in one transaction', async () => {

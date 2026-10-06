@@ -7,7 +7,8 @@ import {
 import { AppCacheService } from '../cache/app-cache.service';
 import { CacheNamespace } from '../cache/app-cache.module';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, SelectQueryBuilder } from 'typeorm';
+import { In, QueryFailedError, Repository, SelectQueryBuilder } from 'typeorm';
+import { CartItem } from '../cart/entities/cart-item.entity';
 import { Category } from '../categories/entities/category.entity';
 import { PaginatedResult, toPaginated } from '../common/pagination';
 import { Favorite } from '../favorites/entities/favorite.entity';
@@ -15,7 +16,7 @@ import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import type { AuthUser } from '../auth/interfaces/jwt-payload.interface';
-import { UserStatus } from '../users/entities/user.entity';
+import { UserRole, UserStatus } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { RecipeSort } from './dto/list-recipes-query.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
@@ -29,6 +30,15 @@ import {
   replaceRecipeIngredients,
 } from './recipe-ingredients';
 import { MediaSigner } from '../uploads/media-signer.service';
+
+const FOREIGN_KEY_VIOLATION = '23503';
+
+function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    error instanceof QueryFailedError &&
+    (error.driverError as { code?: string })?.code === FOREIGN_KEY_VIOLATION
+  );
+}
 
 export interface FindRecipesOptions {
   search?: string;
@@ -306,6 +316,11 @@ export class RecipesService {
 
     if (options.status) {
       query.andWhere('recipe.status = :status', { status: options.status });
+    } else {
+      // สูตรที่เจ้าของลบไปแล้ว (เก็บไว้ให้คนที่ซื้อ) ไม่โผล่แม้แต่ในรายการของเจ้าของเอง
+      query.andWhere('recipe.status != :archived', {
+        archived: RecipeStatus.ARCHIVED,
+      });
     }
 
     if (options.type) {
@@ -424,9 +439,14 @@ export class RecipesService {
   ): Promise<void> {
     const recipe = await this.recipeRepository.findOne({
       where: { id },
-      select: { id: true, creatorId: true },
+      select: { id: true, creatorId: true, status: true },
     });
-    if (!recipe) throw new NotFoundException(`Recipe with id ${id} not found`);
+    // ลบไปแล้ว (เก็บไว้ให้ผู้ซื้อ) เจ้าของแก้/ลบซ้ำไม่ได้ เหลือแต่ admin
+    const archivedForOwner =
+      recipe?.status === RecipeStatus.ARCHIVED && user.role !== UserRole.ADMIN;
+    if (!recipe || archivedForOwner) {
+      throw new NotFoundException(`Recipe with id ${id} not found`);
+    }
     assertCanManageRecipe(recipe, user);
   }
 
@@ -698,15 +718,49 @@ export class RecipesService {
     return categories;
   }
 
-  async remove(id: string): Promise<void> {
-    const recipe = await this.findOne(id);
-    await this.recipeRepository.remove(recipe);
+  /**
+   * ลบสูตร คืนว่าลบจริงหรือเก็บไว้
+   * สูตรที่เคยมีคนสั่งซื้อ (order_items ผูกแบบ RESTRICT) ลบจริงไม่ได้ จึงเปลี่ยนเป็น archived แทน
+   * ไม่เช็กก่อนลบ แต่ลองลบแล้วดู error ของ foreign key กันกรณีมีออเดอร์เข้ามาพอดีระหว่างเช็ก
+   */
+  async remove(id: string): Promise<'deleted' | 'archived'> {
+    const exists = await this.recipeRepository.exists({ where: { id } });
+    if (!exists) throw new NotFoundException(`Recipe with id ${id} not found`);
+
+    let result: 'deleted' | 'archived' = 'deleted';
+    try {
+      // ขั้นตอน/วัตถุดิบ/ตะกร้า/หัวใจ/คอมเมนต์ ฯลฯ ลบตามด้วย onDelete: CASCADE
+      await this.recipeRepository.delete({ id });
+    } catch (error) {
+      if (!isForeignKeyViolation(error)) throw error;
+      await this.archive(id);
+      result = 'archived';
+    }
     // คอมเมนต์/รีวิวของสูตรที่ลบไปแล้วต้องไม่ค้างใน cache
     await Promise.all([
       this.invalidateRecipes(),
       this.cache?.invalidate(CacheNamespace.comments),
       this.cache?.invalidate(CacheNamespace.reviews),
     ]);
+    return result;
+  }
+
+  /** เก็บสูตรที่มีคนซื้อแล้ว: ปิดการขาย เอาออกจากตะกร้าทุกคน และหัวใจของคนที่ไม่ได้ซื้อ */
+  private async archive(id: string): Promise<void> {
+    await this.recipeRepository.manager.transaction(async (manager) => {
+      await manager.update(Recipe, { id }, { status: RecipeStatus.ARCHIVED });
+      await manager.delete(CartItem, { recipeId: id });
+      // คนที่ซื้อแล้วยังเห็นสูตร หัวใจของเขาจึงเก็บไว้ คนอื่นเปิดไม่ได้แล้วจึงเอาออก
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(Favorite)
+        .where('recipe_id = :id', { id })
+        .andWhere(
+          'user_id NOT IN (SELECT user_id FROM recipe_access WHERE recipe_id = :id)',
+        )
+        .execute();
+    });
   }
 
   // ---- cache ----

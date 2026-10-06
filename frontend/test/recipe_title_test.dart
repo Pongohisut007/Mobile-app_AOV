@@ -36,4 +36,21 @@ void main() {
     expect(item.title, 'ต้มยำ');
     expect(item.titleEn, 'Tom yum');
   });
+  test('recipe keeps every category with names in both languages', () {
+    final food = Food.fromJson({
+      'id': 'r1',
+      'title': 'ต้มยำกุ้ง',
+      'categories': [
+        {'id': 'c1', 'name': 'ต้ม', 'nameEn': 'Soup', 'slug': 'soup'},
+        {'id': 'c2', 'name': 'อาหารทะเล', 'slug': 'seafood'},
+      ],
+    }, apiBaseUrl: 'http://localhost');
+
+    expect(food.categoryIds, ['c1', 'c2']);
+    expect(food.categories.map((c) => c.nameFor(AppLanguage.english)), [
+      'Soup',
+      'อาหารทะเล',
+    ]);
+    expect(food.category, 'ต้ม');
+  });
 }

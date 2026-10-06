@@ -27,6 +27,7 @@ import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_ingredients.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
+import 'package:flutter_application_1/widgets/food_detail/food_categories.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_info_card.dart';
 import 'package:flutter_application_1/widgets/common/route_transition_aware.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_image.dart';
@@ -302,6 +303,11 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
+                    if (food.categories.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      FoodCategories(categories: food.categories),
+                    ],
 
                     const SizedBox(height: 33),
 

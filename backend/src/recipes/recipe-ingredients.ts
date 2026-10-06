@@ -18,7 +18,18 @@ export async function replaceRecipeIngredients(
   const ingredients = manager.getRepository(Ingredient);
   const links = manager.getRepository(RecipeIngredient);
 
-  const rows: Partial<RecipeIngredient>[] = [];
+  // เฉพาะคอลัมน์ ไม่มี relation (recipe/ingredient) ไม่งั้น type ของ insert() ไล่ลึกเข้าไปใน entity ที่ผูกกันแล้วไม่ผ่าน
+  const rows: Pick<
+    RecipeIngredient,
+    | 'recipeId'
+    | 'ingredientId'
+    | 'amount'
+    | 'unit'
+    | 'preparationNote'
+    | 'isOptional'
+    | 'groupName'
+    | 'sortOrder'
+  >[] = [];
   const usedIds = new Set<string>();
   for (const [index, input] of inputs.entries()) {
     const ingredient = await resolveIngredient(ingredients, input);

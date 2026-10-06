@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_application_1/models/category.dart';
 import 'package:flutter_application_1/models/recipe_ingredient.dart';
 import 'package:flutter_application_1/models/recipe_step.dart';
 
@@ -16,6 +17,9 @@ class Food {
   final String? type;
   final String? status;
   final List<String> categoryIds;
+
+  /// หมวดทั้งหมดของสูตร (backend ตัดหมวดที่ปิดใช้งานออกให้แล้ว) ใช้โชว์ในหน้ารายละเอียด
+  final List<Category> categories;
   final String description;
   final String filePathImage;
   final bool showImgCommu;
@@ -57,6 +61,7 @@ class Food {
     this.type,
     this.status,
     this.categoryIds = const [],
+    this.categories = const [],
     required this.description,
     required this.filePathImage,
     this.ingredients = const [],
@@ -123,6 +128,11 @@ class Food {
         for (final value in categories ?? const [])
           if (value is Map<String, dynamic> && value['id'] is String)
             value['id'] as String,
+      ],
+      categories: [
+        for (final value in categories ?? const [])
+          if (value is Map<String, dynamic> && value['id'] is String)
+            Category.fromEmbeddedJson(value),
       ],
       description: json['shortDescription'] as String? ?? '',
       filePathImage: json['coverImageUrl'] as String? ?? '',
