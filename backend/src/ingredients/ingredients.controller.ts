@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { AdminOnly } from '../auth/decorators/admin-only.decorator';
 import { CreateIngredientDto, UpdateIngredientDto } from './dto/ingredient.dto';
@@ -17,9 +18,10 @@ import { IngredientsService } from './ingredients.service';
 export class IngredientsController {
   constructor(private readonly ingredientsService: IngredientsService) {}
 
+  // ?q=ไก่ = ค้นจากชื่อ (ใช้ในช่องเลือกวัตถุดิบตอนสร้างสูตร)
   @Get()
-  findAll(): Promise<Ingredient[]> {
-    return this.ingredientsService.findAll();
+  findAll(@Query('q') query?: string): Promise<Ingredient[]> {
+    return this.ingredientsService.findAll(query);
   }
 
   @Get(':id')

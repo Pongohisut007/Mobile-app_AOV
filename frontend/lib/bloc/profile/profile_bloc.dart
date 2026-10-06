@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_application_1/bloc/profile/profile_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_state.dart';
 import 'package:flutter_application_1/repositories/profile_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/data/session_expiry.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ProfileBloc(this._repository, {TokenStorage? tokenStorage})
@@ -12,6 +14,21 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<ProfileRequested>(_loadProfile);
     on<ProfileRefreshRequested>(_loadProfile);
     on<ProfileUpdated>((event, emit) => emit(ProfileLoaded(event.profile)));
+    on<ProfileSessionExpired>(
+      (event, emit) => emit(const ProfileGuest(sessionExpired: true)),
+    );
+    // หน้าอื่นเจอ 401 ก่อน โปรไฟล์ก็ต้องกลับเป็นผู้เยี่ยมชมด้วย
+    _expirySubscription = SessionExpiry.events.listen(
+      (_) => add(const ProfileSessionExpired()),
+    );
+  }
+
+  late final StreamSubscription<void> _expirySubscription;
+
+  @override
+  Future<void> close() {
+    _expirySubscription.cancel();
+    return super.close();
   }
 
   final ProfileRepository _repository;
@@ -39,13 +56,22 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     try {
       final profile = await _repository.fetchProfile(accessToken);
       emit(ProfileLoaded(profile));
-    } on Exception catch (error) {
-      // โหลดไม่ได้ (เช่น ไม่มีเน็ต) แต่มีของเก่าโชว์อยู่ ไม่ต้องเด้ง error
-      // ยกเว้น session หมดอายุ ต้องให้ผู้ใช้รู้
-      final message = error.toString();
-      if (!showingCache || message == appL10n.sessionExpired) {
-        emit(ProfileFailure(message));
+    } on ProfileRepositoryException catch (error) {
+      if (error.sessionExpired) {
+        // token ใช้ไม่ได้แล้ว: ล้างทิ้งแล้วกลับเป็นผู้เยี่ยมชม จะได้มีปุ่มเข้าสู่ระบบ
+        // (ถ้าค้าง token ไว้ หน้าโปรไฟล์จะ error วนไปเรื่อย ๆ จน login ใหม่ไม่ได้)
+        // ระหว่างรอมีการ login ใหม่แล้ว (token เปลี่ยน) = ไม่ต้องทำอะไร
+        final cleared = await SessionExpiry.report(
+          accessToken,
+          storage: _tokenStorage,
+        );
+        if (cleared) emit(const ProfileGuest(sessionExpired: true));
+        return;
       }
+      // โหลดไม่ได้ (เช่น ไม่มีเน็ต) แต่มีของเก่าโชว์อยู่ ไม่ต้องเด้ง error
+      if (!showingCache) emit(ProfileFailure(error.message));
+    } on Exception catch (error) {
+      if (!showingCache) emit(ProfileFailure(error.toString()));
     }
   }
 }

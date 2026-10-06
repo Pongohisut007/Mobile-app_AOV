@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsEnum,
@@ -18,7 +19,11 @@ import {
   RecipeStatus,
   RecipeType,
 } from '../entities/recipe.entity';
-import { CreateRecipeDto, CreateRecipeSectionDto } from './create-recipe.dto';
+import {
+  CreateRecipeDto,
+  CreateRecipeSectionDto,
+  RecipeIngredientInputDto,
+} from './create-recipe.dto';
 
 // ValidationPipe ใช้ whitelist + forbidNonWhitelisted ทุก field จึงต้องมี decorator
 export class UpdateRecipeDto implements Partial<CreateRecipeDto> {
@@ -92,4 +97,12 @@ export class UpdateRecipeDto implements Partial<CreateRecipeDto> {
   @ValidateNested({ each: true })
   @Type(() => CreateRecipeSectionDto)
   sections?: CreateRecipeSectionDto[];
+
+  // ส่งมา = แทนรายการวัตถุดิบเดิมทั้งชุด (ลำดับในรายการ = ลำดับที่แสดง)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => RecipeIngredientInputDto)
+  ingredients?: RecipeIngredientInputDto[];
 }

@@ -9,10 +9,16 @@ class CheckoutFailurePage extends StatelessWidget {
     required this.onRetry,
     required this.onBackToCart,
     this.purchasedCount = 0,
+    this.retryLabel,
+    this.retryIcon = Icons.refresh_rounded,
   });
 
   final String message;
   final int purchasedCount;
+
+  /// ข้อความปุ่มหลัก (ไม่ส่ง = "ลองใหม่") เช่น session หมดอายุ = "เข้าสู่ระบบเพื่อชำระต่อ"
+  final String? retryLabel;
+  final IconData retryIcon;
   final VoidCallback onRetry;
   final VoidCallback onBackToCart;
 
@@ -81,8 +87,8 @@ class CheckoutFailurePage extends StatelessWidget {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: onRetry,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: Text(context.l10n.retry),
+                    icon: Icon(retryIcon),
+                    label: Text(retryLabel ?? context.l10n.retry),
                     style: FilledButton.styleFrom(
                       backgroundColor: ProfileColors.ink,
                       foregroundColor: Colors.white,

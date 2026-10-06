@@ -101,6 +101,7 @@ export class RecipesController {
     @CurrentUser() user: AuthUser,
   ): Promise<void> {
     await this.recipesService.assertCanManage(id, user);
-    return this.recipesService.remove(id);
+    // มีคนซื้อแล้วจะถูกเก็บไว้ให้ผู้ซื้อแทนการลบ แต่สำหรับเจ้าของถือว่าลบแล้วเหมือนกัน
+    await this.recipesService.remove(id);
   }
 }

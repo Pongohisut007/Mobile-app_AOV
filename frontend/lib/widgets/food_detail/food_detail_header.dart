@@ -6,6 +6,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_image.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_menu.dart';
 
 class FoodDetailHeader extends StatefulWidget {
   const FoodDetailHeader({
@@ -99,6 +100,7 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
                       ),
                     )
                   : PopupMenuButton<String>(
+                      offset: const Offset(0, 8),
                       icon: const Icon(
                         Icons.more_vert,
                         color: FoodDetailColors.primaryRed,
@@ -116,28 +118,16 @@ class _FoodDetailHeaderState extends State<FoodDetailHeader> {
                       },
                       itemBuilder: (context) => [
                         if (_canEdit)
-                          PopupMenuItem<String>(
+                          appMenuItem(
                             value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit_outlined),
-                                SizedBox(width: 12),
-                                Text(context.l10n.edit),
-                              ],
-                            ),
+                            icon: Icons.edit_outlined,
+                            label: context.l10n.edit,
                           ),
-                        PopupMenuItem<String>(
+                        appMenuItem(
                           value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline, color: Colors.red),
-                              SizedBox(width: 12),
-                              Text(
-                                context.l10n.deleteRecipe,
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
+                          icon: Icons.delete_outline_rounded,
+                          label: context.l10n.deleteRecipe,
+                          danger: true,
                         ),
                       ],
                     ),

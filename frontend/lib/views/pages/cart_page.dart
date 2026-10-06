@@ -8,7 +8,10 @@ import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/data/recipe_library_cache.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
 import 'package:flutter_application_1/models/cart_item.dart';
+import 'package:flutter_application_1/repositories/auth_repository.dart';
 import 'package:flutter_application_1/repositories/purchase_repository.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/views/pages/login_page.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/checkout_failure_page.dart';
 import 'package:flutter_application_1/views/pages/checkout_success_page.dart';
@@ -19,6 +22,8 @@ import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_dialog.dart';
+import 'package:flutter_application_1/widgets/common/app_sheet.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -30,6 +35,9 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   late final PurchaseRepository _purchaseRepository =
       HttpMockPurchaseRepository(baseUrl: ApiConfig.apiBaseUrl);
+  late final AuthRepository _authRepository = HttpAuthRepository(
+    baseUrl: ApiConfig.apiBaseUrl,
+  );
   bool _isCheckingOut = false;
   // เปิดชีตเลือกผลจำลองอยู่ กันกดชำระเงินรัวจนชีตเด้งซ้อน
   bool _isChoosingScenario = false;
@@ -72,6 +80,13 @@ class _CartPageState extends State<CartPage> {
       return;
     }
 
+    // เช็กก่อนเปิดหน้าจ่ายเงิน: หมดอายุแล้วให้ login ก่อน ไม่ต้องไปลุ้นตอนกำลังจ่าย
+    setState(() => _isCheckingOut = true);
+    final signedIn = await _ensureSignedIn();
+    if (!mounted) return;
+    setState(() => _isCheckingOut = false);
+    if (!signedIn) return;
+
     _isChoosingScenario = true;
     final _MockPurchaseScenario? scenario;
     try {
@@ -92,11 +107,16 @@ class _CartPageState extends State<CartPage> {
     setState(() => _isCheckingOut = true);
     var completed = 0;
     String? errorMessage;
+    var sessionExpired = false;
 
     for (final item in items) {
       try {
         await _purchaseRepository.purchase(item);
         completed++;
+      } on PurchaseException catch (error) {
+        errorMessage = error.message;
+        sessionExpired = error.sessionExpired;
+        break;
       } on Exception catch (error) {
         errorMessage = error.toString();
         break;
@@ -115,6 +135,10 @@ class _CartPageState extends State<CartPage> {
     }
     setState(() => _isCheckingOut = false);
 
+    if (sessionExpired) {
+      _showSessionExpiredDuringCheckout(purchasedCount: completed);
+      return;
+    }
     if (errorMessage != null) {
       _showFailure(errorMessage, purchasedCount: completed);
       return;
@@ -130,6 +154,51 @@ class _CartPageState extends State<CartPage> {
               ),
           onBackHome: () =>
               Navigator.of(resultContext).popUntil((route) => route.isFirst),
+        ),
+      ),
+    );
+  }
+
+  /// true = มี session ใช้ได้ พร้อมจ่าย
+  /// ยังไม่ login / session หมดอายุ = เปิดหน้า login แล้วกลับมาตะกร้าเดิม (ให้กดจ่ายเองอีกที)
+  Future<bool> _ensureSignedIn() async {
+    final token = await TokenStorage().readAccessToken();
+    if (token != null && token.trim().isNotEmpty) {
+      final valid = await _authRepository.checkSession(accessToken: token);
+      if (valid) return true;
+      // 401: SessionExpiry ล้าง session ในเครื่องให้แล้ว
+    }
+    if (!mounted) return false;
+    if (token == null || token.trim().isEmpty) {
+      _showMessage(context.l10n.signInBeforeCheckout, isError: true);
+    }
+    await _signInAndReloadCart();
+    return false;
+  }
+
+  Future<void> _signInAndReloadCart() async {
+    final signedIn = await LoginPage.signInAndReturn(context);
+    if (!mounted || !signedIn) return;
+    context.read<CartBloc>().add(const CartRequested());
+    context.read<PurchasedRecipesBloc>().add(const PurchasedRecipesRefreshed());
+    _showMessage(context.l10n.checkoutResumeReady);
+  }
+
+  /// หมดอายุกลางทาง: รายการที่ซื้อไปแล้วได้สิทธิ์แล้ว ที่เหลือยังอยู่ในตะกร้าฝั่ง server
+  /// ให้ login แล้วกลับมาจ่ายต่อ (ตะกร้าบนจอว่างระหว่างนั้นเพราะกลายเป็นผู้เยี่ยมชม)
+  void _showSessionExpiredDuringCheckout({required int purchasedCount}) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (resultContext) => CheckoutFailurePage(
+          message: context.l10n.checkoutSessionExpired,
+          purchasedCount: purchasedCount,
+          retryLabel: context.l10n.checkoutSignInToContinue,
+          retryIcon: Icons.login_rounded,
+          onRetry: () {
+            Navigator.of(resultContext).pop();
+            _signInAndReloadCart();
+          },
+          onBackToCart: () => Navigator.of(resultContext).pop(),
         ),
       ),
     );
@@ -154,49 +223,38 @@ class _CartPageState extends State<CartPage> {
   }
 
   Future<_MockPurchaseScenario?> _chooseMockScenario() {
-    return showModalBottomSheet<_MockPurchaseScenario>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                context.l10n.mockBillingTitle,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.mockBillingSubtitle,
-                style: TextStyle(color: ProfileColors.muted),
-              ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: () =>
-                    Navigator.pop(sheetContext, _MockPurchaseScenario.success),
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: Text(context.l10n.mockPaySuccess),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    Navigator.pop(sheetContext, _MockPurchaseScenario.failed),
-                icon: const Icon(Icons.error_outline_rounded),
-                label: Text(context.l10n.mockPayFail),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.pop(
-                  sheetContext,
-                  _MockPurchaseScenario.cancelled,
-                ),
-                child: Text(context.l10n.mockUserCancel),
-              ),
-            ],
-          ),
+    return showAppBottomSheet<_MockPurchaseScenario>(
+      context,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppSheetHeader(
+              title: context.l10n.mockBillingTitle,
+              subtitle: context.l10n.mockBillingSubtitle,
+            ),
+            AppSheetOption(
+              icon: Icons.check_circle_outline_rounded,
+              title: context.l10n.mockPaySuccess,
+              onTap: () =>
+                  Navigator.pop(sheetContext, _MockPurchaseScenario.success),
+            ),
+            AppSheetOption(
+              icon: Icons.error_outline_rounded,
+              title: context.l10n.mockPayFail,
+              danger: true,
+              onTap: () =>
+                  Navigator.pop(sheetContext, _MockPurchaseScenario.failed),
+            ),
+            AppSheetOption(
+              icon: Icons.close_rounded,
+              title: context.l10n.mockUserCancel,
+              onTap: () =>
+                  Navigator.pop(sheetContext, _MockPurchaseScenario.cancelled),
+            ),
+          ],
         ),
       ),
     );
@@ -206,27 +264,16 @@ class _CartPageState extends State<CartPage> {
   Future<void> _confirmClear(BuildContext context) async {
     final cartBloc = context.read<CartBloc>();
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.clearCartTitle),
-        content: Text(context.l10n.clearCartMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(context.l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              cartBloc.add(const CartCleared());
-              Navigator.pop(dialogContext);
-            },
-            style: FilledButton.styleFrom(backgroundColor: ProfileColors.ink),
-            child: Text(context.l10n.clear),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      icon: Icons.remove_shopping_cart_outlined,
+      title: context.l10n.clearCartTitle,
+      message: context.l10n.clearCartMessage,
+      confirmLabel: context.l10n.clear,
+      cancelLabel: context.l10n.cancel,
+      danger: true,
     );
+    if (confirmed) cartBloc.add(const CartCleared());
   }
 
   // ดึงลงเพื่อโหลดตะกร้าใหม่ ระหว่างจ่ายเงินไม่ให้โหลดทับ

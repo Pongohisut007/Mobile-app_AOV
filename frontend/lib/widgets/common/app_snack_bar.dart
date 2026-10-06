@@ -5,7 +5,11 @@ import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 enum AppSnackType { info, success, error }
 
 /// SnackBar แบบลอย มุมโค้ง พื้นเข้ม มีไอคอนตามประเภท ใช้ทั้งแอป
-SnackBar appSnackBar(String message, {AppSnackType type = AppSnackType.info}) {
+SnackBar appSnackBar(
+  String message, {
+  AppSnackType type = AppSnackType.info,
+  SnackBarAction? action,
+}) {
   final (icon, iconColor, badgeColor) = switch (type) {
     AppSnackType.success => (
       Icons.check_rounded,
@@ -28,6 +32,7 @@ SnackBar appSnackBar(String message, {AppSnackType type = AppSnackType.info}) {
     // error อยู่นานกว่าหน่อย ให้อ่านข้อความทัน
     duration: Duration(seconds: type == AppSnackType.error ? 5 : 3),
     dismissDirection: DismissDirection.horizontal,
+    action: action,
     content: Row(
       children: [
         Container(
@@ -69,10 +74,11 @@ extension AppSnackBarMessenger on ScaffoldMessengerState {
   void showAppSnackBar(
     String message, {
     AppSnackType type = AppSnackType.info,
+    SnackBarAction? action,
   }) {
     this
       ..hideCurrentSnackBar()
-      ..showSnackBar(appSnackBar(message, type: type));
+      ..showSnackBar(appSnackBar(message, type: type, action: action));
   }
 }
 

@@ -231,7 +231,8 @@ class _FavoriteButton extends StatelessWidget {
   }
 }
 
-// ปุ่มเปิด/ปิดสูตรในตะกร้า อยู่ในตะกร้าแล้วไอคอนจะเป็นตะกร้าทึบ กดอีกครั้งเพื่อเอาออก
+// ปุ่มใส่สูตรลงตะกร้า อยู่ในตะกร้าแล้วไอคอนจะเป็นตะกร้าทึบ กดอีกครั้งเพื่อไปหน้าตะกร้า
+// (เอาออกได้ที่หน้าตะกร้า กันกดพลาดแล้วสูตรหายจากตะกร้าโดยไม่รู้ตัว)
 class _AddToCartButton extends StatelessWidget {
   const _AddToCartButton({required this.food});
 
@@ -262,15 +263,13 @@ class _AddToCartButton extends StatelessWidget {
                 : () async {
                     final cartBloc = context.read<CartBloc>();
                     if (await _requireSignIn(context)) return;
+                    if (!context.mounted) return;
 
-                    final cartItem = cartBloc.state.items
-                        .where((item) => item.recipeId == recipeId)
-                        .firstOrNull;
-                    cartBloc.add(
-                      cartItem == null
-                          ? CartItemAdded(food)
-                          : CartItemRemoved(cartItem.id),
-                    );
+                    if (cartBloc.state.contains(recipeId)) {
+                      Navigator.pushNamed(context, AppRoutes.cart);
+                    } else {
+                      cartBloc.add(CartItemAdded(food));
+                    }
                   },
             child: SizedBox(
               width: 32,

@@ -7,6 +7,7 @@ import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dar
 import 'package:flutter_application_1/widgets/recipe_chat/recipe_chat_sheet.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_sheet.dart';
 
 /// ปุ่ม "ถาม AI" แสดงเฉพาะคนที่ login และมีสิทธิ์ใช้สูตรนี้
 class RecipeChatButton extends StatefulWidget {
@@ -63,14 +64,9 @@ class _RecipeChatButtonState extends State<RecipeChatButton> {
         return;
       }
 
-      await showModalBottomSheet<void>(
-        context: context,
+      await showAppBottomSheet<void>(
+        context,
         isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.white,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
         builder: (_) => RecipeChatSheet(
           repository: _repository,
           accessToken: accessToken,

@@ -18,3 +18,8 @@ final class ProfileUpdated extends ProfileEvent {
 
   final UserProfile profile;
 }
+
+/// session หมดอายุ (เกิดจาก SessionExpiry เมื่อคำขอใดก็ตามได้ 401)
+final class ProfileSessionExpired extends ProfileEvent {
+  const ProfileSessionExpired();
+}

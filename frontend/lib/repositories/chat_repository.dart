@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 /// รูปที่แนบไปถาม AI
 class ChatImage {
@@ -40,7 +41,7 @@ class ChatRepository {
     http.Client? client,
     this.requestTimeout = const Duration(seconds: 60),
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final http.Client _client;

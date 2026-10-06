@@ -441,6 +441,10 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                       initialValue: value.playbackSpeed,
                       onSelected: _setSpeed,
                       color: const Color(0xFF292733),
+                      position: PopupMenuPosition.over,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       icon: Text(
                         '${value.playbackSpeed}x',
                         style: const TextStyle(
@@ -448,13 +452,43 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 0.5, child: Text('0.5x')),
-                        PopupMenuItem(value: 0.75, child: Text('0.75x')),
-                        PopupMenuItem(value: 1, child: Text('1.0x')),
-                        PopupMenuItem(value: 1.25, child: Text('1.25x')),
-                        PopupMenuItem(value: 1.5, child: Text('1.5x')),
-                        PopupMenuItem(value: 2, child: Text('2.0x')),
+                      itemBuilder: (_) => [
+                        for (final speed in const [
+                          0.5,
+                          0.75,
+                          1.0,
+                          1.25,
+                          1.5,
+                          2.0,
+                        ])
+                          PopupMenuItem(
+                            value: speed,
+                            height: 44,
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 24,
+                                  child: speed == value.playbackSpeed
+                                      ? const Icon(
+                                          Icons.check_rounded,
+                                          size: 18,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${speed.toStringAsFixed(speed == 0.75 || speed == 1.25 ? 2 : 1)}x',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: speed == value.playbackSpeed
+                                        ? FontWeight.w800
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                     if (widget.onRotate != null)
