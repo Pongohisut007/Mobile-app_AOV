@@ -1,5 +1,5 @@
 {
-  "API_BASE_URL": "http://api.172.30.58.25.nip.io/",
+  "API_BASE_URL": "https://production.alivefordie.site/",
   "GOOGLE_SERVER_CLIENT_ID": "42277038587-903plo0akspukuamelfgl88asmqrejq5.apps.googleusercontent.com",
   "GOOGLE_IOS_CLIENT_ID": "",
   "ENABLE_MOCK_IAP": true
