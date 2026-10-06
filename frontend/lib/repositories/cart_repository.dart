@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_application_1/models/cart_item.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 /// เรียก REST ของตะกร้า: carts เก็บว่าเป็นของใคร, cart_items เก็บว่ามีสูตรอะไรบ้าง
 /// backend อ่านว่าเป็นตะกร้าของใครจาก accessToken ไม่ได้รับ userId ทาง query
@@ -29,7 +30,7 @@ class HttpCartRepository implements CartRepository {
     http.Client? client,
     this.requestTimeout = const Duration(seconds: 10),
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final http.Client _client;

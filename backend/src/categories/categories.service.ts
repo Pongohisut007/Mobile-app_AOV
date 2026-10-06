@@ -24,18 +24,34 @@ export class CategoriesService {
     private readonly cache?: AppCacheService,
   ) {}
 
-  async findAll(type?: RecipeType, status?: RecipeStatus): Promise<Category[]> {
+  /**
+   * [includeInactive] = รวมหมวดที่ปิดใช้งาน (หน้าจัดการของ admin)
+   * คนทั่วไปเห็นเฉพาะหมวดที่เปิดอยู่
+   */
+  async findAll(
+    type?: RecipeType,
+    status?: RecipeStatus,
+    { includeInactive = false }: { includeInactive?: boolean } = {},
+  ): Promise<Category[]> {
     if (!type && !status) {
       // รายการหมวดแทบไม่เปลี่ยน แต่ถูกเรียกทุกครั้งที่เปิดแอป/หน้าสร้างสูตร
       const load = () =>
-        this.categoryRepository.find({ order: { sortOrder: 'ASC' } });
+        this.categoryRepository.find({
+          where: includeInactive ? {} : { isActive: true },
+          order: { sortOrder: 'ASC' },
+        });
       return this.cache
-        ? this.cache.getOrSet(CacheNamespace.categories, 'all', 600, load)
+        ? this.cache.getOrSet(
+            CacheNamespace.categories,
+            includeInactive ? 'all-including-inactive' : 'all',
+            600,
+            load,
+          )
         : load();
     }
 
     const recipeFilter = this.recipeJoinFilter(type, status);
-    const categories = await this.categoryRepository
+    const query = this.categoryRepository
       .createQueryBuilder('category')
       .leftJoinAndSelect(
         'category.recipes',
@@ -45,16 +61,20 @@ export class CategoriesService {
       )
       .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'categories')
-      .orderBy('category.sortOrder', 'ASC')
-      .getMany();
+      .orderBy('category.sortOrder', 'ASC');
+    if (!includeInactive) {
+      query.where('category.isActive = :active', { active: true });
+    }
 
-    return this.attachRecipeCounts(categories);
+    return this.attachRecipeCounts(await query.getMany());
   }
 
+  /** หมวดที่ปิดใช้งาน = ไม่พบ (ยกเว้น [includeInactive] สำหรับ admin) */
   async findOne(
     id: string,
     type?: RecipeType,
     status?: RecipeStatus,
+    { includeInactive = false }: { includeInactive?: boolean } = {},
   ): Promise<Category> {
     const recipeFilter = this.recipeJoinFilter(type, status);
     const query = this.categoryRepository
@@ -68,6 +88,10 @@ export class CategoriesService {
       .leftJoinAndSelect('recipe.creator', 'creator')
       .leftJoinAndSelect('recipe.categories', 'categories')
       .where('category.id = :id', { id });
+
+    if (!includeInactive) {
+      query.andWhere('category.isActive = :active', { active: true });
+    }
 
     const category = await query.getOne();
 
@@ -158,7 +182,10 @@ export class CategoriesService {
   }
 
   async update(id: string, data: Partial<Category>): Promise<Category> {
-    const category = await this.findOne(id);
+    // admin ต้องแก้ (เช่น เปิดกลับ) หมวดที่ปิดอยู่ได้
+    const category = await this.findOne(id, undefined, undefined, {
+      includeInactive: true,
+    });
     Object.assign(category, data, { id: category.id });
     const saved = await this.categoryRepository.save(category);
     await this.invalidate();
@@ -166,7 +193,9 @@ export class CategoriesService {
   }
 
   async remove(id: string): Promise<void> {
-    const category = await this.findOne(id);
+    const category = await this.findOne(id, undefined, undefined, {
+      includeInactive: true,
+    });
     await this.categoryRepository.remove(category);
     await this.invalidate();
   }

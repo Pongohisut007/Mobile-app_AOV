@@ -60,3 +60,18 @@ flutter build apk --release --dart-define-from-file=config/prod.json  # release 
 | `ENABLE_MOCK_IAP` | optional; defaults to on for debug and off for release |
 
 Running without a config file makes the app stop at startup and say that `API_BASE_URL` is not set.
+
+## Demo data (seed)
+
+`npm run seed` (in `backend/`) **wipes every table** and fills the database with
+data that looks like the app has been used for about six months:
+
+- 20 users: 1 admin, 5 creators, 14 users (2 of them signed up with Google)
+- 100 recipes (official for sale, free community recipes, drafts, hidden/rejected)
+- orders, payments, purchased recipes, reviews, comments, favorites, carts, banners
+
+Every account with a password uses `Password123!`, for example
+`admin@recipy.local`, `chef.mook@recipy.local`, `somchai@example.com`.
+The seed refuses to run when `APP_ENV` is `staging` or `production`
+unless `SEED_ALLOW_RESET=true` is set. Data lives in
+`backend/src/database/seeds/demo-data.ts`.

@@ -42,7 +42,9 @@ class RoutesGenerator {
           builder: (_) => BlocProvider(
             create: (_) =>
                 AuthBloc(HttpAuthRepository(baseUrl: ApiConfig.apiBaseUrl)),
-            child: const LoginPage(),
+            child: LoginPage(
+              returnOnSuccess: setting.arguments == LoginPage.returnHere,
+            ),
           ),
         );
       case AppRoutes.register:

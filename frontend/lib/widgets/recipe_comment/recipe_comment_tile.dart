@@ -5,6 +5,7 @@ import 'package:flutter_application_1/widgets/common/app_network_image.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:flutter_application_1/widgets/recipe_comment/comment_text.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_menu.dart';
 
 class RecipeCommentTile extends StatelessWidget {
   const RecipeCommentTile({
@@ -115,25 +116,16 @@ class RecipeCommentTile extends StatelessWidget {
                             if (action == 'delete') onDelete?.call();
                           },
                           itemBuilder: (context) => [
-                            PopupMenuItem(
+                            appMenuItem(
                               value: 'edit',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit_outlined, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(context.l10n.edit),
-                                ],
-                              ),
+                              icon: Icons.edit_outlined,
+                              label: context.l10n.edit,
                             ),
-                            PopupMenuItem(
+                            appMenuItem(
                               value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete_outline, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(context.l10n.delete),
-                                ],
-                              ),
+                              icon: Icons.delete_outline_rounded,
+                              label: context.l10n.delete,
+                              danger: true,
                             ),
                           ],
                         ),

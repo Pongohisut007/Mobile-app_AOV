@@ -8,8 +8,8 @@ import 'package:flutter_application_1/data/recipe_library_cache.dart';
 import 'package:flutter_application_1/models/food.dart';
 import 'package:flutter_application_1/models/paged_result.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 class FoodRepository {
   static const String baseUrl = ApiConfig.apiBaseUrl;
@@ -147,7 +147,7 @@ class FoodRepository {
       headers['Authorization'] = 'Bearer ${token.trim()}';
     }
 
-    final response = await http.post(
+    final response = await appHttpClient.post(
       Uri.parse('$baseUrl/recipes'),
       headers: headers,
       body: jsonEncode(recipe),
@@ -170,7 +170,7 @@ class FoodRepository {
       headers['Authorization'] = 'Bearer ${token.trim()}';
     }
 
-    final response = await http.patch(
+    final response = await appHttpClient.patch(
       Uri.parse('$baseUrl/recipes/$id'),
       headers: headers,
       body: jsonEncode(recipe),
@@ -205,7 +205,7 @@ class FoodRepository {
 
   Future<PagedResult<Food>> _getFoodsPage(Uri uri, {String? cacheKey}) async {
     debugPrint('Fetching foods from: $uri');
-    final response = await http.get(uri);
+    final response = await appHttpClient.get(uri);
     if (response.statusCode == 200) {
       final body = utf8.decode(response.bodyBytes);
       final result = _decodePage(body);
@@ -220,7 +220,7 @@ class FoodRepository {
     debugPrint('Fetching food from: $url');
     // แนบ token ถ้า login อยู่ สูตรที่ซื้อแล้วจะได้ขั้นตอนครบ (ไม่ login เห็นแค่ preview)
     final token = await TokenStorage().readAccessToken();
-    final response = await http.get(
+    final response = await appHttpClient.get(
       Uri.parse(url),
       headers: token == null || token.trim().isEmpty
           ? null
@@ -246,7 +246,7 @@ class FoodRepository {
 
   Future<PagedResult<Food>> _searchFoods(Uri uri) async {
     debugPrint('Searching foods from: $uri');
-    final response = await http.get(uri);
+    final response = await appHttpClient.get(uri);
 
     if (response.statusCode == 200) {
       return PagedResult.fromJson(
@@ -266,7 +266,7 @@ class FoodRepository {
   /// ลบได้เฉพาะสูตรของตัวเอง (backend ตรวจจาก token)
   Future<void> deleteFood(String foodId) async {
     final token = await TokenStorage().readAccessToken();
-    final response = await http.delete(
+    final response = await appHttpClient.delete(
       Uri.parse('$baseUrl/recipes/$foodId'),
       headers: {
         if (token != null && token.trim().isNotEmpty)

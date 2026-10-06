@@ -1,4 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_application_1/models/category.dart';
+import 'package:flutter_application_1/models/recipe_ingredient.dart';
 import 'package:flutter_application_1/models/recipe_step.dart';
 
 class Food {
@@ -15,6 +17,9 @@ class Food {
   final String? type;
   final String? status;
   final List<String> categoryIds;
+
+  /// หมวดทั้งหมดของสูตร (backend ตัดหมวดที่ปิดใช้งานออกให้แล้ว) ใช้โชว์ในหน้ารายละเอียด
+  final List<Category> categories;
   final String description;
   final String filePathImage;
   final bool showImgCommu;
@@ -30,6 +35,10 @@ class Food {
   final int? servingCount;
   final String? difficulty;
   final List<RecipeStep> steps;
+
+  /// วัตถุดิบเรียงตามลำดับที่เจ้าของจัดไว้ (มาเฉพาะ GET /recipes/:id)
+  /// คนที่ยังไม่ซื้อสูตร official ได้แค่ชื่อ ไม่มีปริมาณ
+  final List<RecipeIngredientLine> ingredients;
 
   // ผู้ชมเห็นขั้นตอนครบไหม (backend ส่งมาเฉพาะ GET /recipes/:id)
   // official ที่ยังไม่ซื้อจะเป็น false และได้มาแค่ขั้นตอน preview
@@ -52,8 +61,10 @@ class Food {
     this.type,
     this.status,
     this.categoryIds = const [],
+    this.categories = const [],
     required this.description,
     required this.filePathImage,
+    this.ingredients = const [],
     this.showImgCommu = false,
     this.price = 0,
     this.favoriteCount = 0,
@@ -118,6 +129,11 @@ class Food {
           if (value is Map<String, dynamic> && value['id'] is String)
             value['id'] as String,
       ],
+      categories: [
+        for (final value in categories ?? const [])
+          if (value is Map<String, dynamic> && value['id'] is String)
+            Category.fromEmbeddedJson(value),
+      ],
       description: json['shortDescription'] as String? ?? '',
       filePathImage: json['coverImageUrl'] as String? ?? '',
       showImgCommu: json['showImgCommu'] as bool? ?? false,
@@ -134,6 +150,7 @@ class Food {
       servingCount: _toInt(json['servingCount']),
       difficulty: json['difficulty'] as String?,
       steps: steps,
+      ingredients: _parseIngredients(json['recipeIngredients']),
       canViewFullRecipe: json['canViewFullRecipe'] as bool? ?? true,
       creatorId: creator?['id'] as String?,
       creatorName: creator?['displayName'] as String?,
@@ -151,6 +168,20 @@ class Food {
   /// ชื่อตามภาษาที่แอปใช้อยู่
   String displayName(BuildContext context) =>
       nameFor(Localizations.localeOf(context));
+
+  static List<RecipeIngredientLine> _parseIngredients(Object? value) {
+    if (value is! List) return const [];
+    final rows = value.whereType<Map<String, dynamic>>().toList()
+      ..sort(
+        (a, b) => (_toInt(a['sortOrder']) ?? 0).compareTo(
+          _toInt(b['sortOrder']) ?? 0,
+        ),
+      );
+    return rows
+        .map(RecipeIngredientLine.fromJson)
+        .whereType<RecipeIngredientLine>()
+        .toList(growable: false);
+  }
 
   static String? _optionalText(Object? value) =>
       value is String && value.trim().isNotEmpty ? value.trim() : null;

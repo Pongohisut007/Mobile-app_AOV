@@ -7,7 +7,8 @@ import {
 import { AppCacheService } from '../cache/app-cache.service';
 import { CacheNamespace } from '../cache/app-cache.module';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, SelectQueryBuilder } from 'typeorm';
+import { In, QueryFailedError, Repository, SelectQueryBuilder } from 'typeorm';
+import { CartItem } from '../cart/entities/cart-item.entity';
 import { Category } from '../categories/entities/category.entity';
 import { PaginatedResult, toPaginated } from '../common/pagination';
 import { Favorite } from '../favorites/entities/favorite.entity';
@@ -15,7 +16,7 @@ import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
 import type { AuthUser } from '../auth/interfaces/jwt-payload.interface';
-import { UserStatus } from '../users/entities/user.entity';
+import { UserRole, UserStatus } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { RecipeSort } from './dto/list-recipes-query.dto';
 import { SearchRecipesDto } from './dto/search-recipes.dto';
@@ -24,7 +25,20 @@ import { RecipeContent } from './entities/recipe-content.entity';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
 import { assertCanManageRecipe } from './recipe-permissions';
+import {
+  hideIngredientAmounts,
+  replaceRecipeIngredients,
+} from './recipe-ingredients';
 import { MediaSigner } from '../uploads/media-signer.service';
+
+const FOREIGN_KEY_VIOLATION = '23503';
+
+function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    error instanceof QueryFailedError &&
+    (error.driverError as { code?: string })?.code === FOREIGN_KEY_VIOLATION
+  );
+}
 
 export interface FindRecipesOptions {
   search?: string;
@@ -271,6 +285,7 @@ export class RecipesService {
             .from(Recipe, 'filtered')
             .innerJoin('filtered.categories', 'filteredCategory')
             .where('filteredCategory.slug = :category')
+            .andWhere('filteredCategory.isActive = true')
             .getQuery(),
         { category: options.category },
       );
@@ -287,6 +302,7 @@ export class RecipesService {
             .from(Recipe, 'filteredById')
             .innerJoin('filteredById.categories', 'filteredCategoryById')
             .where('filteredCategoryById.id = :categoryId')
+            .andWhere('filteredCategoryById.isActive = true')
             .getQuery(),
         { categoryId: options.categoryId },
       );
@@ -300,6 +316,11 @@ export class RecipesService {
 
     if (options.status) {
       query.andWhere('recipe.status = :status', { status: options.status });
+    } else {
+      // สูตรที่เจ้าของลบไปแล้ว (เก็บไว้ให้คนที่ซื้อ) ไม่โผล่แม้แต่ในรายการของเจ้าของเอง
+      query.andWhere('recipe.status != :archived', {
+        archived: RecipeStatus.ARCHIVED,
+      });
     }
 
     if (options.type) {
@@ -330,6 +351,9 @@ export class RecipesService {
     for (const section of recipe.sections) {
       section.contents.sort((left, right) => left.sortOrder - right.sortOrder);
     }
+    recipe.recipeIngredients?.sort(
+      (left, right) => left.sortOrder - right.sortOrder,
+    );
 
     const [recipeWithCounts] = await this.attachRecipeCounts([recipe]);
     return recipeWithCounts;
@@ -360,6 +384,10 @@ export class RecipesService {
     if (recipe.canViewFullRecipe) return this.signPaidMedia(recipe);
 
     recipe.sections = recipe.sections.filter((section) => section.isPreview);
+    // ยังไม่ซื้อ: เห็นชื่อวัตถุดิบไว้ตัดสินใจ แต่ปริมาณ/หน่วย/หมายเหตุ เป็นส่วนที่ขาย
+    recipe.recipeIngredients = hideIngredientAmounts(
+      recipe.recipeIngredients ?? [],
+    );
     return recipe;
   }
 
@@ -411,9 +439,14 @@ export class RecipesService {
   ): Promise<void> {
     const recipe = await this.recipeRepository.findOne({
       where: { id },
-      select: { id: true, creatorId: true },
+      select: { id: true, creatorId: true, status: true },
     });
-    if (!recipe) throw new NotFoundException(`Recipe with id ${id} not found`);
+    // ลบไปแล้ว (เก็บไว้ให้ผู้ซื้อ) เจ้าของแก้/ลบซ้ำไม่ได้ เหลือแต่ admin
+    const archivedForOwner =
+      recipe?.status === RecipeStatus.ARCHIVED && user.role !== UserRole.ADMIN;
+    if (!recipe || archivedForOwner) {
+      throw new NotFoundException(`Recipe with id ${id} not found`);
+    }
     assertCanManageRecipe(recipe, user);
   }
 
@@ -491,9 +524,11 @@ export class RecipesService {
     const {
       categoryIds,
       sections = [],
+      ingredients = [],
       ...recipeData
     } = RecipesService.withoutSignedMedia(dto);
     const categories = await this.resolveCategories(categoryIds);
+    RecipesService.assertActiveCategories(categories);
 
     const created = await this.recipeRepository.manager.transaction(
       async (manager) => {
@@ -531,11 +566,16 @@ export class RecipesService {
           }
         }
 
+        if (ingredients.length > 0) {
+          await replaceRecipeIngredients(manager, recipe.id, ingredients);
+        }
+
         return recipeRepository.findOneOrFail({
           where: { id: recipe.id },
           relations: {
             creator: true,
             categories: true,
+            recipeIngredients: { ingredient: true },
             sections: { contents: true },
           },
         });
@@ -546,7 +586,7 @@ export class RecipesService {
   }
 
   async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
-    const { categoryIds, sections, ...recipeData } =
+    const { categoryIds, sections, ingredients, ...recipeData } =
       RecipesService.withoutSignedMedia(dto);
     const categories = categoryIds
       ? await this.resolveCategories(categoryIds)
@@ -577,11 +617,21 @@ export class RecipesService {
       }
 
       Object.assign(recipe, recipeData, { id: recipe.id });
-      if (categories) recipe.categories = categories;
+      if (categories) {
+        recipe.categories = RecipesService.mergeCategories(
+          recipe.categories,
+          categories,
+        );
+      }
       if (recipe.status === RecipeStatus.PUBLISHED && !recipe.publishedAt) {
         recipe.publishedAt = new Date();
       }
       await recipeRepository.save(recipe);
+
+      // ไม่ส่งมา = คงวัตถุดิบเดิมไว้
+      if (ingredients) {
+        await replaceRecipeIngredients(manager, recipe.id, ingredients);
+      }
 
       if (!sections) return;
 
@@ -615,6 +665,39 @@ export class RecipesService {
     return this.findOne(id);
   }
 
+  /** สูตรใหม่ใส่หมวดที่ admin ปิดใช้งานไม่ได้ */
+  private static assertActiveCategories(categories: Category[]): void {
+    const inactive = categories.filter(
+      (category) => category.isActive === false,
+    );
+    if (inactive.length > 0) {
+      throw new BadRequestException(
+        `Categories are no longer available: ${inactive.map((c) => c.name).join(', ')}`,
+      );
+    }
+  }
+
+  /**
+   * หมวดหลังแก้สูตร = ที่ส่งมา + หมวดที่ปิดใช้งานซึ่งสูตรมีอยู่เดิม
+   * แอปไม่เห็นหมวดที่ปิด (จึงไม่ได้ส่งกลับมา) ถ้าแทนทั้งชุดตรง ๆ สูตรจะหลุดจากหมวดนั้นถาวร
+   * เพิ่มหมวดที่ปิดเข้าไปใหม่ไม่ได้
+   */
+  private static mergeCategories(
+    current: Category[],
+    requested: Category[],
+  ): Category[] {
+    const currentIds = new Set(current.map((category) => category.id));
+    RecipesService.assertActiveCategories(
+      requested.filter((category) => !currentIds.has(category.id)),
+    );
+    const requestedIds = new Set(requested.map((category) => category.id));
+    const keptHidden = current.filter(
+      (category) =>
+        category.isActive === false && !requestedIds.has(category.id),
+    );
+    return [...requested, ...keptHidden];
+  }
+
   // แปลง categoryIds -> Category entity จริง และเช็คว่ามีครบทุก id
   private async resolveCategories(categoryIds?: string[]): Promise<Category[]> {
     if (!categoryIds?.length) return [];
@@ -635,15 +718,49 @@ export class RecipesService {
     return categories;
   }
 
-  async remove(id: string): Promise<void> {
-    const recipe = await this.findOne(id);
-    await this.recipeRepository.remove(recipe);
+  /**
+   * ลบสูตร คืนว่าลบจริงหรือเก็บไว้
+   * สูตรที่เคยมีคนสั่งซื้อ (order_items ผูกแบบ RESTRICT) ลบจริงไม่ได้ จึงเปลี่ยนเป็น archived แทน
+   * ไม่เช็กก่อนลบ แต่ลองลบแล้วดู error ของ foreign key กันกรณีมีออเดอร์เข้ามาพอดีระหว่างเช็ก
+   */
+  async remove(id: string): Promise<'deleted' | 'archived'> {
+    const exists = await this.recipeRepository.exists({ where: { id } });
+    if (!exists) throw new NotFoundException(`Recipe with id ${id} not found`);
+
+    let result: 'deleted' | 'archived' = 'deleted';
+    try {
+      // ขั้นตอน/วัตถุดิบ/ตะกร้า/หัวใจ/คอมเมนต์ ฯลฯ ลบตามด้วย onDelete: CASCADE
+      await this.recipeRepository.delete({ id });
+    } catch (error) {
+      if (!isForeignKeyViolation(error)) throw error;
+      await this.archive(id);
+      result = 'archived';
+    }
     // คอมเมนต์/รีวิวของสูตรที่ลบไปแล้วต้องไม่ค้างใน cache
     await Promise.all([
       this.invalidateRecipes(),
       this.cache?.invalidate(CacheNamespace.comments),
       this.cache?.invalidate(CacheNamespace.reviews),
     ]);
+    return result;
+  }
+
+  /** เก็บสูตรที่มีคนซื้อแล้ว: ปิดการขาย เอาออกจากตะกร้าทุกคน และหัวใจของคนที่ไม่ได้ซื้อ */
+  private async archive(id: string): Promise<void> {
+    await this.recipeRepository.manager.transaction(async (manager) => {
+      await manager.update(Recipe, { id }, { status: RecipeStatus.ARCHIVED });
+      await manager.delete(CartItem, { recipeId: id });
+      // คนที่ซื้อแล้วยังเห็นสูตร หัวใจของเขาจึงเก็บไว้ คนอื่นเปิดไม่ได้แล้วจึงเอาออก
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(Favorite)
+        .where('recipe_id = :id', { id })
+        .andWhere(
+          'user_id NOT IN (SELECT user_id FROM recipe_access WHERE recipe_id = :id)',
+        )
+        .execute();
+    });
   }
 
   // ---- cache ----

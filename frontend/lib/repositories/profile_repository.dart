@@ -5,6 +5,7 @@ import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/data/api_cache.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 abstract interface class ProfileRepository {
   Future<UserProfile> fetchProfile(String accessToken);
@@ -27,7 +28,7 @@ class HttpProfileRepository implements ProfileRepository {
     http.Client? client,
     this.requestTimeout = const Duration(seconds: 10),
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final http.Client _client;
@@ -95,11 +96,15 @@ class HttpProfileRepository implements ProfileRepository {
         'Authorization': 'Bearer $normalizedAccessToken',
       }).timeout(requestTimeout);
 
+      if (response.statusCode == 401) {
+        throw ProfileRepositoryException(
+          appL10n.sessionExpired,
+          sessionExpired: true,
+        );
+      }
       if (response.statusCode != 200) {
         throw ProfileRepositoryException(
-          response.statusCode == 401
-              ? appL10n.sessionExpired
-              : appL10n.errorActionFailed(failureLabel, response.statusCode),
+          appL10n.errorActionFailed(failureLabel, response.statusCode),
         );
       }
 
@@ -128,9 +133,12 @@ class HttpProfileRepository implements ProfileRepository {
 }
 
 class ProfileRepositoryException implements Exception {
-  const ProfileRepositoryException(this.message);
+  const ProfileRepositoryException(this.message, {this.sessionExpired = false});
 
   final String message;
+
+  /// backend ตอบ 401: token ในเครื่องใช้ไม่ได้แล้ว (หมดอายุ/ออกจากระบบจากที่อื่น/บัญชีถูกลบ)
+  final bool sessionExpired;
 
   @override
   String toString() => message;

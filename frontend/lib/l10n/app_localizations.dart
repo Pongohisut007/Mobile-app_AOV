@@ -3361,6 +3361,120 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ตั้งรหัสผ่านใหม่'**
   String get resetPasswordSubmit;
+
+  /// No description provided for @checkoutSessionExpired.
+  ///
+  /// In th, this message translates to:
+  /// **'เซสชันหมดอายุระหว่างชำระเงิน รายการที่ยังไม่ได้ชำระยังอยู่ในตะกร้า'**
+  String get checkoutSessionExpired;
+
+  /// No description provided for @checkoutSignInToContinue.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบเพื่อชำระต่อ'**
+  String get checkoutSignInToContinue;
+
+  /// No description provided for @checkoutResumeReady.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบแล้ว ชำระรายการที่เหลือต่อได้เลย'**
+  String get checkoutResumeReady;
+
+  /// No description provided for @checkingSession.
+  ///
+  /// In th, this message translates to:
+  /// **'กำลังตรวจสอบบัญชี...'**
+  String get checkingSession;
+
+  /// No description provided for @ingredients.
+  ///
+  /// In th, this message translates to:
+  /// **'วัตถุดิบ'**
+  String get ingredients;
+
+  /// Shown in the create-recipe form when no ingredients were added
+  ///
+  /// In th, this message translates to:
+  /// **'ยังไม่ได้ใส่วัตถุดิบ เพิ่มไว้ให้คนทำตามเตรียมของได้ครบ'**
+  String get ingredientsEmptyHint;
+
+  /// No description provided for @addIngredient.
+  ///
+  /// In th, this message translates to:
+  /// **'เพิ่มวัตถุดิบ'**
+  String get addIngredient;
+
+  /// No description provided for @editIngredient.
+  ///
+  /// In th, this message translates to:
+  /// **'แก้ไขวัตถุดิบ'**
+  String get editIngredient;
+
+  /// No description provided for @ingredientName.
+  ///
+  /// In th, this message translates to:
+  /// **'ชื่อวัตถุดิบ'**
+  String get ingredientName;
+
+  /// No description provided for @ingredientNameHint.
+  ///
+  /// In th, this message translates to:
+  /// **'พิมพ์เพื่อค้นหา หรือพิมพ์ชื่อใหม่'**
+  String get ingredientNameHint;
+
+  /// No description provided for @ingredientNameRequired.
+  ///
+  /// In th, this message translates to:
+  /// **'กรุณาใส่ชื่อวัตถุดิบ'**
+  String get ingredientNameRequired;
+
+  /// No description provided for @ingredientIsNew.
+  ///
+  /// In th, this message translates to:
+  /// **'วัตถุดิบใหม่ จะถูกเพิ่มเข้าคลัง'**
+  String get ingredientIsNew;
+
+  /// No description provided for @ingredientAmount.
+  ///
+  /// In th, this message translates to:
+  /// **'ปริมาณ'**
+  String get ingredientAmount;
+
+  /// No description provided for @ingredientAmountInvalid.
+  ///
+  /// In th, this message translates to:
+  /// **'ใส่เป็นตัวเลข ทศนิยมไม่เกิน 3 ตำแหน่ง'**
+  String get ingredientAmountInvalid;
+
+  /// No description provided for @ingredientUnit.
+  ///
+  /// In th, this message translates to:
+  /// **'หน่วย'**
+  String get ingredientUnit;
+
+  /// No description provided for @ingredientNote.
+  ///
+  /// In th, this message translates to:
+  /// **'หมายเหตุ เช่น สับหยาบ'**
+  String get ingredientNote;
+
+  /// No description provided for @ingredientOptional.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่ใส่ก็ได้'**
+  String get ingredientOptional;
+
+  /// No description provided for @ingredientDuplicate.
+  ///
+  /// In th, this message translates to:
+  /// **'มีวัตถุดิบนี้ในรายการแล้ว'**
+  String get ingredientDuplicate;
+
+  /// No description provided for @ingredientAmountsLocked.
+  ///
+  /// In th, this message translates to:
+  /// **'ซื้อสูตรเพื่อดูปริมาณและวิธีเตรียมวัตถุดิบ'**
+  String get ingredientAmountsLocked;
 }
 
 class _AppLocalizationsDelegate

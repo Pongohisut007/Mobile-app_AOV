@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_application_1/models/auth_response.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 abstract interface class AuthRepository {
   Future<AuthResponse> login({required String email, required String password});
@@ -32,6 +33,10 @@ abstract interface class AuthRepository {
   /// ทำให้ token ใบนี้ใช้ไม่ได้ (ออกจากระบบเครื่องนี้ เครื่องอื่นยังอยู่)
   Future<void> logout({required String accessToken});
 
+  /// token นี้ยังใช้ได้ไหม (เช็กก่อนทำเรื่องสำคัญ เช่น ชำระเงิน)
+  /// false เฉพาะเมื่อ backend ตอบ 401 เน็ตหลุด/server error = true (ให้ขั้นตอนถัดไปแจ้งเอง)
+  Future<bool> checkSession({required String accessToken});
+
   /// ปิดบัญชีและลบข้อมูลส่วนตัว (ต้องยืนยันรหัสผ่าน ถ้าบัญชีมีรหัสผ่าน)
   Future<void> deleteAccount({required String accessToken, String? password});
 
@@ -56,7 +61,7 @@ class HttpAuthRepository implements AuthRepository {
     http.Client? client,
     this.requestTimeout = const Duration(seconds: 10),
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final http.Client _client;
@@ -142,6 +147,21 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<void> logout({required String accessToken}) async {
     await _postWithToken('/auth/logout', accessToken);
+  }
+
+  @override
+  Future<bool> checkSession({required String accessToken}) async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse('$_baseUrl/auth/me'),
+            headers: {'Authorization': 'Bearer ${accessToken.trim()}'},
+          )
+          .timeout(requestTimeout);
+      return response.statusCode != 401;
+    } on Exception {
+      return true;
+    }
   }
 
   @override

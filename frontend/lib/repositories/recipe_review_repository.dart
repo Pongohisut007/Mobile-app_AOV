@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_application_1/models/recipe_review.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 /// ให้คะแนนดาวสูตรอาหาร ผูกกับตาราง reviews
 /// ดูคะแนนได้ทุกคน แต่ให้คะแนนต้องล็อกอินและซื้อสูตรแล้ว
@@ -36,7 +37,7 @@ class HttpRecipeReviewRepository implements RecipeReviewRepository {
     http.Client? client,
     this.requestTimeout = const Duration(seconds: 10),
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final http.Client _client;

@@ -25,6 +25,12 @@ export enum RecipeStatus {
   PUBLISHED = 'published',
   HIDDEN = 'hidden',
   REJECTED = 'rejected',
+  /**
+   * เจ้าของลบสูตรที่มีคนสั่งซื้อไปแล้ว: ลบจริงไม่ได้ (order_items ต้องอยู่เป็นหลักฐานการขาย)
+   * จึงเก็บไว้แทน ไม่โผล่ในรายการไหน ไม่มีใครซื้อเพิ่มได้ เจ้าของจัดการต่อไม่ได้
+   * แต่คนที่ซื้อแล้วยังเปิดดูได้จากหน้าสูตรที่ซื้อ
+   */
+  ARCHIVED = 'archived',
 }
 
 export enum RecipeDifficulty {
@@ -145,4 +151,19 @@ export class Recipe extends BaseEntity {
 
   @OneToMany(() => CartItem, (item) => item.recipe)
   cartItems!: CartItem[];
+
+  /**
+   * หมวดที่ admin ปิดใช้งาน (is_active = false) ไม่ส่งออกไปกับข้อมูลสูตร
+   * ใช้ได้กับทุกที่ที่ส่งสูตรออกไป (รายการ/รายละเอียด/ตะกร้า/หัวใจ/สูตรที่ซื้อ และ cache)
+   * แต่ความสัมพันธ์ในฐานข้อมูลยังอยู่ เปิดหมวดกลับเมื่อไรก็กลับมาเหมือนเดิม
+   */
+  toJSON(): Record<string, unknown> {
+    const json = { ...this } as Record<string, unknown>;
+    if (Array.isArray(this.categories)) {
+      json.categories = this.categories.filter(
+        (category) => category.isActive !== false,
+      );
+    }
+    return json;
+  }
 }

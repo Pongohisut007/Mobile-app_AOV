@@ -5,6 +5,7 @@ import 'package:flutter_application_1/repositories/chat_repository.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_sheet.dart';
 
 class ChatBubbleMessage {
   const ChatBubbleMessage({
@@ -158,20 +159,22 @@ class _RecipeChatSheetState extends State<RecipeChatSheet> {
   }
 
   Future<void> _pickImage() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (context) => SafeArea(
+    final source = await showAppBottomSheet<ImageSource>(
+      context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: Text(context.l10n.pickFromGallery),
+            AppSheetOption(
+              icon: Icons.photo_library_outlined,
+              title: context.l10n.pickFromGallery,
               onTap: () => Navigator.of(context).pop(ImageSource.gallery),
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: Text(context.l10n.takePhoto),
+            AppSheetOption(
+              icon: Icons.photo_camera_outlined,
+              title: context.l10n.takePhoto,
               onTap: () => Navigator.of(context).pop(ImageSource.camera),
             ),
           ],

@@ -15,6 +15,8 @@ import 'package:flutter_application_1/widgets/common/language_picker.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/common/app_dialog.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// ตั้งค่า: ภาษา / บัญชี / ความช่วยเหลือ / เกี่ยวกับแอป / ออกจากระบบ / ลบบัญชี
 /// (ปุ่ม Sign out มีที่นี่ที่เดียว)
@@ -59,36 +61,26 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<bool> _confirm({
+    required IconData icon,
     required String title,
     required String message,
     required String action,
     bool danger = false,
-  }) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: danger ? _danger : ProfileColors.ink,
-            ),
-            child: Text(action),
-          ),
-        ],
-      ),
+  }) {
+    return showAppConfirmDialog(
+      context,
+      icon: icon,
+      title: title,
+      message: message,
+      confirmLabel: action,
+      cancelLabel: context.l10n.cancel,
+      danger: danger,
     );
-    return confirmed == true;
   }
 
   Future<void> _signOut() async {
     final confirmed = await _confirm(
+      icon: Icons.logout_rounded,
       title: context.l10n.signOutConfirmTitle,
       message: context.l10n.signOutConfirmMessage,
       action: context.l10n.signOut,
@@ -100,6 +92,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _logoutAllDevices() async {
     if (_isLoggingOutAll) return;
     final confirmed = await _confirm(
+      icon: Icons.devices_other_rounded,
       title: context.l10n.signOutAllTitle,
       message: context.l10n.signOutAllMessage,
       action: context.l10n.signOutAllAction,
@@ -124,12 +117,40 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  // แทน showAboutDialog ของ Material (หน้าตาไม่เข้ากับแอป) ยังเปิดหน้าใบอนุญาตได้เหมือนเดิม
   void _openAbout() {
-    showAboutDialog(
+    final material = MaterialLocalizations.of(context);
+    showDialog<void>(
       context: context,
-      applicationName: AppInfo.name,
-      applicationVersion: context.l10n.versionLabel(AppInfo.version),
-      applicationLegalese: '© ${DateTime.now().year} ${AppInfo.name}',
+      builder: (dialogContext) => AppDialog(
+        leading: SvgPicture.asset(
+          'assets/images/recipy-logo.svg',
+          width: 96,
+          height: 96,
+        ),
+        title: AppInfo.name,
+        message:
+            '${context.l10n.versionLabel(AppInfo.version)}\n'
+            '© ${DateTime.now().year} ${AppInfo.name}',
+        actions: [
+          AppDialogButton(
+            label: material.closeButtonLabel,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          AppDialogButton(
+            label: material.viewLicensesButtonLabel,
+            style: AppDialogActionStyle.text,
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              showLicensePage(
+                context: context,
+                applicationName: AppInfo.name,
+                applicationVersion: AppInfo.version,
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

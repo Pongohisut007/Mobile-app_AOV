@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/repositories/app_http_client.dart';
 
 enum UploadKind { images, videos }
 
@@ -30,7 +31,7 @@ class HttpUploadRepository {
     http.Client? client,
   }) : _baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
        _tokenStorage = tokenStorage ?? TokenStorage(),
-       _client = client ?? http.Client();
+       _client = client ?? appHttpClient;
 
   final String _baseUrl;
   final TokenStorage _tokenStorage;
