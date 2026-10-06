@@ -16,6 +16,7 @@ import 'package:flutter_application_1/repositories/recipe_library_repository.dar
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/routes/route_generator.dart';
+import 'package:flutter_application_1/routes/unfocus_on_navigate_observer.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/common/session_expiry_listener.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -69,6 +70,8 @@ class MyApp extends StatelessWidget {
           valueListenable: AppLanguage.notifier,
           builder: (context, locale, _) => MaterialApp(
             navigatorKey: appNavigatorKey,
+            // กลับมาหน้าเดิมแล้วคีย์บอร์ดไม่เด้งขึ้นเอง
+            navigatorObservers: [UnfocusOnNavigateObserver()],
             scaffoldMessengerKey: appScaffoldMessengerKey,
             // ภาษาหลักเป็นไทย ข้อความทั้งหมดอยู่ใน lib/l10n/*.arb
             locale: locale,
