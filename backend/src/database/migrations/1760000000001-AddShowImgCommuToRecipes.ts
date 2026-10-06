@@ -6,7 +6,7 @@ export class AddShowImgCommuToRecipes1760000000001 implements MigrationInterface
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE "recipes"
-      ADD COLUMN "show_img_commu" boolean NOT NULL DEFAULT false
+      ADD COLUMN IF NOT EXISTS "show_img_commu" boolean NOT NULL DEFAULT false
     `);
   }
 

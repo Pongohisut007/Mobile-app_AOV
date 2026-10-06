@@ -6,7 +6,7 @@ export class AddTokenVersionToUsers1760000000002 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE "users"
-      ADD COLUMN "token_version" integer NOT NULL DEFAULT 0
+      ADD COLUMN IF NOT EXISTS "token_version" integer NOT NULL DEFAULT 0
     `);
   }
 
