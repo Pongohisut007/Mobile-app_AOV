@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_state.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_application_1/data/api_cache.dart';
 
 /// โหลด id ของสูตรที่ซื้อแล้วครั้งเดียวแล้วเก็บไว้ทั้งแอป หน้าอื่นอ่านจากที่นี่แทนการยิง API เอง
 /// อ่าน token จาก secure storage เองแบบเดียวกับ FavoriteBloc
@@ -35,6 +39,18 @@ class PurchasedRecipesBloc
     await _load(emit, keepCurrent: true);
   }
 
+  static const _cacheKey = '${ApiCache.userPrefix}purchased-ids';
+
+  static Future<Set<String>?> _readCachedIds() async {
+    final body = await ApiCache.instance.read(_cacheKey);
+    if (body == null) return null;
+    try {
+      return {...(jsonDecode(body) as List).whereType<String>()};
+    } on Object {
+      return null;
+    }
+  }
+
   Future<void> _load(
     Emitter<PurchasedRecipesState> emit, {
     required bool keepCurrent,
@@ -51,17 +67,35 @@ class PurchasedRecipesBloc
       return;
     }
 
-    emit(
-      PurchasedRecipesState(
-        status: PurchasedRecipesStatus.loading,
-        recipeIds: keepCurrent ? state.recipeIds : const {},
-      ),
-    );
+    // เปิดแอปใหม่: ใช้รายการที่เคยโหลดไว้ไปก่อน ปุ่มซื้อ/เริ่มทำอาหารจะได้ขึ้นทันที
+    // (ระหว่างนั้นถามของใหม่ ซื้อเพิ่มจากเครื่องอื่นก็จะอัปเดตตาม)
+    if (!keepCurrent) {
+      final cached = await _readCachedIds();
+      if (cached != null) {
+        emit(
+          PurchasedRecipesState(
+            status: PurchasedRecipesStatus.ready,
+            recipeIds: cached,
+          ),
+        );
+      }
+    }
+    if (state.status != PurchasedRecipesStatus.ready || keepCurrent) {
+      emit(
+        PurchasedRecipesState(
+          status: PurchasedRecipesStatus.loading,
+          recipeIds: keepCurrent ? state.recipeIds : const {},
+        ),
+      );
+    }
 
     try {
       final recipeIds = await _repository.fetchPurchasedRecipeIds(
         userId: userId,
         accessToken: accessToken,
+      );
+      unawaited(
+        ApiCache.instance.write(_cacheKey, jsonEncode(recipeIds.toList())),
       );
       emit(
         PurchasedRecipesState(

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.flutter_application_1"
+    namespace = "com.aovpro.recipy"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,13 +16,25 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.flutter_application_1"
+        applicationId = "com.aovpro.recipy"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // debug keystore กลางของทีม (อยู่ใน repo) ทุกเครื่องได้ SHA-1 เดียวกัน
+    // Google Sign-In ผูก Android client กับ package + SHA-1 นี้ ไม่ต้องลงทะเบียนทีละเครื่อง
+    // รหัสเป็นค่ามาตรฐานของ debug keystore ไม่ใช่ความลับ (ห้ามใช้ key นี้ขึ้น Play Store)
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

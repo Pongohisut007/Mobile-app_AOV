@@ -106,6 +106,11 @@ describe('RecipeCommentsService comment ownership', () => {
   });
 
   it('lists a page of comments with public author fields', async () => {
+    recipesRepository.findOne.mockResolvedValue({
+      id: 'recipe-id',
+      status: 'published',
+      creatorId: 'creator-id',
+    });
     const result = await service.list('recipe-id', { page: 2, limit: 5 });
     expect(commentsRepository.findAndCount).toHaveBeenCalledWith(
       expect.objectContaining({

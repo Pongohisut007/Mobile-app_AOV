@@ -151,15 +151,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get yourKitchenTitle => 'ครัวของคุณ';
 
   @override
-  String get yourKitchenSubtitle => 'ทุกเมนูที่คุณทำและสะสมไว้';
-
-  @override
   String appVersionFooter(String appName, String version) {
     return '$appName · เวอร์ชัน $version';
   }
-
-  @override
-  String get profileHeaderSubtitle => 'สูตร คำสั่งซื้อ และการตั้งค่าของคุณ';
 
   @override
   String get settingsTitle => 'ตั้งค่า';
@@ -198,15 +192,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String draftsDetail(int count) {
     return 'ยังไม่เสร็จ $count สูตร';
   }
-
-  @override
-  String get statRecipes => 'สูตร';
-
-  @override
-  String get statSaved => 'บันทึก';
-
-  @override
-  String get statRating => 'คะแนน';
 
   @override
   String get guest => 'ผู้เยี่ยมชม';
@@ -350,12 +335,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get forgotPassword => 'ลืมรหัสผ่าน?';
-
-  @override
-  String get orSignInWith => 'หรือเข้าสู่ระบบด้วย';
-
-  @override
-  String get orSignUpWith => 'หรือสมัครด้วย';
 
   @override
   String get acceptTermsRequired =>
@@ -1597,7 +1576,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get faqForgotBody =>
-      'ตอนนี้ยังไม่มีระบบรีเซ็ตรหัสผ่านผ่านอีเมล ถ้ายังเข้าสู่ระบบอยู่ เปลี่ยนรหัสได้ที่ ตั้งค่า → เปลี่ยนรหัสผ่าน ถ้าเข้าไม่ได้แล้วโปรดติดต่อทีมงาน';
+      'กด \"ลืมรหัสผ่าน?\" ในหน้าเข้าสู่ระบบ กรอกอีเมล แล้วใส่รหัส 6 หลักที่ได้ทางอีเมลเพื่อตั้งรหัสผ่านใหม่ ถ้าไม่เห็นอีเมลให้ดูในจดหมายขยะ';
 
   @override
   String get faqLostTitle => 'มือถือหาย หรือสงสัยว่ามีคนใช้บัญชีของฉัน';
@@ -1703,4 +1682,121 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get englishNameHelper => 'ไม่บังคับ ใช้แสดงเมื่อผู้ใช้เลือกภาษาอังกฤษ';
+
+  @override
+  String get statRecipeRating => 'คะแนนสูตร';
+
+  @override
+  String reviewsCountShort(int count) {
+    return '$count รีวิว';
+  }
+
+  @override
+  String get statSales => 'ขายได้';
+
+  @override
+  String get statOfficialSaves => 'บันทึกสูตร Official';
+
+  @override
+  String get statCommunitySaves => 'บันทึกสูตรคอมมูนิตี้';
+
+  @override
+  String get statSavesReceived => 'ถูกบันทึก';
+
+  @override
+  String get statCommentsReceived => 'ความคิดเห็น';
+
+  @override
+  String get statReviewsWritten => 'รีวิวที่เขียน';
+
+  @override
+  String get recentPurchases => 'ซื้อล่าสุด';
+
+  @override
+  String get continueDraftTitle => 'เขียนต่อจากที่ค้างไว้';
+
+  @override
+  String continueDraftSubtitle(int count) {
+    return 'มีฉบับร่าง $count สูตร';
+  }
+
+  @override
+  String get firstRecipeTitle => 'แบ่งปันสูตรแรกของคุณ';
+
+  @override
+  String get firstRecipeSubtitleCreator =>
+      'สร้างสูตร Official และตั้งราคาขายได้';
+
+  @override
+  String get firstRecipeSubtitleUser => 'สร้างสูตรแจกฟรีให้ทุกคนในคอมมูนิตี้';
+
+  @override
+  String get authTagline => 'วันนี้ทำอะไรอร่อยดี';
+
+  @override
+  String get continueWithGoogle => 'เข้าสู่ระบบด้วย Google';
+
+  @override
+  String get orDivider => 'หรือ';
+
+  @override
+  String get googleSignInUnavailable =>
+      'ยังไม่เปิดใช้การเข้าสู่ระบบด้วย Google';
+
+  @override
+  String get googleSignInFailed =>
+      'เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองอีกครั้ง';
+
+  @override
+  String get setPassword => 'ตั้งรหัสผ่าน';
+
+  @override
+  String get setPasswordHint => 'ตั้งรหัสผ่านไว้เข้าสู่ระบบด้วยอีเมลได้ด้วย';
+
+  @override
+  String get passwordSet => 'ตั้งรหัสผ่านแล้ว';
+
+  @override
+  String get forgotPasswordTitle => 'ลืมรหัสผ่าน';
+
+  @override
+  String get forgotPasswordIntro =>
+      'กรอกอีเมลที่ใช้สมัคร เราจะส่งรหัสยืนยัน 6 หลักไปให้';
+
+  @override
+  String get resetPasswordTitle => 'ตั้งรหัสผ่านใหม่';
+
+  @override
+  String get sendResetCode => 'ส่งรหัสยืนยัน';
+
+  @override
+  String resetCodeSentTo(String email) {
+    return 'ถ้า $email มีบัญชีอยู่ เราส่งรหัส 6 หลักไปแล้ว ดูในกล่องจดหมาย (และจดหมายขยะ)';
+  }
+
+  @override
+  String get changeEmail => 'เปลี่ยนอีเมล';
+
+  @override
+  String get resetCode => 'รหัสยืนยัน';
+
+  @override
+  String get resetCodeHint => 'ตัวเลข 6 หลัก';
+
+  @override
+  String get resetCodeInvalid => 'กรอกรหัสตัวเลข 6 หลัก';
+
+  @override
+  String get resendCode => 'ส่งรหัสอีกครั้ง';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'ส่งรหัสอีกครั้งได้ใน $seconds วินาที';
+  }
+
+  @override
+  String get resetCodeResent => 'ส่งรหัสใหม่แล้ว';
+
+  @override
+  String get resetPasswordSubmit => 'ตั้งรหัสผ่านใหม่';
 }

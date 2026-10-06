@@ -1,2 +1,5 @@
 # Public example token in the original regression test; ignore only this historical finding.
 8568b0fd7639b86bc5e7e897d2555153b6368d27:ci/tests/check-secrets.sh:generic-api-key:11
+
+# Thai documentation comment describing the accessToken parameter; no credential is present.
+272025c93bc96e7864ae2ffa210b9d4fefb9aba9:frontend/lib/repositories/recipe_library_repository.dart:generic-api-key:12

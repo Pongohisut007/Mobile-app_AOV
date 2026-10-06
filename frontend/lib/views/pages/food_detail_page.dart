@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/bloc/cart/cart_bloc.dart';
 import 'package:flutter_application_1/bloc/cart/cart_event.dart';
@@ -94,11 +96,18 @@ class _FoodDetailPageState extends State<FoodDetailPage>
       _refresh(silent: true);
     } else {
       // ยิง API ทันที แต่เอาเนื้อหาขึ้นจอหลังเลื่อนหน้าเสร็จ ไม่ให้ build ก้อนใหญ่ระหว่างแอนิเมชัน
-      _foodFuture = afterRouteTransition(
-        FoodRepository().fetchFoodById(widget.foodsId),
-      );
+      // เคยเปิดสูตรนี้ (แม้ปิดแอปไปแล้ว) = โชว์ของในเครื่องก่อน แล้วโหลดของใหม่มาแทนเงียบ ๆ
+      _foodFuture = afterRouteTransition(_loadSavedOrFetch());
     }
     _loadLoginState();
+  }
+
+  Future<Food> _loadSavedOrFetch() async {
+    final saved = await FoodRepository.loadCachedFood(widget.foodsId);
+    if (saved == null) return FoodRepository().fetchFoodById(widget.foodsId);
+    _cachedFood = saved;
+    unawaited(_refresh(silent: true));
+    return saved;
   }
 
   Future<void> _loadLoginState() async {
@@ -172,8 +181,9 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                 initialData: _cachedFood,
                 builder: (context, snapshot) {
                   final food = snapshot.data;
-                  // สูตร community ฟรี ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
-                  if (food != null && _isCommunity(food)) {
+                  // สูตร community ฟรี และสูตรของตัวเอง ไม่มีปุ่มซื้อ ไม่ว่าจะเข้ามาจากหน้าไหน
+                  if (food != null &&
+                      (_isCommunity(food) || _isOwnRecipe(food))) {
                     return const SizedBox.shrink();
                   }
 
@@ -236,6 +246,12 @@ class _FoodDetailPageState extends State<FoodDetailPage>
   // สูตร community ใช้คอมเมนต์ ส่วน official ใช้รีวิว
   // ดูจาก type ของสูตรเอง เพราะเข้าหน้านี้ได้จากหลายที่ (Profile, Home ฯลฯ)
   bool _isCommunity(Food food) => food.type == 'community';
+
+  // สูตรของตัวเองซื้อไม่ได้ (backend ไม่ให้ซื้ออยู่แล้ว)
+  bool _isOwnRecipe(Food food) {
+    final userId = TokenStorage.currentUserId.value;
+    return userId != null && food.creatorId == userId;
+  }
 
   Widget _buildBody(Food food, {required bool isPurchased}) {
     // official ที่ยังไม่ได้ซื้อ ไม่ให้เริ่มทำอาหาร

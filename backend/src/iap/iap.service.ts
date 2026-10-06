@@ -14,6 +14,7 @@ import {
   RecipeAccess,
   RecipeAccessType,
 } from '../recipe-access/entities/recipe-access.entity';
+import { assertPurchasable } from '../recipes/recipe-permissions';
 
 export interface MockPurchaseResult {
   status: 'purchased' | 'already_owned';
@@ -42,12 +43,13 @@ export class IapService {
   }
 
   private assertMockPurchasesEnabled(): void {
-    const nodeEnv = this.configService.get<string>('NODE_ENV');
+    const appEnv = this.configService.get<string>('app.env');
     const explicitlyDisabled =
       this.configService.get<string>('IAP_MOCK_ENABLED') === 'false';
 
     // A fake purchase endpoint must never be usable in production.
-    if (nodeEnv === 'production' || explicitlyDisabled) {
+    // Staging allows it (unless IAP_MOCK_ENABLED=false) until real billing exists.
+    if (appEnv === 'production' || explicitlyDisabled) {
       throw new ServiceUnavailableException(
         'Mock purchases are disabled in this environment.',
       );
@@ -100,6 +102,9 @@ export class IapService {
         transactionId: null,
       };
     }
+
+    // ตรวจอีกครั้งตอนจ่าย: สูตรอาจถูกซ่อน/เปลี่ยนเป็นฟรีหลังใส่ตะกร้าไปแล้ว
+    assertPurchasable(cartItem.recipe, userId);
 
     const now = new Date();
     const transactionId = `mock_${randomUUID()}`;

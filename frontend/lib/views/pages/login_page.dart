@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/data/user_cache.dart';
-import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter/services.dart' show TextInput;
+import 'package:flutter_application_1/widgets/common/auth_style.dart';
 import 'package:flutter_application_1/bloc/auth/auth_bloc.dart';
 import 'package:flutter_application_1/bloc/auth/auth_event.dart';
 import 'package:flutter_application_1/bloc/auth/auth_state.dart';
@@ -10,7 +11,9 @@ import 'package:flutter_application_1/bloc/favorite/favorite_bloc.dart';
 import 'package:flutter_application_1/bloc/favorite/favorite_event.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_bloc.dart';
 import 'package:flutter_application_1/bloc/purchased_recipes/purchased_recipes_event.dart';
+import 'package:flutter_application_1/models/auth_response.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
+import 'package:flutter_application_1/views/pages/forgot_password_page.dart';
 import 'package:flutter_application_1/widgets/login/login_form.dart';
 import 'package:flutter_application_1/widgets/login/login_logo.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,6 +31,20 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  /// error จาก server แสดงในฟอร์ม พิมพ์แก้ช่องไหนก็หายไป
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_clearError);
+    _passwordController.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -36,6 +53,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _submit() {
+    _clearError();
     if (!_formKey.currentState!.validate()) return;
 
     context.read<AuthBloc>().add(
@@ -46,11 +64,25 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  /// ตั้งรหัสผ่านใหม่สำเร็จ = ได้ session กลับมา เข้าสู่ระบบต่อให้เลย
+  Future<void> _openForgotPassword() async {
+    _clearError();
+    final response = await Navigator.of(context).push<AuthResponse>(
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordPage(initialEmail: _emailController.text),
+      ),
+    );
+    if (response == null || !mounted) return;
+    context.read<AuthBloc>().add(AuthSessionStarted(response));
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          // ให้ password manager บันทึกบัญชีที่เพิ่งเข้าสู่ระบบได้
+          TextInput.finishAutofillContext();
           clearUserCaches();
           // secure storage ไม่มี stream บอกว่า token เปลี่ยน
           // ต้องสั่งให้ตะกร้ากับหัวใจโหลดของคนนี้เองหลัง AuthBloc เขียน token แล้ว
@@ -66,37 +98,44 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
         if (state is AuthFailure) {
-          showAppSnackBar(context, state.message, type: AppSnackType.error);
+          setState(() => _errorMessage = state.message);
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFD96868),
-        body: SafeArea(
-          bottom: false,
-          // ฟอร์มสีขาวยืดเต็มพื้นที่ที่เหลือจนถึงล่างสุด ไม่ให้เห็นพื้นแดงด้านล่าง
-          // ถ้าเนื้อหายาวกว่าจอ (จอเล็ก/คีย์บอร์ดขึ้น) ก็ยังเลื่อนได้
-          child: CustomScrollView(
-            slivers: [
-              const SliverToBoxAdapter(
-                child: LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
-              ),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: LoginForm(
-                  formKey: _formKey,
-                  emailController: _emailController,
-                  passwordController: _passwordController,
-                  obscurePassword: _obscurePassword,
-                  onTogglePassword: () => setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  }),
-                  onSubmit: _submit,
-                  onSignUp: () {
-                    Navigator.pushReplacementNamed(context, AppRoutes.register);
-                  },
+        backgroundColor: AuthStyle.primary,
+        body: AuthBackground(
+          child: SafeArea(
+            bottom: false,
+            // ฟอร์มสีขาวยืดเต็มพื้นที่ที่เหลือจนถึงล่างสุด ไม่ให้เห็นพื้นแดงด้านล่าง
+            // ถ้าเนื้อหายาวกว่าจอ (จอเล็ก/คีย์บอร์ดขึ้น) ก็ยังเลื่อนได้
+            child: CustomScrollView(
+              slivers: [
+                const SliverToBoxAdapter(
+                  child: LoginLogo(heightFactor: 0.32, widthFactor: 0.38),
                 ),
-              ),
-            ],
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: LoginForm(
+                    formKey: _formKey,
+                    emailController: _emailController,
+                    passwordController: _passwordController,
+                    obscurePassword: _obscurePassword,
+                    onTogglePassword: () => setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    }),
+                    onSubmit: _submit,
+                    onForgotPassword: _openForgotPassword,
+                    onSignUp: () {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        AppRoutes.register,
+                      );
+                    },
+                    errorMessage: _errorMessage,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

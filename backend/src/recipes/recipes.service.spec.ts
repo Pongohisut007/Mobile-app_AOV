@@ -1,16 +1,18 @@
 /* eslint-disable security/detect-object-injection, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment -- Test query builders and transaction callbacks are Jest mocks. */
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { RecipeComment } from '../recipe-comments/entities/recipe-comment.entity';
 import { Review, ReviewStatus } from '../reviews/entities/review.entity';
+import { UserRole } from '../users/entities/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { RecipeSort } from './dto/list-recipes-query.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
+import { MediaSigner } from '../uploads/media-signer.service';
 import { RecipesService } from './recipes.service';
 
 function queryBuilder() {
@@ -234,6 +236,7 @@ describe('RecipesService', () => {
     const recipe = {
       id: 'r',
       type: RecipeType.OFFICIAL,
+      status: RecipeStatus.PUBLISHED,
       creatorId: 'owner',
       sections: [
         {
@@ -269,12 +272,14 @@ describe('RecipesService', () => {
     recipeRepository.findOne.mockResolvedValue({
       id: 'r',
       type: RecipeType.COMMUNITY,
+      status: RecipeStatus.PUBLISHED,
       sections: [],
     });
     expect((await service.findOneForViewer('r')).canViewFullRecipe).toBe(true);
     recipeRepository.findOne.mockResolvedValue({
       id: 'r',
       type: RecipeType.OFFICIAL,
+      status: RecipeStatus.PUBLISHED,
       creatorId: 'owner',
       sections: [],
     });
@@ -282,6 +287,102 @@ describe('RecipesService', () => {
       (await service.findOneForViewer('r', 'owner')).canViewFullRecipe,
     ).toBe(true);
     expect(access.hasActiveAccess).not.toHaveBeenCalled();
+  });
+
+  it('signs paid step media for viewers who can see the full recipe', async () => {
+    const signer = { sign: jest.fn((url: string) => `${url}?sig=1`) };
+    const signing = new RecipesService(
+      recipeRepository as unknown as Repository<Recipe>,
+      categoryRepository as unknown as Repository<Category>,
+      favoriteRepository as unknown as Repository<Favorite>,
+      reviewRepository as unknown as Repository<Review>,
+      commentRepository as unknown as Repository<RecipeComment>,
+      access as unknown as RecipeAccessService,
+      undefined,
+      signer as unknown as MediaSigner,
+    );
+    const recipe = () => ({
+      id: 'r',
+      type: RecipeType.OFFICIAL,
+      status: RecipeStatus.PUBLISHED,
+      creatorId: 'owner',
+      sections: [
+        {
+          sortOrder: 1,
+          isPreview: true,
+          contents: [{ sortOrder: 1, mediaUrl: '/uploads/images/free.png' }],
+        },
+        {
+          sortOrder: 2,
+          isPreview: false,
+          contents: [{ sortOrder: 1, mediaUrl: '/uploads/videos/paid.mp4' }],
+        },
+      ],
+    });
+
+    recipeRepository.findOne.mockResolvedValue(recipe());
+    access.hasActiveAccess.mockResolvedValue(true);
+    const bought = await signing.findOneForViewer('r', 'buyer');
+    expect(bought.sections[0].contents[0].mediaUrl).toBe(
+      '/uploads/images/free.png',
+    );
+    expect(bought.sections[1].contents[0].mediaUrl).toBe(
+      '/uploads/videos/paid.mp4?sig=1',
+    );
+
+    // ยังไม่ซื้อ: ไม่เห็นขั้นตอนที่ต้องซื้อ และไม่ได้ลิงก์ที่เซ็นแล้ว
+    recipeRepository.findOne.mockResolvedValue(recipe());
+    access.hasActiveAccess.mockResolvedValue(false);
+    signer.sign.mockClear();
+    const preview = await signing.findOneForViewer('r', 'stranger');
+    expect(preview.sections).toHaveLength(1);
+    expect(signer.sign).not.toHaveBeenCalled();
+  });
+
+  it('shows unpublished recipes only to the owner and buyers', async () => {
+    recipeRepository.findOne.mockResolvedValue({
+      id: 'r',
+      type: RecipeType.COMMUNITY,
+      status: RecipeStatus.DRAFT,
+      creatorId: 'owner',
+      sections: [],
+    });
+    access.hasActiveAccess.mockResolvedValue(false);
+
+    await expect(service.findOneForViewer('r')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(
+      service.findOneForViewer('r', 'stranger'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOneForViewer('r', 'owner')).resolves.toEqual(
+      expect.objectContaining({ id: 'r' }),
+    );
+
+    // ซื้อไปแล้ว แต่เจ้าของซ่อนสูตรทีหลัง ยังเปิดได้
+    access.hasActiveAccess.mockResolvedValue(true);
+    await expect(service.findOneForViewer('r', 'buyer')).resolves.toEqual(
+      expect.objectContaining({ id: 'r' }),
+    );
+  });
+
+  it('lets only the owner or an admin manage a recipe', async () => {
+    recipeRepository.findOne.mockResolvedValue({ id: 'r', creatorId: 'owner' });
+
+    await expect(
+      service.assertCanManage('r', { id: 'owner', role: UserRole.USER }),
+    ).resolves.toBeUndefined();
+    await expect(
+      service.assertCanManage('r', { id: 'admin', role: UserRole.ADMIN }),
+    ).resolves.toBeUndefined();
+    await expect(
+      service.assertCanManage('r', { id: 'other', role: UserRole.CREATOR }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    recipeRepository.findOne.mockResolvedValue(null);
+    await expect(
+      service.assertCanManage('missing', { id: 'owner', role: UserRole.USER }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('creates recipe sections and contents in one transaction', async () => {
@@ -314,8 +415,22 @@ describe('RecipesService', () => {
       title: 'Soup',
       status: RecipeStatus.PUBLISHED,
       categoryIds: ['cat', 'cat'],
-      sections: [{ title: 'Prepare', contents: [{ textContent: 'Chop' }] }],
+      sections: [
+        {
+          title: 'Prepare',
+          contents: [
+            {
+              textContent: 'Chop',
+              mediaUrl: '/uploads/videos/a.mp4?exp=1&sig=old',
+            },
+          ],
+        },
+      ],
     } as CreateRecipeDto);
+    // ลิงก์ที่เซ็นมาจากหน้าแก้ไข เก็บลงฐานข้อมูลเป็น path เปล่า
+    expect(contentRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ mediaUrl: '/uploads/videos/a.mp4' }),
+    );
     expect(result).toEqual({ id: 'r' });
     expect(categoryRepository.findBy).toHaveBeenCalledTimes(1);
     expect(recipeRepo.save).toHaveBeenCalledWith(

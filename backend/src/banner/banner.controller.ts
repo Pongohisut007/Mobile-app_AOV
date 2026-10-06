@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { AdminOnly } from '../auth/decorators/admin-only.decorator';
 import { BannerService } from './banner.service';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
@@ -27,11 +28,13 @@ export class BannerController {
     return this.bannerService.findOne(id);
   }
 
+  @AdminOnly()
   @Post()
   create(@Body() dto: CreateBannerDto): Promise<Banner> {
     return this.bannerService.create(dto);
   }
 
+  @AdminOnly()
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -40,6 +43,7 @@ export class BannerController {
     return this.bannerService.update(id, dto);
   }
 
+  @AdminOnly()
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.bannerService.remove(id);

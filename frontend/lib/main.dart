@@ -13,15 +13,24 @@ import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/repositories/cart_repository.dart';
 import 'package:flutter_application_1/repositories/favorite_repository.dart';
 import 'package:flutter_application_1/repositories/recipe_library_repository.dart';
+import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/routes/route_generator.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> main() async {
+  // ไม่ได้ส่ง --dart-define-from-file มา: แจ้งชัด ๆ ดีกว่าไปพังตอนยิง API
+  if (ApiConfig.apiBaseUrl.isEmpty) {
+    throw StateError(
+      'API_BASE_URL is not set. Run with '
+      '--dart-define-from-file=config/dev.json (or config/prod.json)',
+    );
+  }
   WidgetsFlutterBinding.ensureInitialized();
   // ภาษาที่ผู้ใช้เลือกไว้ (หน้าตั้งค่า) ต้องรู้ก่อนวาดหน้าแรก ไม่งั้นจะเห็นไทยแวบหนึ่ง
   await AppLanguage.load();
+  await TokenStorage.loadCurrentUser();
   runApp(const MyApp());
 }
 

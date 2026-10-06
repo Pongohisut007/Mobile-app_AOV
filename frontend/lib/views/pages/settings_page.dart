@@ -6,18 +6,30 @@ import 'package:flutter_application_1/content/app_texts.dart';
 import 'package:flutter_application_1/data/session.dart';
 import 'package:flutter_application_1/repositories/auth_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
+import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/change_password_page.dart';
 import 'package:flutter_application_1/views/pages/delete_account_page.dart';
 import 'package:flutter_application_1/views/pages/text_sections_page.dart';
 import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter_application_1/widgets/common/language_picker.dart';
 import 'package:flutter_application_1/widgets/create_food/recipe_form_style.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 
-/// ตั้งค่า: บัญชี / ความช่วยเหลือ / เกี่ยวกับแอป / ออกจากระบบ / ลบบัญชี
+/// ตั้งค่า: ภาษา / บัญชี / ความช่วยเหลือ / เกี่ยวกับแอป / ออกจากระบบ / ลบบัญชี
 /// (ปุ่ม Sign out มีที่นี่ที่เดียว)
+/// ยังไม่เข้าสู่ระบบก็เปิดได้ แต่ซ่อนเมนูที่ต้องมีบัญชี และมีปุ่มเข้าสู่ระบบแทนออกจากระบบ
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({
+    super.key,
+    this.isSignedIn = true,
+    this.hasPassword = true,
+  });
+
+  final bool isSignedIn;
+
+  /// false = สมัครผ่าน Google และยังไม่มีรหัสผ่าน (เมนูเป็น "ตั้งรหัสผ่าน")
+  final bool hasPassword;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -34,9 +46,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _openChangePassword() async {
     final messenger = ScaffoldMessenger.of(context);
-    final message = context.l10n.passwordChangedOthersSignedOut;
+    final message = widget.hasPassword
+        ? context.l10n.passwordChangedOthersSignedOut
+        : context.l10n.passwordSet;
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const ChangePasswordPage()),
+      MaterialPageRoute<bool>(
+        builder: (_) => ChangePasswordPage(hasPassword: widget.hasPassword),
+      ),
     );
     if (changed != true) return;
     messenger.showAppSnackBar(message, type: AppSnackType.success);
@@ -108,46 +124,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _chooseLanguage() async {
-    final selected = await showModalBottomSheet<Locale>(
-      context: context,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text(
-                sheetContext.l10n.chooseLanguage,
-                style: const TextStyle(
-                  color: ProfileColors.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            for (final locale in AppLanguage.supported)
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                title: Text(AppLanguage.nativeName(locale)),
-                trailing: locale == AppLanguage.current
-                    ? const Icon(Icons.check_rounded, color: ProfileColors.ink)
-                    : null,
-                onTap: () => Navigator.pop(sheetContext, locale),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (selected == null || selected == AppLanguage.current) return;
-    // ทั้งแอปวาดใหม่เป็นภาษาที่เลือก รวมถึงหน้านี้
-    await AppLanguage.change(selected);
-  }
-
   void _openAbout() {
     showAboutDialog(
       context: context,
@@ -172,28 +148,32 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.translate_rounded,
                 label: context.l10n.language,
                 subtitle: AppLanguage.nativeName(AppLanguage.current),
-                onTap: _chooseLanguage,
+                onTap: () => showLanguagePicker(context),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          _SectionLabel(context.l10n.settingsAccount),
-          _SettingsGroup(
-            children: [
-              _SettingsTile(
-                icon: Icons.lock_reset_rounded,
-                label: context.l10n.changePassword,
-                onTap: _openChangePassword,
-              ),
-              _SettingsTile(
-                icon: Icons.devices_other_rounded,
-                label: context.l10n.signOutAllDevices,
-                subtitle: context.l10n.signOutAllDevicesHint,
-                isLoading: _isLoggingOutAll,
-                onTap: _logoutAllDevices,
-              ),
-            ],
-          ),
+          if (widget.isSignedIn) ...[
+            const SizedBox(height: 20),
+            _SectionLabel(context.l10n.settingsAccount),
+            _SettingsGroup(
+              children: [
+                _SettingsTile(
+                  icon: Icons.lock_reset_rounded,
+                  label: widget.hasPassword
+                      ? context.l10n.changePassword
+                      : context.l10n.setPassword,
+                  onTap: _openChangePassword,
+                ),
+                _SettingsTile(
+                  icon: Icons.devices_other_rounded,
+                  label: context.l10n.signOutAllDevices,
+                  subtitle: context.l10n.signOutAllDevicesHint,
+                  isLoading: _isLoggingOutAll,
+                  onTap: _logoutAllDevices,
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           _SectionLabel(context.l10n.settingsHelpAndTerms),
           _SettingsGroup(
@@ -234,28 +214,38 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 20),
           _SettingsGroup(
             children: [
-              _SettingsTile(
-                icon: Icons.logout_rounded,
-                label: context.l10n.signOut,
-                foregroundColor: _danger,
-                showChevron: false,
-                onTap: _signOut,
-              ),
+              widget.isSignedIn
+                  ? _SettingsTile(
+                      icon: Icons.logout_rounded,
+                      label: context.l10n.signOut,
+                      foregroundColor: _danger,
+                      showChevron: false,
+                      onTap: _signOut,
+                    )
+                  : _SettingsTile(
+                      icon: Icons.login_rounded,
+                      label: context.l10n.signIn,
+                      onTap: () =>
+                          Navigator.pushNamed(context, AppRoutes.login),
+                    ),
             ],
           ),
-          const SizedBox(height: 20),
-          _SectionLabel(context.l10n.dangerZone),
-          _SettingsGroup(
-            children: [
-              _SettingsTile(
-                icon: Icons.delete_forever_outlined,
-                label: context.l10n.deleteAccount,
-                subtitle: context.l10n.deleteAccountHint,
-                foregroundColor: _danger,
-                onTap: () => _push(const DeleteAccountPage()),
-              ),
-            ],
-          ),
+          if (widget.isSignedIn) ...[
+            const SizedBox(height: 20),
+            _SectionLabel(context.l10n.dangerZone),
+            _SettingsGroup(
+              children: [
+                _SettingsTile(
+                  icon: Icons.delete_forever_outlined,
+                  label: context.l10n.deleteAccount,
+                  subtitle: context.l10n.deleteAccountHint,
+                  foregroundColor: _danger,
+                  onTap: () =>
+                      _push(DeleteAccountPage(hasPassword: widget.hasPassword)),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
           Center(
             child: Text(

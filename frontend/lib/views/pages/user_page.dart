@@ -4,10 +4,15 @@ import 'package:flutter_application_1/bloc/profile/profile_event.dart';
 import 'package:flutter_application_1/bloc/profile/profile_state.dart';
 import 'package:flutter_application_1/models/user_profile.dart';
 import 'package:flutter_application_1/models/recipe_collection_type.dart';
+import 'package:flutter_application_1/models/recipe_summary.dart';
+import 'package:flutter_application_1/repositories/category_repository.dart';
+import 'package:flutter_application_1/views/pages/create_foodcard_page.dart';
+import 'package:flutter_application_1/views/pages/food_detail_page.dart';
+import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
+import 'package:flutter_application_1/widgets/profile/profile_extras.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/edit_profile_page.dart';
 import 'package:flutter_application_1/views/pages/settings_page.dart';
-import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/widgets/profile/profile_widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
@@ -24,10 +29,18 @@ class UserPage extends StatelessWidget {
     await completed;
   }
 
-  void _openSettings(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const SettingsPage()));
+  // ยังไม่เข้าสู่ระบบก็เปิดได้ (เปลี่ยนภาษา/ดูนโยบาย) แต่ซ่อนเมนูที่ต้องมีบัญชี
+  void _openSettings(
+    BuildContext context, {
+    bool isSignedIn = true,
+    bool hasPassword = true,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            SettingsPage(isSignedIn: isSignedIn, hasPassword: hasPassword),
+      ),
+    );
   }
 
   void _openCart(BuildContext context) {
@@ -56,6 +69,40 @@ class UserPage extends StatelessWidget {
     });
   }
 
+  void _openRecipe(BuildContext context, RecipeSummary recipe) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FoodDetailPage(foodsId: recipe.id),
+      ),
+    );
+  }
+
+  // ปุ่ม "แบ่งปันสูตรแรก": creator เริ่มที่สูตร official ส่วน user เริ่มที่ community
+  Future<void> _createRecipe(BuildContext context, UserProfile profile) async {
+    final profileBloc = context.read<ProfileBloc>();
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    try {
+      // หน้าสร้างสูตรต้องมีรายการหมวดหมู่ทั้งหมดให้เลือก
+      final categories = await CategoryRepository().fetchCategories();
+      final created = await navigator.push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => CreateFoodcardPage(
+            categories: categories,
+            isFromCommunity: !profile.isCreator,
+          ),
+        ),
+      );
+      if (created == true) profileBloc.add(const ProfileRefreshRequested());
+    } catch (error) {
+      messenger.showAppSnackBar(
+        l10n.openEditorFailed('$error'),
+        type: AppSnackType.error,
+      );
+    }
+  }
+
   // หน้าแก้โปรไฟล์คืนโปรไฟล์ใหม่มา (ยกเลิก = null) แสดงได้ทันทีไม่ต้องโหลดซ้ำ
   Future<void> _openEditProfile(
     BuildContext context,
@@ -82,10 +129,13 @@ class UserPage extends StatelessWidget {
                 profile: profile,
                 onRefresh: () => _refresh(context),
                 onEditProfile: () => _openEditProfile(context, profile),
-                onSettingsPressed: () => _openSettings(context),
+                onSettingsPressed: () =>
+                    _openSettings(context, hasPassword: profile.hasPassword),
                 onRecipeCollectionPressed: (collectionType) =>
                     _openRecipeCollection(context, collectionType),
                 onCartPressed: () => _openCart(context),
+                onOpenRecipe: (recipe) => _openRecipe(context, recipe),
+                onCreateRecipe: () => _createRecipe(context, profile),
               ),
               ProfileGuest() => _ProfileContent(
                 profile: UserProfile.guest(),
@@ -93,10 +143,14 @@ class UserPage extends StatelessWidget {
                 onEditProfile: () =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onSettingsPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.login),
+                    _openSettings(context, isSignedIn: false),
                 onRecipeCollectionPressed: (_) =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 onCartPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                onOpenRecipe: (_) =>
+                    Navigator.pushNamed(context, AppRoutes.login),
+                onCreateRecipe: () =>
                     Navigator.pushNamed(context, AppRoutes.login),
                 isGuest: true,
               ),
@@ -122,6 +176,8 @@ class _ProfileContent extends StatelessWidget {
     required this.onSettingsPressed,
     required this.onRecipeCollectionPressed,
     required this.onCartPressed,
+    required this.onOpenRecipe,
+    required this.onCreateRecipe,
     this.isGuest = false,
   });
 
@@ -131,6 +187,8 @@ class _ProfileContent extends StatelessWidget {
   final VoidCallback onSettingsPressed;
   final ValueChanged<RecipeCollectionType> onRecipeCollectionPressed;
   final VoidCallback onCartPressed;
+  final ValueChanged<RecipeSummary> onOpenRecipe;
+  final VoidCallback onCreateRecipe;
   final bool isGuest;
 
   @override
@@ -162,33 +220,38 @@ class _ProfileContent extends StatelessWidget {
                       ? Icons.login_rounded
                       : Icons.edit_outlined,
                 ),
-                const SizedBox(height: 16),
-                ProfileStatsRow(profile: profile),
-                const SizedBox(height: 30),
-                ProfileSectionTitle(
-                  title: context.l10n.yourKitchenTitle,
-                  subtitle: context.l10n.yourKitchenSubtitle,
-                ),
-                const SizedBox(height: 14),
+                // ผู้เยี่ยมชมยังไม่มีผลงานให้แสดง
+                if (!isGuest) ...[
+                  const SizedBox(height: 16),
+                  ProfileStatsRow(profile: profile),
+                ],
+                const SizedBox(height: 24),
+                ProfileSectionTitle(title: context.l10n.yourKitchenTitle),
+                const SizedBox(height: 12),
                 ProfileQuickActions(
                   profile: profile,
                   onPressed: onRecipeCollectionPressed,
                 ),
-                // บัญชี/ความช่วยเหลือ/Sign out อยู่ในหน้า Settings (ไอคอนมุมขวาบน)
-                const SizedBox(height: 24),
-                Center(
-                  child: Text(
-                    context.l10n.appVersionFooter(
-                      AppInfo.name,
-                      AppInfo.version,
-                    ),
-                    style: TextStyle(
-                      color: ProfileColors.muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                if (!isGuest && ProfileNudgeCard.hasContent(profile)) ...[
+                  const SizedBox(height: 14),
+                  ProfileNudgeCard(
+                    profile: profile,
+                    onOpenDrafts: () =>
+                        onRecipeCollectionPressed(RecipeCollectionType.drafts),
+                    onCreateRecipe: onCreateRecipe,
+                  ),
+                ],
+                if (!isGuest && profile.purchasedCount > 0) ...[
+                  const SizedBox(height: 24),
+                  // ซื้อเพิ่ม/ดึงรีเฟรชแล้วจำนวนเปลี่ยน = โหลดรายการใหม่
+                  RecentPurchasesSection(
+                    key: ValueKey(profile.purchasedCount),
+                    onOpenRecipe: onOpenRecipe,
+                    onSeeAll: () => onRecipeCollectionPressed(
+                      RecipeCollectionType.purchased,
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

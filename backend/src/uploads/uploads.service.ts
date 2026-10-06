@@ -9,6 +9,7 @@ import { basename, extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { ByteLruCache } from './byte-lru-cache';
+import { matchesFileSignature, SIGNATURE_BYTES } from './file-signature';
 import { R2Provider } from './storage/r2.provider';
 
 export enum UploadKind {
@@ -143,7 +144,12 @@ export class UploadsService {
       throw error;
     }
     const size = object.ContentLength;
-    if (!size || size > this.maxSize(kind) || object.ContentType !== mimeType) {
+    if (
+      !size ||
+      size > this.maxSize(kind) ||
+      object.ContentType !== mimeType ||
+      !matchesFileSignature(mimeType, await this.readHead(key))
+    ) {
       await this.r2.delete(key);
       throw new BadRequestException('Uploaded file has invalid size or type');
     }
@@ -337,6 +343,16 @@ export class UploadsService {
     );
   }
 
+  /** byte แรกของไฟล์ใน R2 (ไว้ตรวจชนิดไฟล์จริง) */
+  private async readHead(key: string): Promise<Buffer> {
+    const downloaded = await this.r2.download(
+      key,
+      `bytes=0-${SIGNATURE_BYTES - 1}`,
+    );
+    if (!downloaded.Body) return Buffer.alloc(0);
+    return this.readAll(downloaded.Body as Readable);
+  }
+
   private async save(
     file: UploadedFileData | undefined,
     kind: UploadKind,
@@ -344,6 +360,9 @@ export class UploadsService {
     if (!file) throw new BadRequestException('File is required');
 
     const extension = this.validateUpload(kind, file.mimetype, file.size);
+    if (!matchesFileSignature(file.mimetype, file.buffer)) {
+      throw new BadRequestException('File content does not match its type');
+    }
 
     const filename = `${randomUUID()}${extension}`;
     await this.r2.upload(`${kind}/${filename}`, file.buffer, file.mimetype);

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// เก็บ session ของคนที่ล็อกอินไว้ข้ามการเปิดแอป
@@ -12,12 +13,24 @@ class TokenStorage {
 
   final FlutterSecureStorage _storage;
 
+  /// id ของคนที่ login อยู่ (null = ยังไม่ login) อ่านได้ทันทีตอน build
+  /// เช่น ซ่อนปุ่มซื้อบนการ์ดสูตรของตัวเอง โหลดค่าแรกด้วย [loadCurrentUser] ตอนเปิดแอป
+  static final currentUserId = ValueNotifier<String?>(null);
+
+  static Future<void> loadCurrentUser({TokenStorage? storage}) async {
+    final userId = await (storage ?? TokenStorage()).readUserId();
+    currentUserId.value = (userId == null || userId.trim().isEmpty)
+        ? null
+        : userId;
+  }
+
   Future<void> saveSession({
     required String accessToken,
     required String userId,
   }) async {
     await _storage.write(key: accessTokenKey, value: accessToken);
     await _storage.write(key: userIdKey, value: userId);
+    currentUserId.value = userId;
   }
 
   Future<String?> readAccessToken() {
@@ -31,5 +44,6 @@ class TokenStorage {
   Future<void> clearSession() async {
     await _storage.delete(key: accessTokenKey);
     await _storage.delete(key: userIdKey);
+    currentUserId.value = null;
   }
 }

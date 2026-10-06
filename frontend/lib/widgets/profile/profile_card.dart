@@ -55,7 +55,7 @@ class ProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile.displayName,
+                      profile.displayNameFor(context.l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -73,7 +73,7 @@ class ProfileCard extends StatelessWidget {
                       style: TextStyle(color: Colors.white60, fontSize: 13),
                     ),
                     SizedBox(height: 10),
-                    _CreatorBadge(label: profile.roleLabel),
+                    _CreatorBadge(label: profile.roleLabel(context.l10n)),
                   ],
                 ),
               ),
