@@ -1,4 +1,4 @@
-package com.aovpro.recipy
+package com.aov.recipy
 
 import io.flutter.embedding.android.FlutterActivity
 
