@@ -14,6 +14,8 @@ import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { RecipeSection } from './entities/recipe-section.entity';
 import { Recipe, RecipeStatus, RecipeType } from './entities/recipe.entity';
 import { MediaSigner } from '../uploads/media-signer.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import type { NotificationsService } from '../notifications/notifications.service';
 import { RecipesService } from './recipes.service';
 
 function queryBuilder() {
@@ -751,5 +753,50 @@ describe('RecipesService', () => {
         preparationNote: 'สับ',
       }),
     );
+  });
+  it('tells the owner when an admin hides or rejects their recipe', async () => {
+    const notifications = { notifyRecipeOwner: jest.fn() };
+    const moderated = new RecipesService(
+      recipeRepository as unknown as Repository<Recipe>,
+      categoryRepository as unknown as Repository<Category>,
+      favoriteRepository as unknown as Repository<Favorite>,
+      reviewRepository as unknown as Repository<Review>,
+      commentRepository as unknown as Repository<RecipeComment>,
+      access as unknown as RecipeAccessService,
+      undefined,
+      undefined,
+      notifications as unknown as NotificationsService,
+    );
+    const existing = {
+      id: 'r',
+      status: RecipeStatus.PUBLISHED,
+      categories: [],
+    } as unknown as Recipe;
+    const recipeRepo = {
+      findOne: jest.fn().mockResolvedValue(existing),
+      save: jest.fn(),
+    };
+    recipeRepository.manager.transaction.mockImplementation((callback) =>
+      callback({ getRepository: () => recipeRepo }),
+    );
+    recipeRepository.findOne.mockResolvedValue({ ...existing, sections: [] });
+
+    await moderated.update('r', { status: RecipeStatus.HIDDEN }, 'admin');
+    expect(notifications.notifyRecipeOwner).toHaveBeenCalledWith({
+      type: NotificationType.RECIPE_MODERATED,
+      recipeId: 'r',
+      actorId: null,
+      data: { status: 'hidden' },
+    });
+
+    // เจ้าของแก้สูตรเอง / สถานะไม่เปลี่ยน: ไม่แจ้ง
+    notifications.notifyRecipeOwner.mockClear();
+    recipeRepo.findOne.mockResolvedValue({
+      ...existing,
+      status: RecipeStatus.HIDDEN,
+    });
+    await moderated.update('r', { status: RecipeStatus.HIDDEN }, 'admin');
+    await moderated.update('r', { title: 'x' });
+    expect(notifications.notifyRecipeOwner).not.toHaveBeenCalled();
   });
 });

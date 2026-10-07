@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -15,6 +16,8 @@ import {
   RecipeAccessType,
 } from '../recipe-access/entities/recipe-access.entity';
 import { assertPurchasable } from '../recipes/recipe-permissions';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 export interface MockPurchaseResult {
   status: 'purchased' | 'already_owned';
@@ -29,6 +32,8 @@ export class IapService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    @Optional()
+    private readonly notifications?: NotificationsService,
   ) {}
 
   async createMockPurchase(
@@ -37,9 +42,18 @@ export class IapService {
   ): Promise<MockPurchaseResult> {
     this.assertMockPurchasesEnabled();
 
-    return this.dataSource.transaction((manager) =>
+    const result = await this.dataSource.transaction((manager) =>
       this.purchaseCartItem(manager, userId, cartItemId),
     );
+    // แจ้ง creator หลังจ่ายเงินสำเร็จ (commit แล้ว) เท่านั้น
+    if (result.status === 'purchased') {
+      await this.notifications?.notifyRecipeOwner({
+        type: NotificationType.RECIPE_PURCHASED,
+        recipeId: result.recipeId,
+        actorId: userId,
+      });
+    }
+    return result;
   }
 
   private assertMockPurchasesEnabled(): void {

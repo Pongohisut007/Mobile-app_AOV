@@ -3,7 +3,10 @@ import 'package:flutter_application_1/widgets/common/app_shadows.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/config/app_info.dart';
 import 'package:flutter_application_1/content/app_texts.dart';
+import 'package:flutter_application_1/data/notification_center.dart';
+import 'package:flutter_application_1/data/push_notifications.dart';
 import 'package:flutter_application_1/data/session.dart';
+import 'package:flutter_application_1/models/app_notification.dart';
 import 'package:flutter_application_1/repositories/auth_repository.dart';
 import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
@@ -174,6 +177,9 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           ),
           if (widget.isSignedIn) ...[
+            const SizedBox(height: 20),
+            _SectionLabel(context.l10n.settingsNotifications),
+            const _NotificationSettingsGroup(),
             const SizedBox(height: 20),
             _SectionLabel(context.l10n.settingsAccount),
             _SettingsGroup(
@@ -395,6 +401,199 @@ class _SettingsTile extends StatelessWidget {
               color: foregroundColor.withValues(alpha: 0.45),
             )
           : null,
+    );
+  }
+}
+
+/// สวิตช์ push: สวิตช์หลัก + แยกตามประเภท (บันทึกที่ backend ใช้ได้ทุกเครื่องของบัญชี)
+/// ปิดแล้วยังเห็นทุกเรื่องในกล่องแจ้งเตือน
+class _NotificationSettingsGroup extends StatefulWidget {
+  const _NotificationSettingsGroup();
+
+  @override
+  State<_NotificationSettingsGroup> createState() =>
+      _NotificationSettingsGroupState();
+}
+
+class _NotificationSettingsGroupState
+    extends State<_NotificationSettingsGroup> {
+  NotificationSettings _settings = const NotificationSettings();
+  PushPermission? _permission;
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<String?> _token() async {
+    final token = (await NotificationCenter.storage.readAccessToken())?.trim();
+    return token == null || token.isEmpty ? null : token;
+  }
+
+  Future<void> _load() async {
+    final permission = await PushNotifications.currentPermission();
+    NotificationSettings? settings;
+    try {
+      final token = await _token();
+      if (token != null) {
+        settings = await NotificationCenter.repository.fetchSettings(token);
+      }
+    } catch (_) {
+      // โหลดไม่ได้: แสดงค่าตั้งต้น (เปิดทั้งหมด) กดเปลี่ยนแล้วค่อยบันทึก
+    }
+    if (!mounted) return;
+    setState(() {
+      _permission = permission;
+      if (settings != null) _settings = settings;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _save(NotificationSettings next) async {
+    final previous = _settings;
+    final messenger = ScaffoldMessenger.of(context);
+    final failed = context.l10n.notificationSettingsSaveFailed;
+    setState(() {
+      _settings = next;
+      _isSaving = true;
+    });
+    try {
+      final token = await _token();
+      if (token == null) throw StateError('signed out');
+      final saved = await NotificationCenter.repository.updateSettings(
+        token,
+        next,
+      );
+      if (mounted) setState(() => _settings = saved);
+    } catch (_) {
+      if (mounted) setState(() => _settings = previous);
+      messenger.showAppSnackBar(failed, type: AppSnackType.error);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _togglePush(bool enabled) async {
+    // เปิด = ถามสิทธิ์ของเครื่องด้วย ไม่งั้นเปิดในแอปแล้วก็ยังไม่เด้ง
+    if (enabled) {
+      final permission = await PushNotifications.requestPermission();
+      if (!mounted) return;
+      setState(() => _permission = permission);
+    }
+    await _save(_settings.copyWith(pushEnabled: enabled));
+  }
+
+  String _pushSubtitle(BuildContext context) => switch (_permission) {
+    PushPermission.unavailable => context.l10n.pushNotificationsUnavailable,
+    PushPermission.denied when _settings.pushEnabled =>
+      context.l10n.pushNotificationsBlocked,
+    _ => context.l10n.pushNotificationsHint,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final enabled = !_isLoading && !_isSaving;
+    final typesEnabled = enabled && _settings.pushEnabled;
+    return _SettingsGroup(
+      children: [
+        _SettingsSwitchTile(
+          icon: Icons.notifications_active_outlined,
+          label: l10n.pushNotifications,
+          subtitle: _pushSubtitle(context),
+          value: _settings.pushEnabled,
+          onChanged: enabled ? _togglePush : null,
+        ),
+        _SettingsSwitchTile(
+          icon: Icons.payments_outlined,
+          label: l10n.notifySales,
+          value: _settings.sales,
+          onChanged: typesEnabled
+              ? (value) => _save(_settings.copyWith(sales: value))
+              : null,
+        ),
+        _SettingsSwitchTile(
+          icon: Icons.visibility_off_outlined,
+          label: l10n.notifyModeration,
+          value: _settings.moderation,
+          onChanged: typesEnabled
+              ? (value) => _save(_settings.copyWith(moderation: value))
+              : null,
+        ),
+        _SettingsSwitchTile(
+          icon: Icons.star_outline_rounded,
+          label: l10n.notifyReviews,
+          value: _settings.reviews,
+          onChanged: typesEnabled
+              ? (value) => _save(_settings.copyWith(reviews: value))
+              : null,
+        ),
+        _SettingsSwitchTile(
+          icon: Icons.chat_bubble_outline_rounded,
+          label: l10n.notifyComments,
+          value: _settings.comments,
+          onChanged: typesEnabled
+              ? (value) => _save(_settings.copyWith(comments: value))
+              : null,
+        ),
+      ],
+    );
+  }
+}
+
+/// แถวเดียวกับ [_SettingsTile] แต่มีสวิตช์แทนลูกศร
+class _SettingsSwitchTile extends StatelessWidget {
+  const _SettingsSwitchTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = onChanged != null;
+    final color = active
+        ? ProfileColors.ink
+        : ProfileColors.ink.withValues(alpha: 0.4);
+    return SwitchListTile.adaptive(
+      value: value,
+      onChanged: onChanged,
+      contentPadding: const EdgeInsets.only(left: 16, right: 10),
+      activeTrackColor: ProfileColors.ink,
+      secondary: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: ProfileColors.ink.withValues(alpha: 0.07),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle!,
+              style: const TextStyle(color: ProfileColors.muted, fontSize: 12),
+            ),
     );
   }
 }

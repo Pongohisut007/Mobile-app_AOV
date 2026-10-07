@@ -1956,4 +1956,99 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get ingredientAmountsLocked =>
       'Buy this recipe to see amounts and preparation';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsTooltip => 'Notifications';
+
+  @override
+  String get notificationsEmpty => 'No notifications yet';
+
+  @override
+  String get notificationsEmptyHint =>
+      'When someone buys, reviews or comments on your recipes, you\'ll see it here';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark all read';
+
+  @override
+  String get notificationsSignInRequired => 'Sign in to see notifications';
+
+  @override
+  String get actionLoadNotifications => 'Loading notifications';
+
+  @override
+  String get notificationOpen => 'View';
+
+  @override
+  String get notificationSomeone => 'Someone';
+
+  @override
+  String get notificationDeletedRecipe => 'a deleted recipe';
+
+  @override
+  String notificationPurchased(String name, String recipe) {
+    return '$name bought your recipe \"$recipe\"';
+  }
+
+  @override
+  String notificationHidden(String recipe) {
+    return 'Your recipe \"$recipe\" was hidden by the Recipy team';
+  }
+
+  @override
+  String notificationRejected(String recipe) {
+    return 'Your recipe \"$recipe\" did not pass review. Edit it and try again';
+  }
+
+  @override
+  String notificationReviewed(String name, int rating, String recipe) {
+    return '$name rated \"$recipe\" $rating stars';
+  }
+
+  @override
+  String notificationCommented(String name, String recipe) {
+    return '$name commented on \"$recipe\"';
+  }
+
+  @override
+  String notificationGeneric(String recipe) {
+    return 'Something new on \"$recipe\"';
+  }
+
+  @override
+  String get settingsNotifications => 'Notifications';
+
+  @override
+  String get pushNotifications => 'Push notifications';
+
+  @override
+  String get pushNotificationsHint =>
+      'Get notified on this device even when the app is closed';
+
+  @override
+  String get pushNotificationsBlocked =>
+      'Turned off in your device settings. Allow notifications for this app first';
+
+  @override
+  String get pushNotificationsUnavailable =>
+      'Push notifications aren\'t available on this device yet (check the inbox instead)';
+
+  @override
+  String get notifySales => 'Someone buys my recipe';
+
+  @override
+  String get notifyModeration => 'My recipe is hidden or not approved';
+
+  @override
+  String get notifyReviews => 'New reviews on my recipes';
+
+  @override
+  String get notifyComments => 'New comments on my recipes';
+
+  @override
+  String get notificationSettingsSaveFailed =>
+      'Could not save notification settings';
 }

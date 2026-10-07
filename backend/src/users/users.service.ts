@@ -22,6 +22,9 @@ import {
   UserIdentity,
 } from './entities/user-identity.entity';
 import { User, UserRole, UserStatus } from './entities/user.entity';
+import { DeviceToken } from '../notifications/entities/device-token.entity';
+import { NotificationSettings } from '../notifications/entities/notification-settings.entity';
+import { Notification } from '../notifications/entities/notification.entity';
 
 type ActivityCountKey =
   | 'reviewCount'
@@ -181,6 +184,8 @@ export class UsersService {
   /** token ทุกใบที่ออกไปแล้วของ user นี้ใช้ไม่ได้ทันที */
   async bumpTokenVersion(id: string): Promise<void> {
     await this.userRepository.increment({ id }, 'tokenVersion', 1);
+    // เครื่องที่หลุดจากระบบไม่ควรได้ push ของบัญชีนี้อีก (login ใหม่จะลงทะเบียนเครื่องใหม่เอง)
+    await this.userRepository.manager.delete(DeviceToken, { userId: id });
   }
 
   /**
@@ -213,6 +218,10 @@ export class UsersService {
       await manager.delete(Cart, { userId: id });
       // ปลดบัญชี Google ออก เจ้าของสมัครใหม่ด้วยบัญชีเดิมได้
       await manager.delete(UserIdentity, { userId: id });
+      // ไม่ส่ง push และลบกล่องแจ้งเตือน/การตั้งค่าของบัญชีที่ลบแล้ว
+      await manager.delete(DeviceToken, { userId: id });
+      await manager.delete(Notification, { userId: id });
+      await manager.delete(NotificationSettings, { userId: id });
 
       await manager.update(
         User,

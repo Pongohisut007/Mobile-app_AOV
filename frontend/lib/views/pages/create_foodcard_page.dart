@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -26,6 +28,7 @@ import 'package:flutter_application_1/widgets/create_food/recipe_steps_section.d
 import 'package:flutter_application_1/widgets/create_food/recipe_type_section.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
 import 'package:flutter_application_1/widgets/common/app_dialog.dart';
+import 'package:flutter_application_1/data/push_notifications.dart';
 
 class CreateFoodcardPage extends StatefulWidget {
   const CreateFoodcardPage({
@@ -330,6 +333,9 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       if (!mounted) return false;
       if (asDraft) {
         _showMessage(context.l10n.draftSaved, type: AppSnackType.success);
+      } else {
+        // เพิ่งเผยแพร่สูตร: จังหวะที่เจ้าของอยากรู้ว่ามีคนซื้อ/รีวิว จึงถามสิทธิ์ push ตรงนี้
+        unawaited(PushNotifications.requestPermission());
       }
       return true;
     } catch (error) {

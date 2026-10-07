@@ -16,6 +16,9 @@ import { User } from '../users/entities/user.entity';
 import { CreateRecipeCommentDto } from './dto/create-recipe-comment.dto';
 import { ListRecipeCommentsQueryDto } from './dto/list-recipe-comments-query.dto';
 import { RecipeComment } from './entities/recipe-comment.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import { excerpt } from '../notifications/notification-text';
 
 export interface RecipeCommentView {
   id: string;
@@ -48,6 +51,8 @@ export class RecipeCommentsService {
     private readonly recipeAccessService: RecipeAccessService,
     @Optional()
     private readonly cache?: AppCacheService,
+    @Optional()
+    private readonly notifications?: NotificationsService,
   ) {}
 
   // ยอดคอมเมนต์อยู่ในข้อมูลสูตรที่ cache ไว้ เพิ่ม/ลบคอมเมนต์ต้องล้างทั้งคู่
@@ -142,6 +147,12 @@ export class RecipeCommentsService {
       relations: { user: true },
     });
     await this.invalidateRecipeCounts();
+    await this.notifications?.notifyRecipeOwner({
+      type: NotificationType.RECIPE_COMMENTED,
+      recipeId,
+      actorId: userId,
+      data: { excerpt: excerpt(comment) },
+    });
     return this.toView(created);
   }
 

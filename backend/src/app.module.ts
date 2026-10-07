@@ -8,6 +8,7 @@ import databaseConfig from '../config/database.config';
 import googleConfig from '../config/google.config';
 import jwtConfig from '../config/jwt.config';
 import mailConfig from '../config/mail.config';
+import firebaseConfig from '../config/firebase.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -19,6 +20,7 @@ import { DatabaseModule } from './database/database.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { IngredientsModule } from './ingredients/ingredients.module';
 import { IapModule } from './iap/iap.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { RecipeAccessModule } from './recipe-access/recipe-access.module';
@@ -42,6 +44,7 @@ import r2ClientConfig from '../config/r2.client.config';
         r2ClientConfig,
         googleConfig,
         mailConfig,
+        firebaseConfig,
       ],
     }),
     // เพดานคำขอทั้งระบบ (guard อยู่ใน AuthModule เพราะต้องใช้ JwtService แยกผู้ใช้)
@@ -65,6 +68,7 @@ import r2ClientConfig from '../config/r2.client.config';
     FavoritesModule,
     CartModule,
     ChatModule,
+    NotificationsModule,
     UploadsModule,
     // FoodsModule,
   ],
