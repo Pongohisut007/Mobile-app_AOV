@@ -667,22 +667,17 @@ pipeline {
                                             -f docker-compose.ci.yaml \
                                             -p "$COMPOSE_PROJECT_NAME" \
                                             up -d --wait --wait-timeout 120 \
-                                            --pull missing --no-build --remove-orphans
+                                            --pull missing --no-build --remove-orphans \
+                                            postgres redis
 
                                         docker compose \
                                             -f docker-compose.yaml \
                                             -f docker-compose.ci.yaml \
                                             -p "$COMPOSE_PROJECT_NAME" ps
 
-                                        # Bootstrap the legacy schema as development
-                                        # currently does, then exercise all incremental
-                                        # migrations before the staging-mode E2E run.
-                                        docker compose \
-                                            -f docker-compose.yaml \
-                                            -f docker-compose.ci.yaml \
-                                            -p "$COMPOSE_PROJECT_NAME" \
-                                            stop api
-
+                                        # Build the empty database with migrations only
+                                        # (Baseline + incremental), as a new production
+                                        # database is, before the staging-mode E2E run.
                                         docker compose \
                                             -f docker-compose.yaml \
                                             -f docker-compose.ci.yaml \

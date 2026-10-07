@@ -27,18 +27,7 @@ async function main(): Promise<void> {
 
   await dataSource.initialize();
   try {
-    // The existing migrations are incremental. Refuse to apply them to an empty
-    // database until a complete baseline migration has been introduced.
-    const [{ users, recipes }] = await dataSource.query<
-      Array<{ users: string | null; recipes: string | null }>
-    >(
-      "SELECT to_regclass('public.users') AS users, to_regclass('public.recipes') AS recipes",
-    );
-    if (!users || !recipes) {
-      throw new Error(
-        'Database baseline is missing (users/recipes). Restore or migrate the baseline before deployment.',
-      );
-    }
+    // An empty database is built by the Baseline migration; existing ones skip it.
     const migrations = await dataSource.runMigrations();
     console.log(`Applied ${migrations.length} migration(s).`);
   } finally {

@@ -63,15 +63,14 @@ git diff --check
 Jenkins เปิด `migration.enabled` ตอนเปลี่ยน GitOps image tag เป็น image
 ที่มี runner นี้แล้ว ห้ามเปิด job ดังกล่าวกับ image tag รุ่นเก่าที่ไม่มี runner
 
-Migration ที่มีอยู่เป็นการเปลี่ยน schema เพิ่มเติม จึงต้องมีตาราง `users`
-และ `recipes` อยู่ก่อน คลัสเตอร์ใหม่ที่มีฐานข้อมูลว่างต้องมี baseline migration
-ที่ผ่านการตรวจทานก่อน deploy ครั้งแรก Runner จะหยุดพร้อมข้อความระบุสาเหตุ
-หากยังไม่มี schema ตั้งต้น
+Migration แรก `1750000000000-Baseline` สร้างตารางชุดตั้งต้น (ที่เดิมสร้างด้วย
+synchronize) ให้ฐานข้อมูลว่างสร้างได้ด้วย migration อย่างเดียว ฐานข้อมูลที่มี
+ตาราง `users` อยู่แล้ว (staging) จะข้าม baseline ไป ห้ามแก้ไฟล์ baseline หลังใช้งาน
+การเปลี่ยน schema ให้เพิ่ม migration ใหม่เสมอ
 
-ชุด E2E ใน CI สร้าง schema เดิมด้วยการ synchronize ในโหมด development ก่อน
-จากนั้นรัน migration เพิ่มเติม แล้วทดสอบ HTTP โดยใช้ `NODE_ENV=production`
-ทั้งกรณี `APP_ENV=staging` และ `APP_ENV=production` วิธีนี้ตรวจเส้นทาง
-การอัปเกรด แต่ยังไม่ทดแทนการทดสอบ baseline บนฐานข้อมูลว่าง
+ชุด E2E ใน CI เริ่มจากฐานข้อมูลว่าง รัน migration ทั้งหมด (baseline + เพิ่มเติม)
+แล้วทดสอบ HTTP โดยใช้ `NODE_ENV=production` ทั้งกรณี `APP_ENV=staging` และ
+`APP_ENV=production` เส้นทางเดียวกับ production ที่สร้างฐานข้อมูลใหม่
 
 PR แบบ FULL จะ build และสแกน Docker image ในเครื่อง CI โดยไม่ได้รับ credential
 สำหรับเขียนไปยัง Docker Hub หรือ GitOps สำหรับ `develop` และ `main`
