@@ -5,6 +5,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from urllib.parse import quote
 
 
 def env(name: str, default: str = "-") -> str:
@@ -21,24 +22,38 @@ def field(name: str, value: str, inline: bool = True) -> dict:
 
 
 def build_payload(status: str) -> dict:
-    success = status == "success"
-
-    if success:
-        title = "✅ CI Pipeline Succeeded"
-        description = "Jenkins pipeline completed successfully."
-        color = 3066993
-    else:
-        title = "❌ CI Pipeline Failed"
-        description = "Jenkins pipeline encountered an error."
-        color = 15158332
+    titles = {
+        "success": ("✅ CI Pipeline Succeeded", 3066993),
+        "failure": ("❌ CI Pipeline Failed", 15158332),
+        "unstable": ("⚠️ CI Pipeline Unstable", 16776960),
+        "aborted": ("⏹️ CI Pipeline Aborted", 9807270),
+        "not_built": ("⏭️ CI Pipeline Not Built", 9807270),
+    }
+    title, color = titles[status]
+    component = env("CI_COMPONENT")
+    commit_sha = env("COMMIT_SHA")
+    description = "Jenkins pipeline finished."
 
     fields = [
+        field("🧩 Component", component),
         field("📦 Job", f"`{env('JOB_NAME')}`"),
         field("🔢 Build", f"`#{env('BUILD_NUMBER')}`"),
-        field("🌿 Branch", f"`{env('BRANCH_NAME')}`"),
         field("⚙️ CI Mode", f"`{env('CI_MODE')}`"),
-        field("🔖 Commit", f"`{env('COMMIT_SHA')}`"),
+        field("🔖 Commit", f"`{commit_sha}`", False),
     ]
+
+    change_id = os.getenv("CHANGE_ID")
+    if change_id:
+        fields.extend([
+            field("🔀 Pull Request", f"#{change_id}"),
+            field("🌿 Source", f"`{env('CHANGE_BRANCH')}`"),
+            field("🎯 Target", f"`{env('CHANGE_TARGET')}`"),
+        ])
+        change_url = os.getenv("CHANGE_URL")
+        if change_url:
+            fields.append(field("🔗 Pull Request", change_url, False))
+    else:
+        fields.append(field("🌿 Branch", f"`{env('BRANCH_NAME')}`"))
 
     image_name = os.getenv("IMAGE_NAME")
 
@@ -65,6 +80,10 @@ def build_payload(status: str) -> dict:
     build_url = os.getenv("BUILD_URL")
 
     if build_url:
+        apk_path = os.getenv("APK_ARTIFACT_PATH")
+        if apk_path:
+            apk_url = f"{build_url.rstrip('/')}/artifact/{quote(apk_path, safe='/')}"
+            fields.append(field("📱 Download APK", apk_url, False))
         fields.append(
             field(
                 "🔗 Jenkins Build",
@@ -75,9 +94,11 @@ def build_payload(status: str) -> dict:
 
     return {
         "username": "Jenkins CI",
+        "content": f"**CI · {env('CHANGE_TARGET') if change_id else env('BRANCH_NAME')} · {commit_sha[:7]}**",
+        "allowed_mentions": {"parse": []},
         "embeds": [
             {
-                "title": title,
+                "title": f"{component} · {title}",
                 "description": description,
                 "color": color,
                 "fields": fields,
@@ -132,14 +153,14 @@ def send_notification(status: str) -> None:
 def main() -> None:
     if len(sys.argv) != 2:
         print(
-            f"Usage: {sys.argv[0]} <success|failure>",
+            f"Usage: {sys.argv[0]} <success|failure|unstable|aborted|not_built>",
             file=sys.stderr,
         )
         sys.exit(2)
 
     status = sys.argv[1].lower()
 
-    if status not in {"success", "failure"}:
+    if status not in {"success", "failure", "unstable", "aborted", "not_built"}:
         print(
             f"Unsupported status: {status}",
             file=sys.stderr,
