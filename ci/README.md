@@ -131,6 +131,11 @@ build และ archive artifact สำเร็จ หากรอบนั้�
 build APK ไม่สำเร็จ จะไม่มีลิงก์ APK ลิงก์เปิดผ่าน Jenkins จึงต้องมีสิทธิ์
 เข้าถึง Jenkins และ Jenkins ต้องตั้ง `BUILD_URL` ให้เป็น URL ที่ผู้รับเปิดได้
 
+Backend บน `main` ส่ง Discord อีกข้อความเมื่อถึง `Production Approval`
+พร้อมลิงก์ Jenkins build เพื่อให้ผู้มีสิทธิ์กดอนุมัติหรือยกเลิก จากนั้น
+Pipeline จะแจ้งผลสุดท้ายตามปกติ หากส่งแจ้งเตือน gate ไม่สำเร็จหลังลอง 3 ครั้ง
+Pipeline จะล้มเหลวก่อนเข้าสู่ขั้นรออนุมัติ เพื่อไม่ให้มี gate ค้างโดยไม่มีใครทราบ
+
 ### ค่า runtime ใน staging และ production
 
 Chart สร้าง ConfigMap สำหรับ `NODE_ENV`, `APP_ENV`, `PORT`, `DB_HOST`,

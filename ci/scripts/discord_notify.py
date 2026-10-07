@@ -28,11 +28,16 @@ def build_payload(status: str) -> dict:
         "unstable": ("⚠️ CI Pipeline Unstable", 16776960),
         "aborted": ("⏹️ CI Pipeline Aborted", 9807270),
         "not_built": ("⏭️ CI Pipeline Not Built", 9807270),
+        "approval_required": ("🟡 Production Approval Required", 16776960),
     }
     title, color = titles[status]
     component = env("CI_COMPONENT")
     commit_sha = env("COMMIT_SHA")
-    description = "Jenkins pipeline finished."
+    description = (
+        "Production deployment requires a person to approve or abort it in Jenkins."
+        if status == "approval_required"
+        else "Jenkins pipeline finished."
+    )
 
     fields = [
         field("🧩 Component", component),
@@ -86,7 +91,7 @@ def build_payload(status: str) -> dict:
             fields.append(field("📱 Download APK", apk_url, False))
         fields.append(
             field(
-                "🔗 Jenkins Build",
+                "🔗 Open Approval in Jenkins" if status == "approval_required" else "🔗 Jenkins Build",
                 build_url,
                 False,
             )
@@ -153,14 +158,14 @@ def send_notification(status: str) -> None:
 def main() -> None:
     if len(sys.argv) != 2:
         print(
-            f"Usage: {sys.argv[0]} <success|failure|unstable|aborted|not_built>",
+            f"Usage: {sys.argv[0]} <success|failure|unstable|aborted|not_built|approval_required>",
             file=sys.stderr,
         )
         sys.exit(2)
 
     status = sys.argv[1].lower()
 
-    if status not in {"success", "failure", "unstable", "aborted", "not_built"}:
+    if status not in {"success", "failure", "unstable", "aborted", "not_built", "approval_required"}:
         print(
             f"Unsupported status: {status}",
             file=sys.stderr,

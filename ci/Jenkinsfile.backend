@@ -931,6 +931,12 @@ pipeline {
                         error 'IMAGE_NAME is not set before production approval.'
                     }
 
+                    withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                        retry(3) {
+                            sh 'python3 ci/scripts/discord_notify.py approval_required'
+                        }
+                    }
+
                     input(
                         message: """
                         Deploy to production?
