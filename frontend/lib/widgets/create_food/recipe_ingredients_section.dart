@@ -360,6 +360,8 @@ class _IngredientEditorState extends State<_IngredientEditor> {
                       controller: controller,
                       focusNode: focusNode,
                       autofocus: widget.initial == null,
+                      // แตะที่อื่น = ปิดรายการโดยไม่เลือก (ชื่อที่พิมพ์ยังอยู่ เพิ่มวัตถุดิบใหม่ได้)
+                      onTapOutside: (_) => focusNode.unfocus(),
                       textInputAction: TextInputAction.next,
                       maxLength: 150,
                       onChanged: _onNameChanged,

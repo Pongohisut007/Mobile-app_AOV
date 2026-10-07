@@ -24,6 +24,7 @@ import 'package:flutter_application_1/widgets/common/app_snack_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/bottom_buy_bar.dart';
 import 'package:flutter_application_1/widgets/food_detail/error_view.dart';
 import 'package:flutter_application_1/widgets/food_detail/fly_to_cart.dart';
+import 'package:flutter_application_1/widgets/food_detail/food_author.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_description.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_ingredients.dart';
 import 'package:flutter_application_1/widgets/food_detail/food_detail_header.dart';
@@ -303,6 +304,15 @@ class _FoodDetailPageState extends State<FoodDetailPage>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
+                    // ไม่มีทั้ง id และชื่อ = backend ไม่ได้ส่งเจ้าของมา ไม่ต้องโชว์
+                    if (food.creatorId != null || food.creatorName != null) ...[
+                      const SizedBox(height: 10),
+                      FoodAuthor(
+                        name: food.creatorName,
+                        avatarUrl: food.creatorAvatar,
+                      ),
+                    ],
 
                     if (food.categories.isNotEmpty) ...[
                       const SizedBox(height: 12),
