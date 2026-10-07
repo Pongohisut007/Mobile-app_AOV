@@ -87,9 +87,10 @@ Frontend build บน `main` ต้องมี Jenkins environment variable
 
 ขั้นตอนนี้ build และเก็บ APK แบบ release ที่เซ็นด้วย release key สำหรับแจกให้ติดตั้งเอง
 (บัญชี Android Developer Console แบบ limited distribution ไม่ได้ลง Play Store)
-โดยใช้ `config/prod.json` และใส่ API URL สำหรับ build ครั้งนั้น พร้อมปิด
-การซื้อจำลอง หากยังไม่ได้ตั้ง URL และ credentials งาน build บน `main`
-จะล้มเหลวตามที่ตั้งใจไว้ ส่วน debug build ยังใช้ debug key ที่ทีมแชร์กัน
+โดยใช้ `config/prod.json` และใส่ API URL สำหรับ build ครั้งนั้น (เปิดการซื้อจำลอง
+เพราะยังไม่มีระบบจ่ายเงินจริง) หากยังไม่ได้ตั้ง URL และ credentials งาน build บน `main`
+จะล้มเหลวตามที่ตั้งใจไว้ `main` ไม่ build debug APK แล้ว ส่วน branch อื่นยังสร้าง
+debug APK ด้วย debug key ที่ทีมแชร์กัน
 
 ## ค่าที่ต้องเตรียมก่อนทดลอง Pipeline
 

@@ -51,9 +51,10 @@ flutter build apk --release --dart-define-from-file=config/staging.json  # stagi
 flutter build apk --release --dart-define-from-file=config/prod.json  # release build
 ```
 
-Frontend CI builds a debug APK when frontend files change. It selects
-`config/prod.json` for `main` or `prod`, `config/staging.json` for `develop`
-or `staging`, and `config/dev.json` for other branches. Pull requests use their
+Frontend CI builds a debug APK when frontend files change, except on `main`,
+which builds only the signed release APK. It selects `config/prod.json` for
+`prod` (and pull requests from `main`), `config/staging.json` for `develop` or
+`staging`, and `config/dev.json` for other branches. Pull requests use their
 source branch.
 
 | Key | Purpose |

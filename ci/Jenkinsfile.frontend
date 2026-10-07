@@ -219,8 +219,17 @@ pipeline {
         }
 
         stage('Mobile - Build Debug APK') {
+            // main (ไม่ใช่ PR) มี Release Gate build APK release อยู่แล้ว ไม่ต้อง build debug ซ้ำ
             when {
-                expression { env.FRONTEND_CHANGED == 'true' }
+                allOf {
+                    expression { env.FRONTEND_CHANGED == 'true' }
+                    not {
+                        allOf {
+                            branch 'main'
+                            expression { !env.CHANGE_ID?.trim() }
+                        }
+                    }
+                }
             }
 
             steps {
