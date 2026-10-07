@@ -30,6 +30,8 @@ import {
   replaceRecipeIngredients,
 } from './recipe-ingredients';
 import { MediaSigner } from '../uploads/media-signer.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 const FOREIGN_KEY_VIOLATION = '23503';
 
@@ -82,6 +84,9 @@ export class RecipesService {
 
     @Optional()
     private readonly mediaSigner?: MediaSigner,
+
+    @Optional()
+    private readonly notifications?: NotificationsService,
   ) {}
 
   // อายุ cache: รายการสั้นไว้ก่อน เพราะยอดหัวใจ/คอมเมนต์เปลี่ยนบ่อย
@@ -585,13 +590,19 @@ export class RecipesService {
     return created;
   }
 
-  async update(id: string, dto: UpdateRecipeDto): Promise<Recipe> {
+  /** [moderatorId] = admin ที่แก้ (ใช้แจ้งเจ้าของเมื่อสูตรถูกซ่อน/ไม่ผ่านการตรวจ) */
+  async update(
+    id: string,
+    dto: UpdateRecipeDto,
+    moderatorId?: string,
+  ): Promise<Recipe> {
     const { categoryIds, sections, ingredients, ...recipeData } =
       RecipesService.withoutSignedMedia(dto);
     const categories = categoryIds
       ? await this.resolveCategories(categoryIds)
       : undefined;
 
+    let previousStatus: RecipeStatus | undefined;
     await this.recipeRepository.manager.transaction(async (manager) => {
       const recipeRepository = manager.getRepository(Recipe);
       const sectionRepository = manager.getRepository(RecipeSection);
@@ -616,6 +627,7 @@ export class RecipesService {
         );
       }
 
+      previousStatus = recipe.status;
       Object.assign(recipe, recipeData, { id: recipe.id });
       if (categories) {
         recipe.categories = RecipesService.mergeCategories(
@@ -662,7 +674,28 @@ export class RecipesService {
     });
 
     await this.invalidateRecipes();
+    await this.notifyModeration(id, previousStatus, dto.status, moderatorId);
     return this.findOne(id);
+  }
+
+  /** admin เพิ่งซ่อน/ปฏิเสธสูตร: บอกเจ้าของ (สถานะเดิมอยู่แล้ว = ไม่แจ้งซ้ำ) */
+  private async notifyModeration(
+    recipeId: string,
+    previous: RecipeStatus | undefined,
+    next: RecipeStatus | undefined,
+    moderatorId: string | undefined,
+  ): Promise<void> {
+    if (!moderatorId || next === previous) return;
+    if (next !== RecipeStatus.HIDDEN && next !== RecipeStatus.REJECTED) return;
+    await this.notifications?.notifyRecipeOwner({
+      type: NotificationType.RECIPE_MODERATED,
+      recipeId,
+      // ข้อความแจ้งเป็น "ทีมงาน" ไม่เปิดเผยว่า admin คนไหน
+      actorId: null,
+      data: {
+        status: next === RecipeStatus.HIDDEN ? 'hidden' : 'rejected',
+      },
+    });
   }
 
   /** สูตรใหม่ใส่หมวดที่ admin ปิดใช้งานไม่ได้ */

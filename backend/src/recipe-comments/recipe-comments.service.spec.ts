@@ -8,6 +8,8 @@ import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { Recipe } from '../recipes/entities/recipe.entity';
 import { RecipeType } from '../recipes/entities/recipe.entity';
 import { User } from '../users/entities/user.entity';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import type { NotificationsService } from '../notifications/notifications.service';
 import { RecipeComment } from './entities/recipe-comment.entity';
 import { RecipeCommentsService } from './recipe-comments.service';
 
@@ -207,5 +209,28 @@ describe('RecipeCommentsService comment ownership', () => {
     await expect(
       service.remove('recipe-id', 'missing', 'owner-id'),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+  it('notifies the recipe owner about a new comment', async () => {
+    const notifications = { notifyRecipeOwner: jest.fn() };
+    const notifying = new RecipeCommentsService(
+      commentsRepository as unknown as Repository<RecipeComment>,
+      recipesRepository as unknown as Repository<Recipe>,
+      usersRepository as unknown as Repository<User>,
+      access as unknown as RecipeAccessService,
+      undefined,
+      notifications as unknown as NotificationsService,
+    );
+    commentsRepository.save.mockResolvedValueOnce(comment);
+
+    await notifying.create('recipe-id', 'reader-id', {
+      comment: '  ทำตามแล้วอร่อย  ',
+    });
+
+    expect(notifications.notifyRecipeOwner).toHaveBeenCalledWith({
+      type: NotificationType.RECIPE_COMMENTED,
+      recipeId: 'recipe-id',
+      actorId: 'reader-id',
+      data: { excerpt: 'ทำตามแล้วอร่อย' },
+    });
   });
 });

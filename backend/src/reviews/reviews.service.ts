@@ -14,6 +14,9 @@ import { canReadRecipe } from '../recipes/recipe-permissions';
 import { ListReviewsQueryDto } from './dto/list-reviews-query.dto';
 import { UpsertReviewDto } from './dto/upsert-review.dto';
 import { Review, ReviewStatus } from './entities/review.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import { excerpt } from '../notifications/notification-text';
 
 // หน้าสูตรโชว์รีวิวล่าสุดแค่นี้ ที่เหลือดูในหน้ารีวิวทั้งหมด
 const LATEST_REVIEWS_LIMIT = 3;
@@ -58,6 +61,8 @@ export class ReviewsService {
     private readonly recipeAccessService: RecipeAccessService,
     @Optional()
     private readonly cache?: AppCacheService,
+    @Optional()
+    private readonly notifications?: NotificationsService,
   ) {}
 
   // รีวิวเปลี่ยนน้อย แต่ถูกอ่านทุกครั้งที่เปิดหน้าสูตร
@@ -202,6 +207,11 @@ export class ReviewsService {
 
     const comment = dto.comment?.trim() || null;
     const tags = dto.tags ?? [];
+    // แจ้งเจ้าของสูตรเฉพาะรีวิวแรก แก้รีวิวเดิมไม่แจ้งซ้ำ
+    const isFirstReview = !(await this.reviewRepository.findOne({
+      where: { recipeId, userId },
+      select: { id: true },
+    }));
     await this.reviewRepository.upsert(
       { recipeId, userId, rating: dto.rating, comment, tags },
       { conflictPaths: ['userId', 'recipeId'] },
@@ -216,6 +226,17 @@ export class ReviewsService {
       this.cache?.invalidate(CacheNamespace.reviews),
       this.cache?.invalidate(CacheNamespace.recipes),
     ]);
+    if (isFirstReview) {
+      await this.notifications?.notifyRecipeOwner({
+        type: NotificationType.RECIPE_REVIEWED,
+        recipeId,
+        actorId: userId,
+        data: {
+          rating: dto.rating,
+          ...(comment ? { excerpt: excerpt(comment) } : {}),
+        },
+      });
+    }
     return this.toView(saved);
   }
 

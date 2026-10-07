@@ -13,6 +13,9 @@ import { Cart } from '../../cart/entities/cart.entity';
 import { Category } from '../../categories/entities/category.entity';
 import { Favorite } from '../../favorites/entities/favorite.entity';
 import { Ingredient } from '../../ingredients/entities/ingredient.entity';
+import { DeviceToken } from '../../notifications/entities/device-token.entity';
+import { NotificationSettings } from '../../notifications/entities/notification-settings.entity';
+import { Notification } from '../../notifications/entities/notification.entity';
 import { RecipeIngredient } from '../../ingredients/entities/recipe-ingredient.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { Order, OrderStatus } from '../../orders/entities/order.entity';
@@ -64,6 +67,7 @@ import {
  * - สูตร 100 สูตร (official ขายได้ / community ฟรี / draft / ซ่อน / ไม่ผ่านการตรวจ
  *   / archived = เจ้าของลบแต่มีคนซื้อไปแล้ว)
  * - คำสั่งซื้อ การจ่ายเงิน สิทธิ์ดูสูตร รีวิว คอมเมนต์ รายการโปรด ตะกร้า แบนเนอร์
+ * - กล่องแจ้งเตือนของเจ้าของสูตร (มีคนซื้อ/รีวิว/คอมเมนต์/สูตรถูกซ่อน) เก่ากว่า 7 วันถือว่าอ่านแล้ว
  * สุ่มแบบกำหนด seed ไว้ รันกี่ครั้งก็ได้ข้อมูลหน้าตาเดิม (ยกเว้น id และวันที่อิงวันนี้)
  *
  * กันพลาด: ไม่ยอมรันบน staging/production เว้นแต่ตั้ง SEED_ALLOW_RESET=true
@@ -722,6 +726,9 @@ async function seedDeletedAccount(
   }
   await manager.delete(Cart, { userId: user.id });
   await manager.delete(UserIdentity, { userId: user.id });
+  await manager.delete(DeviceToken, { userId: user.id });
+  await manager.delete(Notification, { userId: user.id });
+  await manager.delete(NotificationSettings, { userId: user.id });
 
   const deletedAt = daysAgo(between(2, 7));
   await manager.update(
@@ -739,6 +746,54 @@ async function seedDeletedAccount(
     },
   );
   return user;
+}
+
+/**
+ * แจ้งเตือนย้อนหลังให้เจ้าของสูตร สร้างจากข้อมูลที่ seed ไปแล้ว (เหมือนตอนเกิดเรื่องจริง)
+ * ไม่แจ้งเรื่องที่ทำกับสูตรตัวเอง เรื่องที่เก่ากว่า 7 วันถือว่าอ่านแล้ว
+ */
+async function seedNotifications(manager: EntityManager): Promise<number> {
+  const readAt = (at: string) =>
+    `CASE WHEN ${at} < now() - interval '7 days' THEN ${at} + interval '1 day' END`;
+  const inserts = [
+    // มีคนซื้อสูตร
+    `SELECT r.creator_id, o.user_id, 'recipe_purchased', r.id, '{}'::jsonb,
+            ${readAt('o.paid_at')}, o.paid_at
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id
+       JOIN recipes r ON r.id = oi.recipe_id
+      WHERE o.status = 'paid' AND r.creator_id <> o.user_id`,
+    // รีวิวใหม่
+    `SELECT r.creator_id, rv.user_id, 'recipe_reviewed', r.id,
+            jsonb_strip_nulls(jsonb_build_object(
+              'rating', rv.rating, 'excerpt', left(rv.comment, 100))),
+            ${readAt('rv.created_at')}, rv.created_at
+       FROM reviews rv
+       JOIN recipes r ON r.id = rv.recipe_id
+      WHERE r.creator_id <> rv.user_id`,
+    // คอมเมนต์ใหม่
+    `SELECT r.creator_id, c.user_id, 'recipe_commented', r.id,
+            jsonb_build_object('excerpt', left(c.comment, 100)),
+            ${readAt('c.created_at')}, c.created_at
+       FROM recipe_comments c
+       JOIN recipes r ON r.id = c.recipe_id
+      WHERE r.creator_id <> c.user_id`,
+    // ทีมงานซ่อน/ไม่ผ่านการตรวจ
+    `SELECT r.creator_id, NULL::uuid, 'recipe_moderated', r.id,
+            jsonb_build_object('status', r.status::text),
+            ${readAt('r.updated_at')}, r.updated_at
+       FROM recipes r
+      WHERE r.status IN ('hidden', 'rejected')`,
+  ];
+
+  for (const select of inserts) {
+    await manager.query(
+      `INSERT INTO notifications
+         (user_id, actor_id, type, recipe_id, data, read_at, created_at)
+       ${select}`,
+    );
+  }
+  return manager.count(Notification);
 }
 
 async function seedBanners(manager: EntityManager): Promise<void> {
@@ -788,6 +843,7 @@ async function seed(): Promise<void> {
       const comments = await seedComments(manager, users, recipes);
       const favorites = await seedFavorites(manager, users, recipes);
       const cartItems = await seedCarts(manager, users, recipes, purchases);
+      const notifications = await seedNotifications(manager);
       const deletedUser = await seedDeletedAccount(manager, users);
       await seedBanners(manager);
       return {
@@ -798,6 +854,7 @@ async function seed(): Promise<void> {
         comments,
         favorites,
         cartItems,
+        notifications,
         banners: BANNERS.length,
         archivedRecipe: archived.title,
         deletedAccount: deletedUser.email,

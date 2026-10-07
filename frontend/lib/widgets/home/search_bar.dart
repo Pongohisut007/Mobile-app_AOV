@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
+import 'package:flutter_application_1/widgets/notifications/notification_bell.dart';
 
 class SearchBarWidget extends StatefulWidget {
   const SearchBarWidget({
@@ -129,10 +130,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
         ),
         if (widget.showNotificationButton) ...[
           const SizedBox(width: 10),
-          const CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Icon(Icons.notifications_none),
-          ),
+          const NotificationBellButton(),
         ],
       ],
     );

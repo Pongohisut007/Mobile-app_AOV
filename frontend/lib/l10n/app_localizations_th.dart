@@ -1860,4 +1860,98 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get ingredientAmountsLocked =>
       'ซื้อสูตรเพื่อดูปริมาณและวิธีเตรียมวัตถุดิบ';
+
+  @override
+  String get notificationsTitle => 'การแจ้งเตือน';
+
+  @override
+  String get notificationsTooltip => 'การแจ้งเตือน';
+
+  @override
+  String get notificationsEmpty => 'ยังไม่มีการแจ้งเตือน';
+
+  @override
+  String get notificationsEmptyHint =>
+      'เมื่อมีคนซื้อ รีวิว หรือคอมเมนต์สูตรของคุณ จะแจ้งที่นี่';
+
+  @override
+  String get notificationsMarkAllRead => 'อ่านทั้งหมดแล้ว';
+
+  @override
+  String get notificationsSignInRequired => 'เข้าสู่ระบบเพื่อดูการแจ้งเตือน';
+
+  @override
+  String get actionLoadNotifications => 'โหลดการแจ้งเตือน';
+
+  @override
+  String get notificationOpen => 'ดู';
+
+  @override
+  String get notificationSomeone => 'มีคน';
+
+  @override
+  String get notificationDeletedRecipe => 'สูตรที่ถูกลบแล้ว';
+
+  @override
+  String notificationPurchased(String name, String recipe) {
+    return '$name ซื้อสูตร \"$recipe\" ของคุณ';
+  }
+
+  @override
+  String notificationHidden(String recipe) {
+    return 'สูตร \"$recipe\" ของคุณถูกทีมงานซ่อนจากผู้ใช้อื่น';
+  }
+
+  @override
+  String notificationRejected(String recipe) {
+    return 'สูตร \"$recipe\" ของคุณไม่ผ่านการตรวจ แก้ไขแล้วลองใหม่ได้';
+  }
+
+  @override
+  String notificationReviewed(String name, int rating, String recipe) {
+    return '$name ให้ $rating ดาวกับ \"$recipe\"';
+  }
+
+  @override
+  String notificationCommented(String name, String recipe) {
+    return '$name คอมเมนต์ใน \"$recipe\"';
+  }
+
+  @override
+  String notificationGeneric(String recipe) {
+    return 'มีความเคลื่อนไหวใน \"$recipe\"';
+  }
+
+  @override
+  String get settingsNotifications => 'การแจ้งเตือน';
+
+  @override
+  String get pushNotifications => 'การแจ้งเตือนแบบพุช';
+
+  @override
+  String get pushNotificationsHint => 'แจ้งเตือนบนเครื่อง แม้ไม่ได้เปิดแอปอยู่';
+
+  @override
+  String get pushNotificationsBlocked =>
+      'ถูกปิดในการตั้งค่าของเครื่อง เปิดการแจ้งเตือนของแอปก่อน';
+
+  @override
+  String get pushNotificationsUnavailable =>
+      'เครื่องนี้ยังรับการแจ้งเตือนแบบพุชไม่ได้ (ดูได้ในกล่องแจ้งเตือน)';
+
+  @override
+  String get notifySales => 'มีคนซื้อสูตรของฉัน';
+
+  @override
+  String get notifyModeration => 'สูตรถูกซ่อนหรือไม่ผ่านการตรวจ';
+
+  @override
+  String get notifyReviews => 'รีวิวใหม่ในสูตรของฉัน';
+
+  @override
+  String get notifyComments => 'คอมเมนต์ใหม่ในสูตรของฉัน';
+
+  @override
+  String get notificationSettingsSaveFailed =>
+      'บันทึกการตั้งค่าการแจ้งเตือนไม่สำเร็จ';
 }

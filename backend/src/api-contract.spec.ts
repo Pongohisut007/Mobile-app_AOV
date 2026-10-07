@@ -341,6 +341,8 @@ describe('Recipe API HTTP contracts', () => {
     expect(recipes.update).toHaveBeenCalledWith(
       recipeId,
       expect.objectContaining({ showImgCommu: true }),
+      // ไม่ใช่ admin = ไม่ใช่การตรวจสูตร (ไม่แจ้งเจ้าของ)
+      undefined,
     );
     expect(recipes.assertCanManage).toHaveBeenCalledWith(recipeId, {
       id: userId,

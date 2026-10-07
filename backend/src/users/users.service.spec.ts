@@ -10,6 +10,9 @@ import {
   IdentityProvider,
   UserIdentity,
 } from './entities/user-identity.entity';
+import { DeviceToken } from '../notifications/entities/device-token.entity';
+import { NotificationSettings } from '../notifications/entities/notification-settings.entity';
+import { Notification } from '../notifications/entities/notification.entity';
 import { User, UserRole, UserStatus } from './entities/user.entity';
 import { UsersService } from './users.service';
 
@@ -92,6 +95,7 @@ describe('UsersService', () => {
         transaction: jest.fn((run: (m: typeof manager) => Promise<void>) =>
           run(manager),
         ),
+        delete: jest.fn(),
       },
     };
     recipeRepository = { count: jest.fn().mockResolvedValue(2) };
@@ -153,6 +157,11 @@ describe('UsersService', () => {
       'tokenVersion',
       1,
     );
+    // เครื่องที่หลุดจากระบบไม่ได้รับ push ของบัญชีนี้อีก
+    const { delete: removeDevices } = userRepository.manager as {
+      delete: jest.Mock;
+    };
+    expect(removeDevices).toHaveBeenCalledWith(DeviceToken, { userId: 'u1' });
   });
 
   it('deleting an account anonymises the user and clears caches', async () => {
@@ -175,6 +184,9 @@ describe('UsersService', () => {
       1,
     );
     expect(manager.createQueryBuilder).toHaveBeenCalledTimes(2);
+    for (const entity of [DeviceToken, Notification, NotificationSettings]) {
+      expect(manager.delete).toHaveBeenCalledWith(entity, { userId: 'u1' });
+    }
     expect(cache.invalidate).toHaveBeenCalledTimes(3);
   });
 

@@ -3,6 +3,8 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RecipeAccessService } from '../recipe-access/recipe-access.service';
 import { Recipe } from '../recipes/entities/recipe.entity';
+import { NotificationType } from '../notifications/entities/notification.entity';
+import type { NotificationsService } from '../notifications/notifications.service';
 import { Review, ReviewStatus } from './entities/review.entity';
 import { ReviewsService } from './reviews.service';
 
@@ -203,5 +205,33 @@ describe('ReviewsService', () => {
     ).resolves.toEqual(expect.objectContaining({ count: 0 }));
 
     recipes.findOne.mockResolvedValue({ ...draft, status: 'published' });
+  });
+  it('notifies the recipe owner about a first review but not about edits', async () => {
+    const notifications = { notifyRecipeOwner: jest.fn() };
+    const notifying = new ReviewsService(
+      reviews as unknown as Repository<Review>,
+      recipes as unknown as Repository<Recipe>,
+      access as unknown as RecipeAccessService,
+      undefined,
+      notifications as unknown as NotificationsService,
+    );
+    reviews.findOneOrFail.mockResolvedValue(review);
+
+    reviews.findOne.mockResolvedValueOnce(null);
+    await notifying.upsertMine('recipe-1', 'user-1', {
+      rating: 5,
+      comment: ' อร่อยมาก ',
+    });
+    expect(notifications.notifyRecipeOwner).toHaveBeenCalledWith({
+      type: NotificationType.RECIPE_REVIEWED,
+      recipeId: 'recipe-1',
+      actorId: 'user-1',
+      data: { rating: 5, excerpt: 'อร่อยมาก' },
+    });
+
+    notifications.notifyRecipeOwner.mockClear();
+    reviews.findOne.mockResolvedValueOnce({ id: 'review-1' });
+    await notifying.upsertMine('recipe-1', 'user-1', { rating: 3 });
+    expect(notifications.notifyRecipeOwner).not.toHaveBeenCalled();
   });
 });
