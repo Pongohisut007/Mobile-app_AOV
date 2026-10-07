@@ -8,6 +8,9 @@ import { Cart } from '../cart/entities/cart.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
 import { Ingredient } from '../ingredients/entities/ingredient.entity';
+import { DeviceToken } from '../notifications/entities/device-token.entity';
+import { NotificationSettings } from '../notifications/entities/notification-settings.entity';
+import { Notification } from '../notifications/entities/notification.entity';
 import { RecipeIngredient } from '../ingredients/entities/recipe-ingredient.entity';
 import { OrderItem } from '../orders/entities/order-item.entity';
 import { Order } from '../orders/entities/order.entity';
@@ -41,6 +44,9 @@ const entities = [
   Banner,
   Cart,
   CartItem,
+  Notification,
+  DeviceToken,
+  NotificationSettings,
 ];
 
 @Module({

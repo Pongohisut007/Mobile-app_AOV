@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DataSource, EntityManager, IsNull, MoreThan } from 'typeorm';
 import { CartItem } from '../cart/entities/cart-item.entity';
@@ -15,6 +10,8 @@ import {
   RecipeAccessType,
 } from '../recipe-access/entities/recipe-access.entity';
 import { assertPurchasable } from '../recipes/recipe-permissions';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 export interface MockPurchaseResult {
   status: 'purchased' | 'already_owned';
@@ -24,36 +21,34 @@ export interface MockPurchaseResult {
   transactionId: string | null;
 }
 
+/**
+ * ซื้อจำลองใช้ได้ทุก environment รวม production
+ * (ยังไม่มีระบบจ่ายเงินจริง แอปแจกเป็น APK ใช้ Google Play Billing ไม่ได้)
+ */
 @Injectable()
 export class IapService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly configService: ConfigService,
+    @Optional()
+    private readonly notifications?: NotificationsService,
   ) {}
 
   async createMockPurchase(
     userId: string,
     cartItemId: string,
   ): Promise<MockPurchaseResult> {
-    this.assertMockPurchasesEnabled();
-
-    return this.dataSource.transaction((manager) =>
+    const result = await this.dataSource.transaction((manager) =>
       this.purchaseCartItem(manager, userId, cartItemId),
     );
-  }
-
-  private assertMockPurchasesEnabled(): void {
-    const appEnv = this.configService.get<string>('app.env');
-    const explicitlyDisabled =
-      this.configService.get<string>('IAP_MOCK_ENABLED') === 'false';
-
-    // A fake purchase endpoint must never be usable in production.
-    // Staging allows it (unless IAP_MOCK_ENABLED=false) until real billing exists.
-    if (appEnv === 'production' || explicitlyDisabled) {
-      throw new ServiceUnavailableException(
-        'Mock purchases are disabled in this environment.',
-      );
+    // แจ้ง creator หลังจ่ายเงินสำเร็จ (commit แล้ว) เท่านั้น
+    if (result.status === 'purchased') {
+      await this.notifications?.notifyRecipeOwner({
+        type: NotificationType.RECIPE_PURCHASED,
+        recipeId: result.recipeId,
+        actorId: userId,
+      });
     }
+    return result;
   }
 
   private async purchaseCartItem(

@@ -10,6 +10,7 @@ import 'package:flutter_application_1/repositories/token_storage.dart';
 import 'package:flutter_application_1/routes/app_routes.dart';
 import 'package:flutter_application_1/views/pages/food_detail_page.dart';
 import 'package:flutter_application_1/widgets/common/app_network_image.dart';
+import 'package:flutter_application_1/widgets/common/time_ago.dart';
 import 'package:flutter_application_1/widgets/profile/profile_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/l10n/l10n.dart';
@@ -19,24 +20,12 @@ class PostCard extends StatelessWidget {
 
   final Food food;
 
-  // แปลง DateTime → "x นาทีที่แล้ว / x ชั่วโมงที่แล้ว / x วันที่แล้ว"
-  String _timeAgo(BuildContext context, DateTime? dt) {
-    if (dt == null) return '';
-    final l10n = context.l10n;
-    final diff = DateTime.now().difference(dt);
-    if (diff.inSeconds < 60) return l10n.timeJustNow;
-    if (diff.inMinutes < 60) return l10n.timeMinutesAgo(diff.inMinutes);
-    if (diff.inHours < 24) return l10n.timeHoursAgo(diff.inHours);
-    if (diff.inDays < 30) return l10n.timeDaysAgo(diff.inDays);
-    if (diff.inDays < 365) {
-      return l10n.timeMonthsAgo((diff.inDays / 30).floor());
-    }
-    return l10n.timeYearsAgo((diff.inDays / 365).floor());
-  }
-
   @override
   Widget build(BuildContext context) {
-    final timeLabel = _timeAgo(context, food.publishedAt);
+    final publishedAt = food.publishedAt;
+    final timeLabel = publishedAt == null
+        ? ''
+        : timeAgo(context.l10n, publishedAt);
 
     // การ์ดขาวมุมโค้ง 20 มีเงาจาง ๆ เหมือนการ์ดอาหารหน้า Home
     return Padding(

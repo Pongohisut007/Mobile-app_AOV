@@ -3475,6 +3475,162 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ซื้อสูตรเพื่อดูปริมาณและวิธีเตรียมวัตถุดิบ'**
   String get ingredientAmountsLocked;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'การแจ้งเตือน'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsTooltip.
+  ///
+  /// In th, this message translates to:
+  /// **'การแจ้งเตือน'**
+  String get notificationsTooltip;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In th, this message translates to:
+  /// **'ยังไม่มีการแจ้งเตือน'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationsEmptyHint.
+  ///
+  /// In th, this message translates to:
+  /// **'เมื่อมีคนซื้อ รีวิว หรือคอมเมนต์สูตรของคุณ จะแจ้งที่นี่'**
+  String get notificationsEmptyHint;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In th, this message translates to:
+  /// **'อ่านทั้งหมดแล้ว'**
+  String get notificationsMarkAllRead;
+
+  /// No description provided for @notificationsSignInRequired.
+  ///
+  /// In th, this message translates to:
+  /// **'เข้าสู่ระบบเพื่อดูการแจ้งเตือน'**
+  String get notificationsSignInRequired;
+
+  /// No description provided for @actionLoadNotifications.
+  ///
+  /// In th, this message translates to:
+  /// **'โหลดการแจ้งเตือน'**
+  String get actionLoadNotifications;
+
+  /// No description provided for @notificationOpen.
+  ///
+  /// In th, this message translates to:
+  /// **'ดู'**
+  String get notificationOpen;
+
+  /// No description provided for @notificationSomeone.
+  ///
+  /// In th, this message translates to:
+  /// **'มีคน'**
+  String get notificationSomeone;
+
+  /// No description provided for @notificationDeletedRecipe.
+  ///
+  /// In th, this message translates to:
+  /// **'สูตรที่ถูกลบแล้ว'**
+  String get notificationDeletedRecipe;
+
+  /// No description provided for @notificationPurchased.
+  ///
+  /// In th, this message translates to:
+  /// **'{name} ซื้อสูตร \"{recipe}\" ของคุณ'**
+  String notificationPurchased(String name, String recipe);
+
+  /// No description provided for @notificationHidden.
+  ///
+  /// In th, this message translates to:
+  /// **'สูตร \"{recipe}\" ของคุณถูกทีมงานซ่อนจากผู้ใช้อื่น'**
+  String notificationHidden(String recipe);
+
+  /// No description provided for @notificationRejected.
+  ///
+  /// In th, this message translates to:
+  /// **'สูตร \"{recipe}\" ของคุณไม่ผ่านการตรวจ แก้ไขแล้วลองใหม่ได้'**
+  String notificationRejected(String recipe);
+
+  /// No description provided for @notificationReviewed.
+  ///
+  /// In th, this message translates to:
+  /// **'{name} ให้ {rating} ดาวกับ \"{recipe}\"'**
+  String notificationReviewed(String name, int rating, String recipe);
+
+  /// No description provided for @notificationCommented.
+  ///
+  /// In th, this message translates to:
+  /// **'{name} คอมเมนต์ใน \"{recipe}\"'**
+  String notificationCommented(String name, String recipe);
+
+  /// No description provided for @notificationGeneric.
+  ///
+  /// In th, this message translates to:
+  /// **'มีความเคลื่อนไหวใน \"{recipe}\"'**
+  String notificationGeneric(String recipe);
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In th, this message translates to:
+  /// **'การแจ้งเตือน'**
+  String get settingsNotifications;
+
+  /// No description provided for @pushNotifications.
+  ///
+  /// In th, this message translates to:
+  /// **'การแจ้งเตือนแบบพุช'**
+  String get pushNotifications;
+
+  /// No description provided for @pushNotificationsHint.
+  ///
+  /// In th, this message translates to:
+  /// **'แจ้งเตือนบนเครื่อง แม้ไม่ได้เปิดแอปอยู่'**
+  String get pushNotificationsHint;
+
+  /// No description provided for @pushNotificationsBlocked.
+  ///
+  /// In th, this message translates to:
+  /// **'ถูกปิดในการตั้งค่าของเครื่อง เปิดการแจ้งเตือนของแอปก่อน'**
+  String get pushNotificationsBlocked;
+
+  /// No description provided for @pushNotificationsUnavailable.
+  ///
+  /// In th, this message translates to:
+  /// **'เครื่องนี้ยังรับการแจ้งเตือนแบบพุชไม่ได้ (ดูได้ในกล่องแจ้งเตือน)'**
+  String get pushNotificationsUnavailable;
+
+  /// No description provided for @notifySales.
+  ///
+  /// In th, this message translates to:
+  /// **'มีคนซื้อสูตรของฉัน'**
+  String get notifySales;
+
+  /// No description provided for @notifyModeration.
+  ///
+  /// In th, this message translates to:
+  /// **'สูตรถูกซ่อนหรือไม่ผ่านการตรวจ'**
+  String get notifyModeration;
+
+  /// No description provided for @notifyReviews.
+  ///
+  /// In th, this message translates to:
+  /// **'รีวิวใหม่ในสูตรของฉัน'**
+  String get notifyReviews;
+
+  /// No description provided for @notifyComments.
+  ///
+  /// In th, this message translates to:
+  /// **'คอมเมนต์ใหม่ในสูตรของฉัน'**
+  String get notifyComments;
+
+  /// No description provided for @notificationSettingsSaveFailed.
+  ///
+  /// In th, this message translates to:
+  /// **'บันทึกการตั้งค่าการแจ้งเตือนไม่สำเร็จ'**
+  String get notificationSettingsSaveFailed;
 }
 
 class _AppLocalizationsDelegate

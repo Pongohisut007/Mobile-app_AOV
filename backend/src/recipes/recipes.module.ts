@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { UploadsModule } from '../uploads/uploads.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { Favorite } from '../favorites/entities/favorite.entity';
@@ -25,6 +26,7 @@ import { Recipe } from './entities/recipe.entity';
       RecipeComment,
     ]),
     RecipeAccessModule,
+    NotificationsModule,
   ],
   controllers: [RecipesController],
   providers: [RecipesService],

@@ -22,6 +22,8 @@ import 'package:flutter_application_1/widgets/common/session_expiry_listener.dar
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_application_1/widgets/common/app_menu.dart';
 import 'package:flutter_application_1/widgets/common/app_sheet.dart';
+import 'package:flutter_application_1/data/notification_center.dart';
+import 'package:flutter_application_1/data/push_notifications.dart';
 
 Future<void> main() async {
   // ไม่ได้ส่ง --dart-define-from-file มา: แจ้งชัด ๆ ดีกว่าไปพังตอนยิง API
@@ -35,7 +37,12 @@ Future<void> main() async {
   // ภาษาที่ผู้ใช้เลือกไว้ (หน้าตั้งค่า) ต้องรู้ก่อนวาดหน้าแรก ไม่งั้นจะเห็นไทยแวบหนึ่ง
   await AppLanguage.load();
   await TokenStorage.loadCurrentUser();
+  // push (FCM) ไม่ได้ตั้งค่าใน config = ข้ามไป แอปส่วนอื่นใช้ได้ปกติ
+  await PushNotifications.init();
   runApp(const MyApp());
+  // ตัวเลขบนกระดิ่ง + ลงทะเบียนเครื่องรับ push ตาม login/logout
+  NotificationCenter.start();
+  PushNotifications.openInitialMessage();
 }
 
 class MyApp extends StatelessWidget {

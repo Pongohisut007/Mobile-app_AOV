@@ -992,5 +992,85 @@
   "ingredientAmountsLocked": "ซื้อสูตรเพื่อดูปริมาณและวิธีเตรียมวัตถุดิบ",
   "@ingredientsEmptyHint": {
     "description": "Shown in the create-recipe form when no ingredients were added"
-  }
+  },
+  "notificationsTitle": "การแจ้งเตือน",
+  "notificationsTooltip": "การแจ้งเตือน",
+  "notificationsEmpty": "ยังไม่มีการแจ้งเตือน",
+  "notificationsEmptyHint": "เมื่อมีคนซื้อ รีวิว หรือคอมเมนต์สูตรของคุณ จะแจ้งที่นี่",
+  "notificationsMarkAllRead": "อ่านทั้งหมดแล้ว",
+  "notificationsSignInRequired": "เข้าสู่ระบบเพื่อดูการแจ้งเตือน",
+  "actionLoadNotifications": "โหลดการแจ้งเตือน",
+  "notificationOpen": "ดู",
+  "notificationSomeone": "มีคน",
+  "notificationDeletedRecipe": "สูตรที่ถูกลบแล้ว",
+  "notificationPurchased": "{name} ซื้อสูตร \"{recipe}\" ของคุณ",
+  "@notificationPurchased": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "recipe": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationHidden": "สูตร \"{recipe}\" ของคุณถูกทีมงานซ่อนจากผู้ใช้อื่น",
+  "@notificationHidden": {
+    "placeholders": {
+      "recipe": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRejected": "สูตร \"{recipe}\" ของคุณไม่ผ่านการตรวจ แก้ไขแล้วลองใหม่ได้",
+  "@notificationRejected": {
+    "placeholders": {
+      "recipe": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationReviewed": "{name} ให้ {rating} ดาวกับ \"{recipe}\"",
+  "@notificationReviewed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "rating": {
+        "type": "int"
+      },
+      "recipe": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationCommented": "{name} คอมเมนต์ใน \"{recipe}\"",
+  "@notificationCommented": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "recipe": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationGeneric": "มีความเคลื่อนไหวใน \"{recipe}\"",
+  "@notificationGeneric": {
+    "placeholders": {
+      "recipe": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsNotifications": "การแจ้งเตือน",
+  "pushNotifications": "การแจ้งเตือนแบบพุช",
+  "pushNotificationsHint": "แจ้งเตือนบนเครื่อง แม้ไม่ได้เปิดแอปอยู่",
+  "pushNotificationsBlocked": "ถูกปิดในการตั้งค่าของเครื่อง เปิดการแจ้งเตือนของแอปก่อน",
+  "pushNotificationsUnavailable": "เครื่องนี้ยังรับการแจ้งเตือนแบบพุชไม่ได้ (ดูได้ในกล่องแจ้งเตือน)",
+  "notifySales": "มีคนซื้อสูตรของฉัน",
+  "notifyModeration": "สูตรถูกซ่อนหรือไม่ผ่านการตรวจ",
+  "notifyReviews": "รีวิวใหม่ในสูตรของฉัน",
+  "notifyComments": "คอมเมนต์ใหม่ในสูตรของฉัน",
+  "notificationSettingsSaveFailed": "บันทึกการตั้งค่าการแจ้งเตือนไม่สำเร็จ"
 }

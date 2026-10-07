@@ -89,12 +89,17 @@ class RecipeFormStyle {
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
       );
 
-  static AppBar appBar({required String title, Widget? leading}) => AppBar(
+  static AppBar appBar({
+    required String title,
+    Widget? leading,
+    List<Widget>? actions,
+  }) => AppBar(
     backgroundColor: background,
     foregroundColor: ink,
     surfaceTintColor: Colors.transparent,
     scrolledUnderElevation: 0,
     leading: leading,
+    actions: actions,
     title: Text(
       title,
       maxLines: 1,

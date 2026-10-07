@@ -25,6 +25,7 @@ import {
   visibleRecipeFilters,
 } from './recipe-permissions';
 import { PaginatedResult, RecipesService } from './recipes.service';
+import { UserRole } from '../users/entities/user.entity';
 
 @Controller('recipes')
 export class RecipesController {
@@ -91,7 +92,11 @@ export class RecipesController {
   ): Promise<Recipe> {
     assertRecipeFieldsAllowed(dto, user, { changingType: true });
     await this.recipesService.assertCanManage(id, user);
-    return this.recipesService.update(id, dto);
+    return this.recipesService.update(
+      id,
+      dto,
+      user.role === UserRole.ADMIN ? user.id : undefined,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
