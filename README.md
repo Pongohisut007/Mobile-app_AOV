@@ -23,22 +23,21 @@ RolesGuard ใช้ตรวจ "สิทธิ์"
 
 ## Mock Android purchase flow
 
-The cart includes a development-only Google Play Billing simulation. In a debug
-build, Checkout lets a tester choose success, failure, or cancellation. A
+The cart includes a Google Play Billing simulation (there is no real billing
+yet). Checkout lets the user choose success, failure, or cancellation. A
 successful purchase calls `POST /iap/mock/purchases`; the backend creates a paid
 order and payment, grants recipe access, and removes that recipe from the cart.
 
-The backend always rejects mock purchases when `APP_ENV=production`. On
-`development` and `staging` they are allowed; set `IAP_MOCK_ENABLED=false` to
-disable them there.
+Mock purchases are allowed in every environment, `production` included, because
+the app is distributed as an APK outside Google Play and has no real billing
+yet.
 
 `APP_ENV` (`development` | `staging` | `production`) controls app behavior and is
 separate from `NODE_ENV` (the Docker image always sets `NODE_ENV=production`).
 Only `development` auto-syncs the database schema; `staging` and `production`
 must run `npm run migration:run`. If `APP_ENV` is not set, `NODE_ENV=production`
-counts as `production` and anything else as `development`. Flutter release
-builds hide the successful mock path by default; for a non-production release
-test build, pass `--dart-define=ENABLE_MOCK_IAP=true` explicitly.
+counts as `production` and anything else as `development`. In the Flutter app,
+every `config/*.json` turns mock purchases on (debug and release builds alike).
 
 ## Flutter config (dev / staging / prod)
 
@@ -62,7 +61,7 @@ source branch.
 | `API_BASE_URL` | backend URL (the emulator reaches the host machine at `10.0.2.2`; a real phone needs the computer's IP) |
 | `GOOGLE_SERVER_CLIENT_ID` | Web client ID, same value as `GOOGLE_CLIENT_IDS` in the backend |
 | `GOOGLE_IOS_CLIENT_ID` | iOS client ID (iOS builds only) |
-| `ENABLE_MOCK_IAP` | optional; defaults to on for debug and off for release |
+| `ENABLE_MOCK_IAP` | mock purchases; `true` in every config (defaults to on if missing) |
 
 Running without a config file makes the app stop at startup and say that `API_BASE_URL` is not set.
 

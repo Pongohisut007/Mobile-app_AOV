@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Optional,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DataSource, EntityManager, IsNull, MoreThan } from 'typeorm';
 import { CartItem } from '../cart/entities/cart-item.entity';
@@ -27,11 +21,14 @@ export interface MockPurchaseResult {
   transactionId: string | null;
 }
 
+/**
+ * ซื้อจำลองใช้ได้ทุก environment รวม production
+ * (ยังไม่มีระบบจ่ายเงินจริง แอปแจกเป็น APK ใช้ Google Play Billing ไม่ได้)
+ */
 @Injectable()
 export class IapService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly configService: ConfigService,
     @Optional()
     private readonly notifications?: NotificationsService,
   ) {}
@@ -40,8 +37,6 @@ export class IapService {
     userId: string,
     cartItemId: string,
   ): Promise<MockPurchaseResult> {
-    this.assertMockPurchasesEnabled();
-
     const result = await this.dataSource.transaction((manager) =>
       this.purchaseCartItem(manager, userId, cartItemId),
     );
@@ -54,20 +49,6 @@ export class IapService {
       });
     }
     return result;
-  }
-
-  private assertMockPurchasesEnabled(): void {
-    const appEnv = this.configService.get<string>('app.env');
-    const explicitlyDisabled =
-      this.configService.get<string>('IAP_MOCK_ENABLED') === 'false';
-
-    // A fake purchase endpoint must never be usable in production.
-    // Staging allows it (unless IAP_MOCK_ENABLED=false) until real billing exists.
-    if (appEnv === 'production' || explicitlyDisabled) {
-      throw new ServiceUnavailableException(
-        'Mock purchases are disabled in this environment.',
-      );
-    }
   }
 
   private async purchaseCartItem(

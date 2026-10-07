@@ -85,7 +85,8 @@ Frontend build บน `main` ต้องมี Jenkins environment variable
 `android-upload-keystore` (ไฟล์), `android-keystore-password`,
 `android-key-alias` และ `android-key-password` (secret text)
 
-ขั้นตอนนี้ build และเก็บ App Bundle แบบ release ที่เซ็นด้วย release key
+ขั้นตอนนี้ build และเก็บ APK แบบ release ที่เซ็นด้วย release key สำหรับแจกให้ติดตั้งเอง
+(บัญชี Android Developer Console แบบ limited distribution ไม่ได้ลง Play Store)
 โดยใช้ `config/prod.json` และใส่ API URL สำหรับ build ครั้งนั้น พร้อมปิด
 การซื้อจำลอง หากยังไม่ได้ตั้ง URL และ credentials งาน build บน `main`
 จะล้มเหลวตามที่ตั้งใจไว้ ส่วน debug build ยังใช้ debug key ที่ทีมแชร์กัน

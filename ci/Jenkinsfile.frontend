@@ -276,7 +276,7 @@ if parsed.scheme != 'https' or not parsed.netloc:
 
 config = json.loads(Path('config/prod.json').read_text(encoding='utf-8'))
 config['API_BASE_URL'] = url
-config['ENABLE_MOCK_IAP'] = False
+config['ENABLE_MOCK_IAP'] = True
 Path('config/ci-release.json').write_text(json.dumps(config), encoding='utf-8')
 PY
                     '''
@@ -294,7 +294,7 @@ PY
                                 test -n "$ANDROID_KEYSTORE_PASSWORD"
                                 test -n "$ANDROID_KEY_ALIAS"
                                 test -n "$ANDROID_KEY_PASSWORD"
-                                flutter build appbundle --release \
+                                flutter build apk --release \
                                     --dart-define-from-file=config/ci-release.json
                             '''
                         }
@@ -304,7 +304,7 @@ PY
             post {
                 success {
                     archiveArtifacts(
-                        artifacts: 'frontend/build/app/outputs/bundle/release/app-release.aab',
+                        artifacts: 'frontend/build/app/outputs/flutter-apk/app-release.apk',
                         fingerprint: true
                     )
                 }

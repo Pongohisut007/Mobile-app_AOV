@@ -5,8 +5,8 @@ import { registerAs } from '@nestjs/config';
  * - NODE_ENV บอก Node/ไลบรารีว่ารันแบบ production (Dockerfile ตั้ง production เสมอ)
  * - APP_ENV บอกพฤติกรรมของแอป:
  *   development = แก้ schema อัตโนมัติ (synchronize), ซื้อจำลองได้, ไม่มี SMTP พิมพ์อีเมลลง log
- *   staging     = ใช้ migration, ซื้อจำลองได้ (ปิดด้วย IAP_MOCK_ENABLED=false), ไม่มี SMTP พิมพ์อีเมลลง log
- *   production  = ใช้ migration, ซื้อจำลองไม่ได้เด็ดขาด, ไม่มี SMTP = error
+ *   staging     = ใช้ migration, ซื้อจำลองได้, ไม่มี SMTP พิมพ์อีเมลลง log
+ *   production  = ใช้ migration, ซื้อจำลองได้ (ยังไม่มีระบบจ่ายเงินจริง), ไม่มี SMTP = error
  */
 export const APP_ENVS = ['development', 'staging', 'production'] as const;
 export type AppEnv = (typeof APP_ENVS)[number];
