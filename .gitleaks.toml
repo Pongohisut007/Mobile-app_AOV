@@ -13,3 +13,20 @@ paths = [
 regexes = [
   '''^abc123def456$'''
 ]
+
+[[rules]]
+id = "gcp-api-key"
+
+# Firebase client API key ถูกฝังในแอปที่แจกอยู่แล้ว ไม่ใช่ความลับ (Google ออกแบบให้เป็นแบบนี้)
+# ความปลอดภัยมาจากการจำกัด key ใน Google Cloud Console (package + SHA-1, จำกัด API)
+# อนุญาตเฉพาะบรรทัด FIREBASE_API_KEY ใน config ของแอป ที่อื่นยังจับตามปกติ
+[[rules.allowlists]]
+description = "Firebase client API key in Flutter dart-define configs (public by design)"
+condition = "AND"
+paths = [
+  '''^frontend/config/(dev|staging|prod)\.json$'''
+]
+regexTarget = "line"
+regexes = [
+  '''"FIREBASE_API_KEY"\s*:'''
+]
