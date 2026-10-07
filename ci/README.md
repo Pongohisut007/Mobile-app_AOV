@@ -106,7 +106,7 @@ agent images, PVC และเครื่องมือของ CI ตาม�
 - Backend บน `develop` และ `main`: credential `dockerhub` ชนิด Username with
   password สำหรับ push image, `github-jenkins` สำหรับเขียน GitOps repo,
   การตั้งค่า SonarQube ชื่อ `SonarQube` พร้อม webhook สำหรับ Quality Gate,
-  และ `discord-webhook-url` สำหรับการแจ้งผลของ trusted branch
+  และ `discord-webhook-url` สำหรับการแจ้งผล CI
 - Backend บน `main` เพิ่ม `cosign-private-key` (file), `cosign-password`
   (secret text) และ `cosign-public-key` (file) สำหรับเซ็นและตรวจ SBOM
 - Frontend บน `main` เพิ่ม `MOBILE_API_BASE_URL` เป็น HTTPS URL และ Android
@@ -114,6 +114,22 @@ agent images, PVC และเครื่องมือของ CI ตาม�
 
 ตรวจว่า Jenkins Multibranch jobs ชี้ไปที่ `ci/Jenkinsfile.backend` และ
 `ci/Jenkinsfile.frontend` และเห็น branch ที่ push ขึ้น remote แล้ว
+
+ทั้งสอง Pipeline แจ้ง Discord เมื่อ CI ของ PR ที่มี target เป็น `main` หรือ
+`develop` จบ รวมถึงผล success, failure, unstable และ aborted โดยระบุเลข PR,
+source, target และลิงก์ PR ส่วน build ของ branch `main`/`develop` หลัง merge
+ยังแจ้งเช่นเดิม ต้องตั้งค่า Multibranch ให้ค้นพบ PR เหล่านี้และให้ trusted PR
+build เข้าถึง credential `discord-webhook-url` ห้ามเปิด credential นี้ให้ PR
+จาก source ที่ไม่เชื่อถือ เพราะ PR แก้ Jenkinsfile และสคริปต์ส่งแจ้งเตือนได้
+หากต้องแจ้ง PR จาก fork ด้วย ให้ส่งผ่าน Jenkins job ที่ใช้ trusted Jenkinsfile
+แยกต่างหากซึ่งไม่ได้รันโค้ดจาก PR
+
+แจ้งเตือน Frontend และ Backend แสดง branch/PR กับ full commit SHA เดียวกัน
+เพื่อจับคู่สอง job ได้ โดยหัวข้อความระบุ component ชัดเจน Frontend บน
+`main` จะแนบลิงก์ release APK และบน `develop` จะแนบลิงก์ debug APK เมื่อ
+build และ archive artifact สำเร็จ หากรอบนั้นไม่มีการเปลี่ยน frontend หรือ
+build APK ไม่สำเร็จ จะไม่มีลิงก์ APK ลิงก์เปิดผ่าน Jenkins จึงต้องมีสิทธิ์
+เข้าถึง Jenkins และ Jenkins ต้องตั้ง `BUILD_URL` ให้เป็น URL ที่ผู้รับเปิดได้
 
 ### ค่า runtime ใน staging และ production
 
