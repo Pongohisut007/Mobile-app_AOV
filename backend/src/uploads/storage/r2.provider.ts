@@ -35,13 +35,21 @@ export class R2Provider {
     return this.client.send(command);
   }
 
-  presignUpload(key: string, contentType: string, expiresIn: number) {
+  // ContentLength ถูกเซ็นไปกับลิงก์ (content-length อยู่ใน signed headers)
+  // ส่งไฟล์ขนาดไม่ตรงกับที่ขอไว้ R2 จะปฏิเสธ จึงอัปโหลดไฟล์ใหญ่เกินเพดานไม่ได้
+  presignUpload(
+    key: string,
+    contentType: string,
+    contentLength: number,
+    expiresIn: number,
+  ) {
     return getSignedUrl(
       this.client,
       new PutObjectCommand({
         Bucket: this.config.getOrThrow<string>('r2.bucketName'),
         Key: key,
         ContentType: contentType,
+        ContentLength: contentLength,
       }),
       { expiresIn },
     );

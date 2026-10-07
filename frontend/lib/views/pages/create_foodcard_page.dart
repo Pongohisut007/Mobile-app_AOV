@@ -474,13 +474,12 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
     if (_isSaving || _isBusy) return null;
     setState(() => _isPickingFile = true);
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final selectedFile = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: allowedExtensions,
       );
-      if (result == null || result.files.isEmpty) return null;
+      if (selectedFile == null) return null;
 
-      final selectedFile = result.files.single;
       final path = selectedFile.path;
       if (path == null) {
         throw Exception(appL10n.cannotOpenSelectedFile);
@@ -489,7 +488,7 @@ class _CreateFoodcardPageState extends State<CreateFoodcardPage> {
       var file = File(path);
       var name = selectedFile.name;
       var mimeType = _mimeType(kind, selectedFile.extension);
-      var size = selectedFile.size;
+      var size = await file.length();
       // ย่อรูปก่อน แล้วค่อยเช็กขนาด รูปต้นฉบับใหญ่เกินแต่ย่อแล้วผ่านก็ใช้ได้
       if (kind == UploadKind.images) {
         final prepared = await prepareImageForUpload(

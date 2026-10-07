@@ -63,15 +63,8 @@ export class UploadsController {
     return this.uploadsService.saveImage(file);
   }
 
-  @RateLimit('upload')
-  @Post('videos')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: 100 * 1024 * 1024 } }),
-  )
-  uploadVideo(@UploadedFile() file?: UploadedFileData): Promise<UploadResult> {
-    return this.uploadsService.saveVideo(file);
-  }
+  // วิดีโอไม่มี POST /uploads/videos แล้ว: multer เก็บทั้งไฟล์ (สูงสุด 100 MB) ไว้ใน RAM
+  // อัปโหลดพร้อมกันไม่กี่ไฟล์ก็ทำให้ pod หน่วยความจำเต็มได้ ใช้ presign + complete แทน
 
   // รูป/วิดีโอโหลดทีละหลายไฟล์ตอนเลื่อนหน้า (แอป cache ไว้แล้ว) ไม่นับรวมเพดาน
   @SkipThrottle()

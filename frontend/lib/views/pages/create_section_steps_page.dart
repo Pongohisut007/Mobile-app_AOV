@@ -72,13 +72,12 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
     try {
       const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
       const videoExtensions = ['mp4', 'webm', 'mov'];
-      final result = await FilePicker.platform.pickFiles(
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: [...imageExtensions, ...videoExtensions],
       );
-      if (result == null || result.files.isEmpty) return;
+      if (file == null) return;
 
-      final file = result.files.single;
       final path = file.path;
       if (path == null) throw Exception(appL10n.cannotOpenSelectedFile);
       final extension = file.extension?.toLowerCase();
@@ -91,7 +90,7 @@ class _CreateSectionStepsPageState extends State<CreateSectionStepsPage> {
       var upload = File(path);
       var name = file.name;
       var mimeType = _mimeType(kind, file.extension);
-      var size = file.size;
+      var size = await upload.length();
       // ย่อรูปก่อน แล้วค่อยเช็กขนาด (วิดีโออัปโหลดตามเดิม)
       if (!isVideo) {
         final prepared = await prepareImageForUpload(

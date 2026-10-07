@@ -111,6 +111,7 @@ export class UploadsService {
     const uploadUrl = await this.r2.presignUpload(
       `${kind}/${filename}`,
       mimeType,
+      size,
       expiresIn,
     );
     return {
@@ -164,10 +165,6 @@ export class UploadsService {
 
   saveImage(file?: UploadedFileData): Promise<UploadResult> {
     return this.save(file, UploadKind.IMAGES);
-  }
-
-  saveVideo(file?: UploadedFileData): Promise<UploadResult> {
-    return this.save(file, UploadKind.VIDEOS);
   }
 
   async open(

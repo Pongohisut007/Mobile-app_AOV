@@ -70,6 +70,11 @@ class RecipeCategorySection extends StatelessWidget {
                       return TextField(
                         controller: controller,
                         focusNode: focusNode,
+                        // แตะที่อื่น = ปิดรายการโดยไม่เลือก และล้างคำค้นที่ค้างไว้
+                        onTapOutside: (_) {
+                          focusNode.unfocus();
+                          controller.clear();
+                        },
                         decoration: RecipeFormStyle.input(
                           hint: context.l10n.searchCategoriesHint,
                           prefixIcon: const Icon(
