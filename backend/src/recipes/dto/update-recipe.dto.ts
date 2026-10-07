@@ -5,11 +5,12 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
-  IsNumberString,
   IsOptional,
   IsString,
   IsUUID,
   Length,
+  Matches,
+  Max,
   MaxLength,
   Min,
   ValidateNested,
@@ -22,6 +23,9 @@ import {
 import {
   CreateRecipeDto,
   CreateRecipeSectionDto,
+  PRICE_MESSAGE,
+  PRICE_PATTERN,
+  RECIPE_LIMITS,
   RecipeIngredientInputDto,
 } from './create-recipe.dto';
 
@@ -44,10 +48,12 @@ export class UpdateRecipeDto implements Partial<CreateRecipeDto> {
 
   @IsOptional()
   @IsString()
+  @MaxLength(RECIPE_LIMITS.shortDescription)
   shortDescription?: string | null;
 
   @IsOptional()
   @IsString()
+  @MaxLength(RECIPE_LIMITS.url)
   coverImageUrl?: string | null;
 
   @IsOptional()
@@ -55,22 +61,26 @@ export class UpdateRecipeDto implements Partial<CreateRecipeDto> {
   showImgCommu?: boolean;
 
   @IsOptional()
-  @IsNumberString()
+  @IsString()
+  @Matches(PRICE_PATTERN, { message: PRICE_MESSAGE })
   price?: string;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(RECIPE_LIMITS.minutes)
   preparationMinutes?: number | null;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(RECIPE_LIMITS.minutes)
   cookingMinutes?: number | null;
 
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(RECIPE_LIMITS.servings)
   servingCount?: number | null;
 
   @IsOptional()
@@ -88,12 +98,14 @@ export class UpdateRecipeDto implements Partial<CreateRecipeDto> {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(RECIPE_LIMITS.categories)
   @IsUUID('all', { each: true })
   categoryIds?: string[];
 
   // ถ้าส่งมา จะแทนที่ section/content เดิมทั้งหมด
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(RECIPE_LIMITS.sections)
   @ValidateNested({ each: true })
   @Type(() => CreateRecipeSectionDto)
   sections?: CreateRecipeSectionDto[];

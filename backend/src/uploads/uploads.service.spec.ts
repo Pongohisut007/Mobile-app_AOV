@@ -23,7 +23,7 @@ describe('UploadsService presigned uploads', () => {
     r2.download.mockImplementation(() => Promise.resolve(firstBytes(PNG)));
   });
 
-  it('signs an image PUT and preserves the existing read URL', async () => {
+  it('signs the declared size so a larger file cannot be uploaded', async () => {
     const result = await service.presign(UploadKind.IMAGES, 'image/png', 123);
     expect(result.method).toBe('PUT');
     expect(result.headers).toEqual({ 'Content-Type': 'image/png' });
@@ -32,6 +32,7 @@ describe('UploadsService presigned uploads', () => {
     expect(r2.presignUpload).toHaveBeenCalledWith(
       `images/${result.filename}`,
       'image/png',
+      123,
       300,
     );
   });

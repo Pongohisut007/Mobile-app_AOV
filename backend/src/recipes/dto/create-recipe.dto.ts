@@ -6,11 +6,11 @@ import {
   IsEnum,
   IsInt,
   IsNumber,
-  IsNumberString,
   IsOptional,
   IsString,
   IsUUID,
   Length,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -24,6 +24,29 @@ import {
   RecipeType,
 } from '../entities/recipe.entity';
 
+/**
+ * เพดานของข้อมูลสูตร กันค่าที่ทำให้ DB error (เลขเกิน integer) หรือทำงานหนักเกินเหตุ
+ * ตั้งไว้กว้างกว่าการใช้งานจริงมาก แอปปกติไม่มีทางชน
+ */
+export const RECIPE_LIMITS = {
+  minutes: 10_000,
+  servings: 1_000,
+  durationSeconds: 86_400,
+  sortOrder: 10_000,
+  sections: 100,
+  contentsPerSection: 100,
+  categories: 20,
+  shortDescription: 2_000,
+  sectionDescription: 5_000,
+  textContent: 10_000,
+  url: 2_048,
+} as const;
+
+/** ไม่ติดลบ ทศนิยมไม่เกิน 2 ตำแหน่ง ตรงกับคอลัมน์ numeric(12, 2) */
+export const PRICE_PATTERN = /^\d{1,10}(\.\d{1,2})?$/;
+export const PRICE_MESSAGE =
+  'price must be a non-negative number with at most 2 decimal places';
+
 export class CreateRecipeContentDto {
   @IsEnum(RecipeContentType)
   contentType!: RecipeContentType;
@@ -35,20 +58,24 @@ export class CreateRecipeContentDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(RECIPE_LIMITS.textContent)
   textContent?: string | null;
 
   @IsOptional()
   @IsString()
+  @MaxLength(RECIPE_LIMITS.url)
   mediaUrl?: string | null;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(RECIPE_LIMITS.durationSeconds)
   durationSeconds?: number | null;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(RECIPE_LIMITS.sortOrder)
   sortOrder?: number;
 }
 
@@ -59,11 +86,13 @@ export class CreateRecipeSectionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(RECIPE_LIMITS.sectionDescription)
   description?: string | null;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(RECIPE_LIMITS.sortOrder)
   sortOrder?: number;
 
   @IsOptional()
@@ -72,6 +101,7 @@ export class CreateRecipeSectionDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(RECIPE_LIMITS.contentsPerSection)
   @ValidateNested({ each: true })
   @Type(() => CreateRecipeContentDto)
   contents?: CreateRecipeContentDto[];
@@ -135,10 +165,12 @@ export class CreateRecipeDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(RECIPE_LIMITS.shortDescription)
   shortDescription?: string | null;
 
   @IsOptional()
   @IsString()
+  @MaxLength(RECIPE_LIMITS.url)
   coverImageUrl?: string | null;
 
   @IsOptional()
@@ -146,22 +178,26 @@ export class CreateRecipeDto {
   showImgCommu?: boolean;
 
   @IsOptional()
-  @IsNumberString()
+  @IsString()
+  @Matches(PRICE_PATTERN, { message: PRICE_MESSAGE })
   price?: string;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(RECIPE_LIMITS.minutes)
   preparationMinutes?: number | null;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(RECIPE_LIMITS.minutes)
   cookingMinutes?: number | null;
 
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(RECIPE_LIMITS.servings)
   servingCount?: number | null;
 
   @IsOptional()
@@ -178,11 +214,13 @@ export class CreateRecipeDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(RECIPE_LIMITS.categories)
   @IsUUID('all', { each: true })
   categoryIds?: string[];
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(RECIPE_LIMITS.sections)
   @ValidateNested({ each: true })
   @Type(() => CreateRecipeSectionDto)
   sections?: CreateRecipeSectionDto[];
