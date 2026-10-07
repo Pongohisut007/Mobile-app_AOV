@@ -59,6 +59,30 @@ JENKINS_API_TOKEN=<jenkins-api-token>
 
 เมื่อเห็น `Logged in as ...; watching ...` แปลว่า Bot เชื่อม Discord แล้ว Bot จะตรวจ Jenkins ต่อทุก 10 วินาที ถ้าปิด PowerShell หรือคอม sleep Bot จะหยุดทำงาน
 
+หาก Bot ขึ้น `Missing Access` หรือไม่ส่งปุ่ม ให้ตรวจการเข้าถึง Discord โดยไม่แสดง token:
+
+```powershell
+.\.venv\Scripts\python.exe bot.py --check-discord
+```
+
+ผลที่พร้อมใช้งานคือ `bot is in configured server: True`, `configured channel: accessible` และ `channel belongs to configured server: True`. หาก Bot แสดงใน Integrations แต่ไม่อยู่ใน Members ให้เชิญด้วย OAuth2 scope `bot` เข้า server ที่ต้องการอีกครั้ง
+
+### หาก Bot แสดง `Jenkins returned HTTP 403`
+
+หยุด Bot ด้วย `Ctrl+C` แล้วรันคำสั่งตรวจ API ซึ่งไม่พิมพ์ token:
+
+```powershell
+.\.venv\Scripts\python.exe bot.py --check-jenkins
+```
+
+- `identity: HTTP 403`, `authenticated=False` หรือ `authenticated-as=anonymous`: ตรวจ `JENKINS_USER` และ `JENKINS_API_TOKEN` ใน `.env` ว่าเป็น **username ของ Jenkins + API token ของ username นั้น** ไม่ใช่รหัสผ่าน, Discord token, หรือ Jenkins credential ID. หากมี reverse proxy หน้า Jenkins ให้ตรวจว่ามันส่ง `Authorization` header ถึง Jenkins
+- `identity: HTTP 200` แต่ `main job: HTTP 403`: บัญชี Bot ต้องมี `Overall/Read` และ `Job/Read` สำหรับ folder/job ทุกชั้นจนถึง backend `main`. ดู `required-permission` ในผลตรวจประกอบ
+- `main job: HTTP 200` แต่ `last build: HTTP 404`: job อาจยังไม่มี build หรือ URL branch `main` ไม่ถูกต้อง
+- `pending input: HTTP 404`: ตรวจว่ามี Pipeline: REST API plugin และ URL build ถูกต้อง; ระหว่างยังไม่มี build ก็อาจได้ 404
+- `X-Jenkins=no/unknown` ในคำตอบ 403: คำตอบอาจมาจาก reverse proxy แทน Jenkins ให้ตรวจกฎเข้าถึงของ proxy
+
+การอ่านด้วย `GET` ไม่ต้องใช้ CSRF crumb และ Bot ส่ง Basic authentication ตั้งแต่คำขอแรกอยู่แล้ว อย่าแก้ปัญหาด้วยการปิด Jenkins security หรือ CSRF protection
+
 ## 4. ทดลองแบบไม่ deploy production
 
 1. ตรวจว่า Bot ออนไลน์ใน Discord และ log ไม่มี HTTP 401/403/404 จาก Jenkins
