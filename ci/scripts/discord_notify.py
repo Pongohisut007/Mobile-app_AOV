@@ -5,6 +5,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from urllib.parse import quote
 
 
 def env(name: str, default: str = "-") -> str:
@@ -29,13 +30,16 @@ def build_payload(status: str) -> dict:
         "not_built": ("⏭️ CI Pipeline Not Built", 9807270),
     }
     title, color = titles[status]
+    component = env("CI_COMPONENT")
+    commit_sha = env("COMMIT_SHA")
     description = "Jenkins pipeline finished."
 
     fields = [
+        field("🧩 Component", component),
         field("📦 Job", f"`{env('JOB_NAME')}`"),
         field("🔢 Build", f"`#{env('BUILD_NUMBER')}`"),
         field("⚙️ CI Mode", f"`{env('CI_MODE')}`"),
-        field("🔖 Commit", f"`{env('COMMIT_SHA')}`"),
+        field("🔖 Commit", f"`{commit_sha}`", False),
     ]
 
     change_id = os.getenv("CHANGE_ID")
@@ -76,6 +80,10 @@ def build_payload(status: str) -> dict:
     build_url = os.getenv("BUILD_URL")
 
     if build_url:
+        apk_path = os.getenv("APK_ARTIFACT_PATH")
+        if apk_path:
+            apk_url = f"{build_url.rstrip('/')}/artifact/{quote(apk_path, safe='/')}"
+            fields.append(field("📱 Download APK", apk_url, False))
         fields.append(
             field(
                 "🔗 Jenkins Build",
@@ -86,10 +94,11 @@ def build_payload(status: str) -> dict:
 
     return {
         "username": "Jenkins CI",
+        "content": f"**CI · {env('CHANGE_TARGET') if change_id else env('BRANCH_NAME')} · {commit_sha[:7]}**",
         "allowed_mentions": {"parse": []},
         "embeds": [
             {
-                "title": title,
+                "title": f"{component} · {title}",
                 "description": description,
                 "color": color,
                 "fields": fields,

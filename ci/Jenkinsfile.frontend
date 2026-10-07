@@ -8,6 +8,7 @@ pipeline {
 
     environment {
         APP_NAME = 'recipy-mobile'
+        CI_COMPONENT = 'Frontend'
     }
 
     options {
@@ -33,7 +34,7 @@ pipeline {
                     }
 
                     env.COMMIT_SHA = sh(
-                        script: 'git rev-parse --short=7 HEAD',
+                        script: 'git rev-parse HEAD',
                         returnStdout: true
                     ).trim()
 
@@ -256,6 +257,9 @@ pipeline {
                         artifacts: 'frontend/build/app/outputs/flutter-apk/app-debug.apk',
                         fingerprint: true
                     )
+                    script {
+                        env.APK_ARTIFACT_PATH = 'frontend/build/app/outputs/flutter-apk/app-debug.apk'
+                    }
                 }
             }
         }
@@ -315,6 +319,9 @@ PY
                         artifacts: 'frontend/build/app/outputs/flutter-apk/app-release.apk',
                         fingerprint: true
                     )
+                    script {
+                        env.APK_ARTIFACT_PATH = 'frontend/build/app/outputs/flutter-apk/app-release.apk'
+                    }
                 }
                 always {
                     sh 'rm -f frontend/config/ci-release.json'

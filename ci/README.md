@@ -124,6 +124,13 @@ build เข้าถึง credential `discord-webhook-url` ห้ามเป�
 หากต้องแจ้ง PR จาก fork ด้วย ให้ส่งผ่าน Jenkins job ที่ใช้ trusted Jenkinsfile
 แยกต่างหากซึ่งไม่ได้รันโค้ดจาก PR
 
+แจ้งเตือน Frontend และ Backend แสดง branch/PR กับ full commit SHA เดียวกัน
+เพื่อจับคู่สอง job ได้ โดยหัวข้อความระบุ component ชัดเจน Frontend บน
+`main` จะแนบลิงก์ release APK และบน `develop` จะแนบลิงก์ debug APK เมื่อ
+build และ archive artifact สำเร็จ หากรอบนั้นไม่มีการเปลี่ยน frontend หรือ
+build APK ไม่สำเร็จ จะไม่มีลิงก์ APK ลิงก์เปิดผ่าน Jenkins จึงต้องมีสิทธิ์
+เข้าถึง Jenkins และ Jenkins ต้องตั้ง `BUILD_URL` ให้เป็น URL ที่ผู้รับเปิดได้
+
 ### ค่า runtime ใน staging และ production
 
 Chart สร้าง ConfigMap สำหรับ `NODE_ENV`, `APP_ENV`, `PORT`, `DB_HOST`,

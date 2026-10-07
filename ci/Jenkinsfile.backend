@@ -8,6 +8,7 @@ pipeline {
 
     environment {
         APP_NAME = 'taskflow-api'
+        CI_COMPONENT = 'Backend'
         NODE_ENV = 'test'
 
         // Public Docker Hub repository pulled by the k3s cluster.
@@ -48,7 +49,7 @@ pipeline {
                     }
 
                     env.COMMIT_SHA = sh(
-                        script: 'git rev-parse --short=7 HEAD',
+                        script: 'git rev-parse HEAD',
                         returnStdout: true
                     ).trim()
 
