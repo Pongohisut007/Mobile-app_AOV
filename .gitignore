@@ -74,4 +74,9 @@ crash.*.log
 tfplan
 plan.txt
 
+# Local Discord approval bot credentials and state
+ci/discord-approval-bot/.env
+ci/discord-approval-bot/.state.sqlite3*
+ci/discord-approval-bot/.venv/
+ci/discord-approval-bot/__pycache__/
 reports
