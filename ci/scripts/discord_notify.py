@@ -21,24 +21,35 @@ def field(name: str, value: str, inline: bool = True) -> dict:
 
 
 def build_payload(status: str) -> dict:
-    success = status == "success"
-
-    if success:
-        title = "✅ CI Pipeline Succeeded"
-        description = "Jenkins pipeline completed successfully."
-        color = 3066993
-    else:
-        title = "❌ CI Pipeline Failed"
-        description = "Jenkins pipeline encountered an error."
-        color = 15158332
+    titles = {
+        "success": ("✅ CI Pipeline Succeeded", 3066993),
+        "failure": ("❌ CI Pipeline Failed", 15158332),
+        "unstable": ("⚠️ CI Pipeline Unstable", 16776960),
+        "aborted": ("⏹️ CI Pipeline Aborted", 9807270),
+        "not_built": ("⏭️ CI Pipeline Not Built", 9807270),
+    }
+    title, color = titles[status]
+    description = "Jenkins pipeline finished."
 
     fields = [
         field("📦 Job", f"`{env('JOB_NAME')}`"),
         field("🔢 Build", f"`#{env('BUILD_NUMBER')}`"),
-        field("🌿 Branch", f"`{env('BRANCH_NAME')}`"),
         field("⚙️ CI Mode", f"`{env('CI_MODE')}`"),
         field("🔖 Commit", f"`{env('COMMIT_SHA')}`"),
     ]
+
+    change_id = os.getenv("CHANGE_ID")
+    if change_id:
+        fields.extend([
+            field("🔀 Pull Request", f"#{change_id}"),
+            field("🌿 Source", f"`{env('CHANGE_BRANCH')}`"),
+            field("🎯 Target", f"`{env('CHANGE_TARGET')}`"),
+        ])
+        change_url = os.getenv("CHANGE_URL")
+        if change_url:
+            fields.append(field("🔗 Pull Request", change_url, False))
+    else:
+        fields.append(field("🌿 Branch", f"`{env('BRANCH_NAME')}`"))
 
     image_name = os.getenv("IMAGE_NAME")
 
@@ -75,6 +86,7 @@ def build_payload(status: str) -> dict:
 
     return {
         "username": "Jenkins CI",
+        "allowed_mentions": {"parse": []},
         "embeds": [
             {
                 "title": title,
@@ -132,14 +144,14 @@ def send_notification(status: str) -> None:
 def main() -> None:
     if len(sys.argv) != 2:
         print(
-            f"Usage: {sys.argv[0]} <success|failure>",
+            f"Usage: {sys.argv[0]} <success|failure|unstable|aborted|not_built>",
             file=sys.stderr,
         )
         sys.exit(2)
 
     status = sys.argv[1].lower()
 
-    if status not in {"success", "failure"}:
+    if status not in {"success", "failure", "unstable", "aborted", "not_built"}:
         print(
             f"Unsupported status: {status}",
             file=sys.stderr,

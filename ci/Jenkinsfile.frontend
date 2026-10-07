@@ -178,7 +178,6 @@ pipeline {
                             }
                         }
                     }
-
                 }
 
                 stage('Mobile SCA - OSV Scanner') {
@@ -291,10 +290,10 @@ PY
                     '''
                 }
                 withCredentials([
-                    file(credentialsId: 'android-upload-keystore', variable: 'ANDROID_KEYSTORE_PATH'),
-                    string(credentialsId: 'android-keystore-password', variable: 'ANDROID_KEYSTORE_PASSWORD'),
-                    string(credentialsId: 'android-key-alias', variable: 'ANDROID_KEY_ALIAS'),
-                    string(credentialsId: 'android-key-password', variable: 'ANDROID_KEY_PASSWORD')
+                    file(credentialsId: 'taskflow-android-keystore', variable: 'ANDROID_KEYSTORE_PATH'),
+                    string(credentialsId: 'taskflow-android-store-pass', variable: 'ANDROID_KEYSTORE_PASSWORD'),
+                    string(credentialsId: 'taskflow-android-key-alias', variable: 'ANDROID_KEY_ALIAS'),
+                    string(credentialsId: 'taskflow-android-key-pass', variable: 'ANDROID_KEY_PASSWORD')
                 ]) {
                     container('flutter') {
                         dir('frontend') {
@@ -331,20 +330,18 @@ PY
                 allowEmptyArchive: true
             )
         }
-        success {
+        cleanup {
             script {
-                if (!env.CHANGE_ID?.trim() && ['develop', 'main'].contains(env.BRANCH_NAME)) {
-                    withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
-                        sh 'python3 ci/scripts/discord_notify.py success || echo "WARNING: Discord notification failed"'
-                    }
-                }
-            }
-        }
-        failure {
-            script {
-                if (!env.CHANGE_ID?.trim() && ['develop', 'main'].contains(env.BRANCH_NAME)) {
-                    withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
-                        sh 'python3 ci/scripts/discord_notify.py failure || echo "WARNING: Discord notification failed"'
+                def target = env.CHANGE_ID?.trim() ? env.CHANGE_TARGET?.trim() : env.BRANCH_NAME?.trim()
+                if (['develop', 'main'].contains(target)) {
+                    try {
+                        withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                            retry(3) {
+                                sh "python3 ci/scripts/discord_notify.py ${currentBuild.currentResult.toLowerCase()}"
+                            }
+                        }
+                    } catch (Exception err) {
+                        echo 'WARNING: Discord notification failed.'
                     }
                 }
             }
